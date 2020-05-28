@@ -1,7 +1,7 @@
 package com.oceanum.exec.process
 
 import com.oceanum.common.Environment
-import com.oceanum.exec.LineHandler
+import com.oceanum.exec.{InputStreamHandler, LineHandler}
 
 /**
  * @author chenmingkun
@@ -14,8 +14,8 @@ case class JavaProp(jars: Array[String],
                     env: Map[String, String] = Map.empty,
                     directory: String = "",
                     waitForTimeout: Long = -1,
-                    stdoutHandler: LineHandler,
-                    stderrHandler: LineHandler)
+                    stdoutHandler: InputStreamHandler,
+                    stderrHandler: InputStreamHandler)
   extends ProcessProp(
       (Environment.EXEC_JAVA +: options :+ "-cp" :+ jars.mkString(":") :+ mainClass) ++ args,
       env,

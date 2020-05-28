@@ -8,6 +8,7 @@ import com.oceanum.actors.StateHandler
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration.{FiniteDuration, _}
+import scala.language.postfixOps
 /**
  * @author chenmingkun
  * @date 2020/5/4

@@ -8,6 +8,7 @@ import com.oceanum.exec.multi.MultiOperatorExecutor
 import com.oceanum.exec.process.ProcessExecutor
 
 import scala.collection.JavaConversions.asScalaSet
+import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.Duration
 import scala.util.matching.Regex
 
@@ -43,7 +44,7 @@ object Environment {
 
   val CLUSTER_SYSTEM_NAME: String = getProperty("cluster.system-name", "cluster")
   val CLUSTER_NODE_PORT: Int = getProperty("cluster.node.port", "3551").toInt
-  val CLUSTER_NODE_TOPICS: Array[String] = getProperty("cluster.node.topics").split(",").map(_.trim)
+  val CLUSTER_NODE_HOST: String = getProperty("cluster.node.host", "127.0.0.1")
   val CLUSTER_SEED_NODE: Seq[String] = getProperty("cluster.seed-node", "127.0.0.1:3551").split(",").map(node => s"akka.tcp://$CLUSTER_SYSTEM_NAME@$node").toSeq
 
   val CLIENT_SYSTEM_NAME: String = getProperty("client.system-name", "client")
@@ -51,6 +52,8 @@ object Environment {
 
   val DEV_MODE: Boolean = getProperty("dev-mode", "false").toBoolean
   val EXECUTORS: Array[Executor[_ <: OperatorProp]] = Array(new ProcessExecutor(OutputManager.global), new MultiOperatorExecutor())
+
+  val SCHEDULE_EXECUTION_CONTEXT: ExecutionContext = ExecutionContext.global
 
   val OS: OS = {
     val sys = scala.util.Properties
@@ -61,6 +64,7 @@ object Environment {
   val PATH_SEPARATOR: String = {
     File.separator
   }
+  val CLUSTER_NODE_TOPICS: Array[String] = getProperty("cluster.node.topics").split(",").map(_.trim)
 
   def getProperty(key: String): String = properties.getProperty(key)
 

@@ -2,14 +2,14 @@ package com.oceanum.exec.process
 
 import java.io.IOException
 
-import com.oceanum.exec.{LineHandler, OperatorProp}
+import com.oceanum.exec.{InputStreamHandler, LineHandler, OperatorProp}
 
 class ProcessProp(val propCmd: Array[String] = Array.empty,
                   val propEnv: Map[String, String] = Map.empty,
                   val propDirectory: String = "",
                   val propWaitForTimeout: Long = -1,
-                  val propStdoutHandler: LineHandler,
-                  val propStderrHandler: LineHandler) extends OperatorProp {
+                  val propStdoutHandler: InputStreamHandler,
+                  val propStderrHandler: InputStreamHandler) extends OperatorProp {
   override def close(): Unit = {
     try {
       propStderrHandler.close()

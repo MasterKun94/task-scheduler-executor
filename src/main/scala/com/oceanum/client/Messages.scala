@@ -3,7 +3,7 @@ package com.oceanum.client
 import akka.actor.ActorRef
 import com.oceanum.actors.StateHandler
 import com.oceanum.exec.process.{JavaProp, ProcessProp, PythonProp, ScalaProp, ShellProp, ShellScriptProp, SuUserProp}
-import com.oceanum.exec.{EventListener, Operator, OperatorProp}
+import com.oceanum.exec.{EventListener, InputStreamHandler, LineHandler, Operator, OperatorProp}
 
 import scala.concurrent.duration.FiniteDuration
 
@@ -48,10 +48,10 @@ case class ShellPropMessage(cmd: Array[String] = Array.empty,
                             env: Map[String, String] = Map.empty,
                             directory: Option[String] = None,
                             waitForTimeout: Long = -1,
-                            stdoutLineHandler: LineHandlerProducer,
-                            stderrLineHandler: LineHandlerProducer) extends ProcessPropMessage {
+                            stdoutLineHandler: () => InputStreamHandler,
+                            stderrLineHandler: () => InputStreamHandler) extends ProcessPropMessage {
   override def toOperatorProp: ProcessProp = ShellProp(
-    cmd, env, directory.getOrElse(""), waitForTimeout, stdoutLineHandler.produce, stderrLineHandler.produce)
+    cmd, env, directory.getOrElse(""), waitForTimeout, stdoutLineHandler(), stderrLineHandler())
 }
 
 case class ShellScriptPropMessage(scriptFile: String,
@@ -59,10 +59,10 @@ case class ShellScriptPropMessage(scriptFile: String,
                                   env: Map[String, String] = Map.empty,
                                   directory: Option[String] = None,
                                   waitForTimeout: Long = -1,
-                                  stdoutLineHandler: LineHandlerProducer,
-                                  stderrLineHandler: LineHandlerProducer) extends ProcessPropMessage {
+                                  stdoutLineHandler: () => InputStreamHandler,
+                                  stderrLineHandler: () => InputStreamHandler) extends ProcessPropMessage {
   override def toOperatorProp: ProcessProp = ShellScriptProp(
-    scriptFile, args, env, directory.getOrElse(""), waitForTimeout, stdoutLineHandler.produce, stderrLineHandler.produce)
+    scriptFile, args, env, directory.getOrElse(""), waitForTimeout, stdoutLineHandler(), stderrLineHandler())
 }
 
 case class JavaPropMessage(jars: Array[String],
@@ -72,10 +72,10 @@ case class JavaPropMessage(jars: Array[String],
                            env: Map[String, String] = Map.empty,
                            directory: Option[String] = None,
                            waitForTimeout: Long = -1,
-                           stdoutLineHandler: LineHandlerProducer,
-                           stderrLineHandler: LineHandlerProducer) extends ProcessPropMessage {
+                           stdoutLineHandler: () => InputStreamHandler,
+                           stderrLineHandler: () => InputStreamHandler) extends ProcessPropMessage {
   override def toOperatorProp: ProcessProp = JavaProp(
-    jars, mainClass, args, options, env, directory.getOrElse(""), waitForTimeout, stdoutLineHandler.produce, stderrLineHandler.produce)
+    jars, mainClass, args, options, env, directory.getOrElse(""), waitForTimeout, stdoutLineHandler(), stderrLineHandler())
 }
 
 case class ScalaPropMessage(jars: Array[String],
@@ -85,10 +85,10 @@ case class ScalaPropMessage(jars: Array[String],
                             env: Map[String, String] = Map.empty,
                             directory: Option[String] = None,
                             waitForTimeout: Long = -1,
-                            stdoutLineHandler: LineHandlerProducer,
-                            stderrLineHandler: LineHandlerProducer) extends ProcessPropMessage {
+                            stdoutLineHandler: () => InputStreamHandler,
+                            stderrLineHandler: () => InputStreamHandler) extends ProcessPropMessage {
   override def toOperatorProp: ProcessProp = ScalaProp(
-    jars, mainClass, args, options, env, directory.getOrElse(""), waitForTimeout, stdoutLineHandler.produce, stderrLineHandler.produce)
+    jars, mainClass, args, options, env, directory.getOrElse(""), waitForTimeout, stdoutLineHandler(), stderrLineHandler())
 }
 case class PythonPropMessage(pyFile: String,
                              args: Array[String] = Array.empty,
@@ -96,10 +96,10 @@ case class PythonPropMessage(pyFile: String,
                              env: Map[String, String] = Map.empty,
                              directory: String = ".",
                              waitForTimeout: Long = -1,
-                             stdoutLineHandler: LineHandlerProducer,
-                             stderrLineHandler: LineHandlerProducer) extends ProcessPropMessage {
+                             stdoutLineHandler: () => InputStreamHandler,
+                             stderrLineHandler: () => InputStreamHandler) extends ProcessPropMessage {
   override def toOperatorProp: ProcessProp = PythonProp(
-    pyFile, args, options, env, directory, waitForTimeout, stdoutLineHandler.produce, stderrLineHandler.produce)
+    pyFile, args, options, env, directory, waitForTimeout, stdoutLineHandler(), stderrLineHandler())
 }
 
 case class SuUserPropMessage(user: String, prop: ProcessPropMessage) extends PropMessage {

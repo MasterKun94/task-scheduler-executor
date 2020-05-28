@@ -1,11 +1,14 @@
 package com.oceanum.client
 
+import java.io.File
+
 import akka.actor.{ActorPaths, ActorRef, ActorSystem, Props}
 import akka.cluster.client.{ClusterClient, ClusterClientSettings}
 import akka.pattern.ask
 import akka.util.Timeout
 import com.oceanum.actors.{ClientActor, ClientExecutor, ClientListener, StateHandler}
 import com.oceanum.common.Environment
+import com.oceanum.exec.LineHandler
 import com.typesafe.config.ConfigFactory
 
 import scala.concurrent.{ExecutionContext, ExecutionContextExecutor, Future}
@@ -21,27 +24,30 @@ class SchedulerClient(endpoint: ActorRef)(implicit executionContext: ExecutionCo
     SchedulerClient.clientSystem.actorOf(Props(classOf[ClientActor], endpoint, executionContext), "client-actor")
   }
 
-  def execute(topic: String, operatorMessage: OperatorMessage): Future[OperatorInstance] = {
+  def execute(topic: String, operatorMessage: OperatorMessage, checkStateInterval: FiniteDuration = FiniteDuration(10, "s"), stateHandler: StateHandler = StateHandler.empty()): Future[OperatorInstance] = {
     availableExecutor(topic)
       .flatMap(response => {
-        val executor = SchedulerClient.clientSystem.actorOf(Props(classOf[ClientExecutor], response.executor.actor))
-        executor
-          .ask(ExecuteOperatorRequest(operatorMessage, CheckStateScheduled(FiniteDuration(10, "s"), StateHandler.empty())))
-          .map(_ => OperatorInstance(executor))
-      })
-  }
-
-  def execute(topic: String, operatorMessage: OperatorMessage, checkStateInterval: FiniteDuration, stateHandler: StateHandler): Future[OperatorInstance] = {
-    availableExecutor(topic)
-      .flatMap(response => {
-        val executor = SchedulerClient.clientSystem.actorOf(Props(classOf[ClientExecutor], response.executor.actor))
-        executor
+        val clientExecutor = SchedulerClient.clientSystem.actorOf(Props(classOf[ClientExecutor], response.executor.actor))
+        clientExecutor
           .ask(ExecuteOperatorRequest(operatorMessage, CheckStateScheduled(checkStateInterval, stateHandler)))
-          .map(_ => OperatorInstance(executor))
+          .map(_ => OperatorInstance(clientExecutor))
       })
   }
 
-  def availableExecutors(topic: String, timeWait: FiniteDuration): Future[AvailableExecutorsResponse] = {
+  def executeAll(topic: String, operatorMessage: OperatorMessage, checkStateInterval: FiniteDuration = FiniteDuration(10, "s"), stateHandler: StateHandler = StateHandler.empty())(implicit timeWait: FiniteDuration): Future[OperatorInstance] = {
+    availableExecutors(topic)
+      .flatMap(response => {
+        response.executors
+          .map(executor => {
+          val clientExecutor = SchedulerClient.clientSystem.actorOf(Props(classOf[ClientExecutor], executor.actor))
+            .ask(ExecuteOperatorRequest(operatorMessage, CheckStateScheduled(checkStateInterval, stateHandler)))
+            .map(_ => OperatorInstance(clientExecutor))
+        })
+          .map(future => Future.)
+      })
+  }
+
+  def availableExecutors(topic: String)(implicit timeWait: FiniteDuration): Future[AvailableExecutorsResponse] = {
     val client = getClient(executionContext)
     client
       .ask(AvailableExecutorsRequest(topic, timeWait))
@@ -74,6 +80,7 @@ object SchedulerClient {
   }
 
   def main(args: Array[String]): Unit = {
+    val path = "E:\\chenmingkun\\task-scheduler-executor\\src\\main\\resources"
     implicit val executionContext: ExecutionContextExecutor = ExecutionContext.global
     implicit val timeout: Timeout = 10 second
     val client = SchedulerClient.create
@@ -84,11 +91,11 @@ object SchedulerClient {
         3000,
         1,
         PythonPropMessage(
-          pyFile = "C:\\Users\\chenmingkun\\work\\idea\\work\\task-scheduler-core\\task-scheduler-executor\\src\\main\\resources\\test.py",
+          pyFile = s"$path\\test.py",
           args = Array("hello", "world"),
           env = Map("FILE_NAME" -> "test.py"),
-          stdoutLineHandler = LineHandlerProducer.file("C:\\Users\\chenmingkun\\work\\idea\\work\\task-scheduler-core\\task-scheduler-executor\\src\\main\\resources\\test1.txt"),
-          stderrLineHandler = LineHandlerProducer.file("C:\\Users\\chenmingkun\\work\\idea\\work\\task-scheduler-core\\task-scheduler-executor\\src\\main\\resources\\test2.txt"),
+          stdoutLineHandler = () => LineHandler.fileOutputHandler(new File(s"$path\\test1.txt")),
+          stderrLineHandler = () => LineHandler.fileOutputHandler(new File(s"$path\\test2.txt")),
 //          stdoutLineHandler = LineHandlerProducer.print(),
 //          stderrLineHandler = LineHandlerProducer.print(),
           waitForTimeout = 100000

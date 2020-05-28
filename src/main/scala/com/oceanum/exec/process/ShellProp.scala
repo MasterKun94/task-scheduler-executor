@@ -1,6 +1,6 @@
 package com.oceanum.exec.process
 
-import com.oceanum.exec.LineHandler
+import com.oceanum.exec.{InputStreamHandler, LineHandler}
 
 /**
  * @author chenmingkun
@@ -10,6 +10,6 @@ case class ShellProp(cmd: Array[String] = Array.empty,
                      env: Map[String, String] = Map.empty,
                      directory: String = "",
                      waitForTimeout: Long = -1,
-                     stdoutHandler: LineHandler,
-                     stderrHandler: LineHandler)
+                     stdoutHandler: InputStreamHandler,
+                     stderrHandler: InputStreamHandler)
 extends ProcessProp(cmd, env, directory, waitForTimeout, stdoutHandler, stderrHandler)

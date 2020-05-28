@@ -13,24 +13,24 @@ import scala.concurrent.ExecutionContext
  * @author chenmingkun
  * @date 2020/5/3
  */
-class ExecutionEndpoint(implicit scheduleExecutionContext: ExecutionContext) extends Actor {
+class ExecutionEndpoint(topics: Seq[String]) extends Actor {
 
   //使用pub/sub方式设置
   val mediator: ActorRef = DistributedPubSub(context.system).mediator
 
   override def preStart(): Unit = {
-    for (topic <- Environment.CLUSTER_NODE_TOPICS) {
+    for (topic <- topics) {
       mediator ! Subscribe(topic, self)
     }
   }
 
   override def receive: Receive = {
     case req: ExecuteOperatorRequest =>
-      val executor = context.system.actorOf(Props(classOf[ExecutionActor], scheduleExecutionContext), "executor")
-      executor.tell(req, sender())
+      val proxy = context.system.actorOf(Props(classOf[ExecutionProxy]), "execution-proxy")
+      proxy.tell(req, sender())
 
 
-    case AvailableExecutorRequest(_) =>
+    case _: AvailableExecutorRequest =>
       sender() ! AvailableExecutor(self, ExecuteManager.queueSize, Environment.CLUSTER_NODE_TOPICS)
   }
 }
