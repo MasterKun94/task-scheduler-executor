@@ -35,9 +35,9 @@ object ClusterMain {
   }
 
   def main(args: Array[String]): Unit = {
-    ClusterStarter.main(Array("--port=3551"))
-    ClusterStarter.main(Array("--port=3552"))
-    ClusterStarter.main(Array("--port=3553"))
+    ClusterStarter.main(Array("--port=3551", "--topics=t1,a1"))
+    ClusterStarter.main(Array("--port=3552", "--topics=t2,a2"))
+    ClusterStarter.main(Array("--port=3553", "--topics=t3,a3"))
     //    Thread.sleep(3000)
     //    SchedulerClient.main(null)
   }

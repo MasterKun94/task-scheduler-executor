@@ -24,41 +24,30 @@ class SchedulerClient(endpoint: ActorRef)(implicit executionContext: ExecutionCo
     SchedulerClient.clientSystem.actorOf(Props(classOf[ClientActor], endpoint, executionContext), "client-actor")
   }
 
-  def execute(topic: String, operatorMessage: OperatorMessage, checkStateInterval: FiniteDuration = FiniteDuration(10, "s"), stateHandler: StateHandler = StateHandler.empty()): Future[OperatorInstance] = {
-    availableExecutor(topic)
-      .flatMap(response => {
-        val clientExecutor = SchedulerClient.clientSystem.actorOf(Props(classOf[ClientExecutor], response.executor.actor))
-        clientExecutor
-          .ask(ExecuteOperatorRequest(operatorMessage, CheckStateScheduled(checkStateInterval, stateHandler)))
-          .map(_ => OperatorInstance(clientExecutor))
-      })
+
+  def execute(topic: String, task: Task, stateHandler: StateHandler = StateHandler.empty()): Future[ExecutorInstance] = {
+    doExecute(AvailableExecutorRequest(topic), task, stateHandler)
   }
 
-  def executeAll(topic: String, operatorMessage: OperatorMessage, checkStateInterval: FiniteDuration = FiniteDuration(10, "s"), stateHandler: StateHandler = StateHandler.empty())(implicit timeWait: FiniteDuration): Future[OperatorInstance] = {
-    availableExecutors(topic)
-      .flatMap(response => {
-        response.executors
-          .map(executor => {
-          val clientExecutor = SchedulerClient.clientSystem.actorOf(Props(classOf[ClientExecutor], executor.actor))
-            .ask(ExecuteOperatorRequest(operatorMessage, CheckStateScheduled(checkStateInterval, stateHandler)))
-            .map(_ => OperatorInstance(clientExecutor))
-        })
-          .map(future => Future.)
-      })
+  def executeAll(topic: String, task: Task, stateHandler: StateHandler = StateHandler.empty())(implicit timeWait: FiniteDuration): Future[ExecutorInstance] = {
+    doExecute(AvailableExecutorsRequest(topic, timeWait), task, stateHandler)
   }
 
-  def availableExecutors(topic: String)(implicit timeWait: FiniteDuration): Future[AvailableExecutorsResponse] = {
+  private def doExecute(requestMsg: Any, task: Task, stateHandler: StateHandler = StateHandler.empty()): Future[ExecutorInstance] = {
     val client = getClient(executionContext)
     client
-      .ask(AvailableExecutorsRequest(topic, timeWait))
-      .mapTo[AvailableExecutorsResponse]
-  }
-
-  def availableExecutor(topic: String): Future[AvailableExecutorResponse] = {
-    val client = getClient(executionContext)
-    client
-      .ask(AvailableExecutorRequest(topic))
+      .ask(requestMsg)
       .mapTo[AvailableExecutorResponse]
+      .flatMap(response => {
+        val res = response.executor
+          .map(executor => SchedulerClient.clientSystem.actorOf(Props(classOf[ClientExecutor], executor.actor)))
+          .map(client => client
+            .ask(ExecuteOperatorRequest(task, CheckStateScheduled(stateHandler.checkInterval(), stateHandler)))
+            .map(_ => client)
+          )
+          .toSeq
+        Future.sequence(res).map(ExecutorInstance(_))
+      })
   }
 }
 
@@ -83,14 +72,16 @@ object SchedulerClient {
     val path = "E:\\chenmingkun\\task-scheduler-executor\\src\\main\\resources"
     implicit val executionContext: ExecutionContextExecutor = ExecutionContext.global
     implicit val timeout: Timeout = 10 second
+    implicit val timeWait: FiniteDuration = 2 second
     val client = SchedulerClient.create
+//    client.availableExecutors("test").map(res => res.executors.mkString(", \n")).foreach(println)
     val future = client
-      .execute("test", OperatorMessage(
+      .executeAll("a1", Task(
         "test",
         3,
         3000,
         1,
-        PythonPropMessage(
+        PythonTaskProp(
           pyFile = s"$path\\test.py",
           args = Array("hello", "world"),
           env = Map("FILE_NAME" -> "test.py"),
@@ -103,7 +94,7 @@ object SchedulerClient {
       future
       .onComplete {
         case Success(value) =>
-          value.checkStateScheduled(2 second, StateHandler(state => println("state is: " + state)))
+          value.handleState(2 second, state => println("state is: " + state))
           value.onComplete(stat => {
             println("result is: " + stat)
             value.close()

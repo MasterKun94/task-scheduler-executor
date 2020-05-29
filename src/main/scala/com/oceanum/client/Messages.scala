@@ -23,85 +23,84 @@ case class CheckStateScheduled(duration: FiniteDuration, handler: StateHandler =
 
 case class AvailableExecutorRequest(topic: String)
 case class AvailableExecutorsRequest(topic: String, maxWait: FiniteDuration)
-case class AvailableExecutorResponse(executor: AvailableExecutor)
-case class AvailableExecutorsResponse(executors: Array[AvailableExecutor])
+case class AvailableExecutorResponse(executor: TraversableOnce[AvailableExecutor])
 case class AvailableExecutor(actor: ActorRef, queueSize: Int, topics: Array[String])
-case class ExecuteOperatorRequest(operatorMessage: OperatorMessage, checkStateScheduled: CheckStateScheduled)
-case class ExecuteOperatorResponse(operatorMessage: OperatorMessage, checkStateScheduled: CheckStateScheduled)
+case class ExecuteOperatorRequest(operatorMessage: Task, checkStateScheduled: CheckStateScheduled)
+case class ExecuteOperatorResponse(operatorMessage: Task, checkStateScheduled: CheckStateScheduled)
 case class HandleState(handler: StateHandler)
 case class HandleOnComplete(handler: StateHandler)
 case class ExecutorState(isSuccess: Boolean, iterator: Iterator[EventListener.State])
 
-case class OperatorMessage(name: String, retryCount: Int, retryInterval: Int, priority: Int, prop: PropMessage) {
+case class Task(name: String, retryCount: Int, retryInterval: Int, priority: Int, prop: TaskProp) {
   def toOperator(listener: EventListener): Operator[_ <: OperatorProp] = Operator(name, retryCount, retryInterval, priority, prop.toOperatorProp, listener)
 }
 
-trait PropMessage {
+trait TaskProp {
   def toOperatorProp: OperatorProp
 }
 
-abstract class ProcessPropMessage extends PropMessage {
+abstract class ProcessTaskProp extends TaskProp {
   override def toOperatorProp: ProcessProp
 }
 
-case class ShellPropMessage(cmd: Array[String] = Array.empty,
-                            env: Map[String, String] = Map.empty,
-                            directory: Option[String] = None,
-                            waitForTimeout: Long = -1,
-                            stdoutLineHandler: () => InputStreamHandler,
-                            stderrLineHandler: () => InputStreamHandler) extends ProcessPropMessage {
+case class ShellTaskProp(cmd: Array[String] = Array.empty,
+                         env: Map[String, String] = Map.empty,
+                         directory: Option[String] = None,
+                         waitForTimeout: Long = -1,
+                         stdoutLineHandler: () => InputStreamHandler,
+                         stderrLineHandler: () => InputStreamHandler) extends ProcessTaskProp {
   override def toOperatorProp: ProcessProp = ShellProp(
     cmd, env, directory.getOrElse(""), waitForTimeout, stdoutLineHandler(), stderrLineHandler())
 }
 
-case class ShellScriptPropMessage(scriptFile: String,
-                                  args: Array[String] = Array.empty,
-                                  env: Map[String, String] = Map.empty,
-                                  directory: Option[String] = None,
-                                  waitForTimeout: Long = -1,
-                                  stdoutLineHandler: () => InputStreamHandler,
-                                  stderrLineHandler: () => InputStreamHandler) extends ProcessPropMessage {
+case class ShellScriptTaskProp(scriptFile: String,
+                               args: Array[String] = Array.empty,
+                               env: Map[String, String] = Map.empty,
+                               directory: Option[String] = None,
+                               waitForTimeout: Long = -1,
+                               stdoutLineHandler: () => InputStreamHandler,
+                               stderrLineHandler: () => InputStreamHandler) extends ProcessTaskProp {
   override def toOperatorProp: ProcessProp = ShellScriptProp(
     scriptFile, args, env, directory.getOrElse(""), waitForTimeout, stdoutLineHandler(), stderrLineHandler())
 }
 
-case class JavaPropMessage(jars: Array[String],
-                           mainClass: String,
-                           args: Array[String] = Array.empty,
-                           options: Array[String] = Array.empty,
-                           env: Map[String, String] = Map.empty,
-                           directory: Option[String] = None,
-                           waitForTimeout: Long = -1,
-                           stdoutLineHandler: () => InputStreamHandler,
-                           stderrLineHandler: () => InputStreamHandler) extends ProcessPropMessage {
+case class JavaTaskProp(jars: Array[String],
+                        mainClass: String,
+                        args: Array[String] = Array.empty,
+                        options: Array[String] = Array.empty,
+                        env: Map[String, String] = Map.empty,
+                        directory: Option[String] = None,
+                        waitForTimeout: Long = -1,
+                        stdoutLineHandler: () => InputStreamHandler,
+                        stderrLineHandler: () => InputStreamHandler) extends ProcessTaskProp {
   override def toOperatorProp: ProcessProp = JavaProp(
     jars, mainClass, args, options, env, directory.getOrElse(""), waitForTimeout, stdoutLineHandler(), stderrLineHandler())
 }
 
-case class ScalaPropMessage(jars: Array[String],
-                            mainClass: String,
-                            args: Array[String] = Array.empty,
-                            options: Array[String] = Array.empty,
-                            env: Map[String, String] = Map.empty,
-                            directory: Option[String] = None,
-                            waitForTimeout: Long = -1,
-                            stdoutLineHandler: () => InputStreamHandler,
-                            stderrLineHandler: () => InputStreamHandler) extends ProcessPropMessage {
+case class ScalaTaskProp(jars: Array[String],
+                         mainClass: String,
+                         args: Array[String] = Array.empty,
+                         options: Array[String] = Array.empty,
+                         env: Map[String, String] = Map.empty,
+                         directory: Option[String] = None,
+                         waitForTimeout: Long = -1,
+                         stdoutLineHandler: () => InputStreamHandler,
+                         stderrLineHandler: () => InputStreamHandler) extends ProcessTaskProp {
   override def toOperatorProp: ProcessProp = ScalaProp(
     jars, mainClass, args, options, env, directory.getOrElse(""), waitForTimeout, stdoutLineHandler(), stderrLineHandler())
 }
-case class PythonPropMessage(pyFile: String,
-                             args: Array[String] = Array.empty,
-                             options: Array[String] = Array.empty,
-                             env: Map[String, String] = Map.empty,
-                             directory: String = ".",
-                             waitForTimeout: Long = -1,
-                             stdoutLineHandler: () => InputStreamHandler,
-                             stderrLineHandler: () => InputStreamHandler) extends ProcessPropMessage {
+case class PythonTaskProp(pyFile: String,
+                          args: Array[String] = Array.empty,
+                          options: Array[String] = Array.empty,
+                          env: Map[String, String] = Map.empty,
+                          directory: String = ".",
+                          waitForTimeout: Long = -1,
+                          stdoutLineHandler: () => InputStreamHandler,
+                          stderrLineHandler: () => InputStreamHandler) extends ProcessTaskProp {
   override def toOperatorProp: ProcessProp = PythonProp(
     pyFile, args, options, env, directory, waitForTimeout, stdoutLineHandler(), stderrLineHandler())
 }
 
-case class SuUserPropMessage(user: String, prop: ProcessPropMessage) extends PropMessage {
+case class SuUserTaskProp(user: String, prop: ProcessTaskProp) extends TaskProp {
   override def toOperatorProp: ProcessProp = SuUserProp(user, prop.toOperatorProp)
 }

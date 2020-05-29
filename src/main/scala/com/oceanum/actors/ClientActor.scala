@@ -1,8 +1,9 @@
 package com.oceanum.actors
 
-import akka.actor.{Actor, ActorLogging, ActorRef}
+import akka.actor.{Actor, ActorLogging, ActorRef, Cancellable}
 import akka.cluster.client.ClusterClient.Publish
 import com.oceanum.client._
+import com.oceanum.common.Environment
 import com.oceanum.exec.EventListener
 import com.oceanum.exec.EventListener._
 
@@ -15,13 +16,19 @@ import scala.concurrent.ExecutionContext
 class ClientActor(clusterClient: ActorRef, executionContext: ExecutionContext) extends Actor with ActorLogging {
   implicit private val ec: ExecutionContext = executionContext
 
+  override def preStart(): Unit = {
+    context.system.scheduler.scheduleOnce(Environment.ACTOR_ALIVE_TIME_MAX) {
+      context.stop(self)
+    }
+  }
+
   override def receive: Receive = {
     case req: AvailableExecutorsRequest =>
-      clusterClient ! Publish(req.topic, req)
+      clusterClient ! Publish(req.topic, AvailableExecutorRequest(req.topic))
+      context.become(receiveExecutors(sender(), Array.empty))
       context.system.scheduler.scheduleOnce(req.maxWait) {
         self ! req
       }
-      context.become(receiveExecutors(sender(), Array.empty))
 
     case req: AvailableExecutorRequest =>
       clusterClient ! Publish(req.topic, req)
@@ -30,18 +37,19 @@ class ClientActor(clusterClient: ActorRef, executionContext: ExecutionContext) e
 
   def receiveExecutors(receiver: ActorRef, executors: Array[AvailableExecutor]): Receive = {
     case executor: AvailableExecutor =>
-      receiver ! AvailableExecutorResponse(executor)
       context.become(receiveExecutors(receiver, executors :+ executor))
 
     case req: AvailableExecutorsRequest =>
-      receiver ! AvailableExecutorsResponse(executors)
+      receiver ! AvailableExecutorResponse(executors)
       context.stop(self)
+      cancelable.cancel()
   }
 
   def receiveExecutor(receiver: ActorRef): Receive = {
     case executor: AvailableExecutor =>
-      receiver ! AvailableExecutorResponse(executor)
+      receiver ! AvailableExecutorResponse(Some(executor))
       context.stop(self)
+      cancelable.cancel()
   }
 }
 
@@ -60,7 +68,7 @@ class ClientExecutor(executor: ActorRef) extends Actor with ActorLogging {
 
     case res: ExecuteOperatorResponse =>
       log.info("receive operator response from " + sender())
-      actor ! OperatorInstance(self)
+      actor ! ExecutorInstance(Seq(self))
       context.become(onRunning(sender(), res.checkStateScheduled.handler))
   }
 

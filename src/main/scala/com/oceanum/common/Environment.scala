@@ -9,7 +9,7 @@ import com.oceanum.exec.process.ProcessExecutor
 
 import scala.collection.JavaConversions.asScalaSet
 import scala.concurrent.ExecutionContext
-import scala.concurrent.duration.Duration
+import scala.concurrent.duration.{Duration, FiniteDuration}
 import scala.util.matching.Regex
 
 /**
@@ -54,6 +54,7 @@ object Environment {
   val EXECUTORS: Array[Executor[_ <: OperatorProp]] = Array(new ProcessExecutor(OutputManager.global), new MultiOperatorExecutor())
 
   val SCHEDULE_EXECUTION_CONTEXT: ExecutionContext = ExecutionContext.global
+  val ACTOR_ALIVE_TIME_MAX: FiniteDuration = FiniteDuration(1, "d")
 
   val OS: OS = {
     val sys = scala.util.Properties
