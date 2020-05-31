@@ -1,20 +1,22 @@
-package com.oceanum.exec.process
+package com.oceanum.exec.executors
 
 import java.io.{File, IOException}
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 
 import com.oceanum.common.Environment
-import com.oceanum.exec.{OperatorProp, _}
+import com.oceanum.exec.tasks.{JavaTask, ProcessTask, PythonTask, ScalaTask, ShellTask, SuUserTask}
+import com.oceanum.exec.{OperatorTask, _}
+
+import scala.collection.JavaConversions.{mapAsJavaMap, seqAsJavaList}
 
 /**
  * @author chenmingkun
  * @date 2020/4/28
  */
-class ProcessExecutor(outputManager: OutputManager) extends Executor[ProcessProp] {
+class ProcessExecutor(outputManager: OutputManager) extends TypedExecutor[ProcessTask] {
 
-  import scala.collection.JavaConversions.{mapAsJavaMap, seqAsJavaList}
-  override protected def typedExecute(operatorProp: Operator[_ <: ProcessProp]): ExitCode = {
+  override protected def typedExecute(operatorProp: Operator[_ <: ProcessTask]): ExitCode = {
 
     val prop = operatorProp.prop
     val cmd = prop.propCmd.toList
@@ -75,18 +77,18 @@ class ProcessExecutor(outputManager: OutputManager) extends Executor[ProcessProp
     override def isKilled: Boolean = ref.get()
   }
 
-  override def executable(p: OperatorProp): Boolean = {
+  override def executable(p: OperatorTask): Boolean = {
     check(p)
   }
 
   @scala.annotation.tailrec
-  private def check(operatorProp: OperatorProp): Boolean = {
+  private def check(operatorProp: OperatorTask): Boolean = {
     operatorProp match {
-      case _: ShellProp => Environment.EXEC_SHELL_ENABLED
-      case _: ScalaProp => Environment.EXEC_SCALA_ENABLED
-      case _: JavaProp => Environment.EXEC_JAVA_ENABLED
-      case _: PythonProp => Environment.EXEC_PYTHON_ENABLED
-      case SuUserProp(_, prop) => check(prop)
+      case _: ShellTask => Environment.EXEC_SHELL_ENABLED
+      case _: ScalaTask => Environment.EXEC_SCALA_ENABLED
+      case _: JavaTask => Environment.EXEC_JAVA_ENABLED
+      case _: PythonTask => Environment.EXEC_PYTHON_ENABLED
+      case SuUserTask(_, prop) => check(prop)
     }
   }
 }

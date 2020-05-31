@@ -3,7 +3,7 @@ package com.oceanum.actors
 import akka.actor.{Actor, ActorLogging, ActorRef, Cancellable}
 import com.oceanum.client._
 import com.oceanum.common.Environment
-import com.oceanum.exec.EventListener._
+import com.oceanum.exec.State._
 import com.oceanum.exec.{EventListener, ExecuteManager, ExecutorHook}
 
 import scala.concurrent.ExecutionContext
@@ -12,7 +12,7 @@ import scala.concurrent.duration.FiniteDuration
  * @author chenmingkun
  * @date 2020/5/2
  */
-class ExecutionProxy extends Actor with ActorLogging {
+class ExecutionInstance extends Actor with ActorLogging {
 
   private val listener: EventListener = new EventListener {
     override def prepare(message: Any): Unit = {

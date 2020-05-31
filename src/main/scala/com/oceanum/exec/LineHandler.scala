@@ -9,7 +9,7 @@ import scala.util.Properties
  * @author chenmingkun
  * @date 2020/4/29
  */
-abstract class LineHandler extends InputStreamHandler {
+trait LineHandler extends InputStreamHandler {
   override def handle(input: InputStream): Unit = {
     val reader = new BufferedReader(new InputStreamReader(input, StandardCharsets.UTF_8))
     try {

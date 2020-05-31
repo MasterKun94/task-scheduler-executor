@@ -9,12 +9,12 @@ import com.oceanum.common.{Environment, Log}
  * @date 2020/4/29
  */
 object ExecuteManager extends Log {
-  type Prop = Operator[_ <: OperatorProp]
+  type Prop = Operator[_ <: OperatorTask]
   private val num = Environment.EXEC_THREAD_NUM
   private val exec = RootExecutor
   private val priorityMailbox: MailBox[Prop] = MailBox.priority(p => execute(p), num, (p1, p2) => p1.priority - p2.priority)
   private val delayedMailbox: MailBox[Delayed] = MailBox.delay(p => processDelay(p), 1)
-  private val outputManager: OutputManager = new OutputManager(num * 2)
+  private val outputManager: OutputManager = OutputManager.global
 
   def submit(operatorProp: Prop): ExecutorHook = {
     operatorProp.eventListener.prepare()
@@ -73,7 +73,7 @@ object ExecuteManager extends Log {
     }
   }
 
-  case class ClosedProp(prop: OperatorProp) extends Delayed {
+  case class ClosedProp(prop: OperatorTask) extends Delayed {
     val time: Long = System.currentTimeMillis()
 
     override def getDelay(unit: TimeUnit): Long = unit.convert(time + 10000 - System.currentTimeMillis(), TimeUnit.MILLISECONDS);

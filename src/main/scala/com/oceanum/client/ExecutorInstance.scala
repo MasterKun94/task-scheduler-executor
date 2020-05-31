@@ -5,7 +5,7 @@ import akka.util.Timeout
 import com.oceanum.exec.EventListener
 import akka.pattern.ask
 import com.oceanum.actors.StateHandler
-import com.oceanum.exec.EventListener.State
+import com.oceanum.exec.State.State
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration.{FiniteDuration, _}
@@ -24,7 +24,7 @@ case class ExecutorInstance(executor: TraversableOnce[ActorRef])(implicit timeou
     Future.sequence(executor.map(client => client ? CheckStateScheduled(handler.checkInterval(), handler))) map (_ => Unit) mapTo
   }
 
-  def handleState(interval: FiniteDuration, handler: EventListener.State => Unit): Future[Unit] = {
+  def handleState(interval: FiniteDuration, handler: State => Unit): Future[Unit] = {
     val stateHandler = new StateHandler {
       override def handle(state: State): Unit = handler(state)
 
@@ -41,7 +41,7 @@ case class ExecutorInstance(executor: TraversableOnce[ActorRef])(implicit timeou
     Future.sequence(executor.map(client => client ? HandleOnComplete(handler))) map (_ => Unit) mapTo
   }
 
-  def onComplete(handler: EventListener.State => Unit): Future[Unit] = {
+  def onComplete(handler: State => Unit): Future[Unit] = {
     onComplete(StateHandler(handler))
   }
 

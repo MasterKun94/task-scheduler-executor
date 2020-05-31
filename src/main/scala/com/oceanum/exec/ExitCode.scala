@@ -17,5 +17,5 @@ object ExitCode {
   case object OK extends ExitCode
   case object ERROR extends ExitCode
   case object KILL extends ExitCode
-  case class UN_SUPPORT(operatorClass: Class[_ <: OperatorProp]) extends ExitCode
+  case class UN_SUPPORT(operatorClass: Class[_ <: OperatorTask]) extends ExitCode
 }

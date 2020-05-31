@@ -6,7 +6,7 @@ import akka.actor.{ActorPaths, ActorRef, ActorSystem, Props}
 import akka.cluster.client.{ClusterClient, ClusterClientSettings}
 import akka.pattern.ask
 import akka.util.Timeout
-import com.oceanum.actors.{ClientActor, ClientExecutor, ClientListener, StateHandler}
+import com.oceanum.actors.{ExecutorFinder, ClientExecutor, ClientListener, StateHandler}
 import com.oceanum.common.Environment
 import com.oceanum.exec.LineHandler
 import com.typesafe.config.ConfigFactory
@@ -21,7 +21,7 @@ import scala.util.{Failure, Success}
  */
 class SchedulerClient(endpoint: ActorRef)(implicit executionContext: ExecutionContext, timeout: Timeout) {
   private def getClient(executionContext: ExecutionContext): ActorRef = {
-    SchedulerClient.clientSystem.actorOf(Props(classOf[ClientActor], endpoint, executionContext), "client-actor")
+    SchedulerClient.clientSystem.actorOf(Props(classOf[ExecutorFinder], endpoint, executionContext), "client-actor")
   }
 
 
@@ -69,7 +69,7 @@ object SchedulerClient {
   }
 
   def main(args: Array[String]): Unit = {
-    val path = "E:\\chenmingkun\\task-scheduler-executor\\src\\main\\resources"
+    val path = "C:\\Users\\chenmingkun\\work\\idea\\work\\task-scheduler-core\\task-scheduler-executor\\src\\main\\resources"
     implicit val executionContext: ExecutionContextExecutor = ExecutionContext.global
     implicit val timeout: Timeout = 10 second
     implicit val timeWait: FiniteDuration = 2 second

@@ -1,11 +1,11 @@
-package com.oceanum.exec.process
+package com.oceanum.exec.tasks
 
 /**
  * @author chenmingkun
  * @date 2020/5/2
  */
-case class SuUserProp(user: String, prop: ProcessProp)
-  extends ProcessProp(
+case class SuUserTask(user: String, prop: ProcessTask)
+  extends ProcessTask(
     Array("su", "-", user, "-c") :+ s"${prop.propCmd.mkString(" ")}",
     prop.propEnv,
     prop.propDirectory,

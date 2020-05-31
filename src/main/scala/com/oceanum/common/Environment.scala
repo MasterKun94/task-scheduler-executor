@@ -3,9 +3,8 @@ package com.oceanum.common
 import java.io.File
 import java.util.Properties
 
-import com.oceanum.exec.{Executor, OperatorProp, OutputManager}
-import com.oceanum.exec.multi.MultiOperatorExecutor
-import com.oceanum.exec.process.ProcessExecutor
+import com.oceanum.exec.executors.{MultiOperatorExecutor, ProcessExecutor}
+import com.oceanum.exec.{OperatorTask, OutputManager, TypedExecutor}
 
 import scala.collection.JavaConversions.asScalaSet
 import scala.concurrent.ExecutionContext
@@ -20,7 +19,7 @@ object Environment {
 
   private val properties = {
     val loader = new PropLoader
-    loader.load("application-env")
+    loader.load("application-env.properties")
     loader.load("application.properties")
     loader.get
   }
@@ -51,7 +50,7 @@ object Environment {
   val CLIENT_PORT: Int = getProperty("client.port", "4551").toInt
 
   val DEV_MODE: Boolean = getProperty("dev-mode", "false").toBoolean
-  val EXECUTORS: Array[Executor[_ <: OperatorProp]] = Array(new ProcessExecutor(OutputManager.global), new MultiOperatorExecutor())
+  val EXECUTORS: Array[TypedExecutor[_ <: OperatorTask]] = Array(new ProcessExecutor(OutputManager.global), new MultiOperatorExecutor())
 
   val SCHEDULE_EXECUTION_CONTEXT: ExecutionContext = ExecutionContext.global
   val ACTOR_ALIVE_TIME_MAX: FiniteDuration = FiniteDuration(1, "d")

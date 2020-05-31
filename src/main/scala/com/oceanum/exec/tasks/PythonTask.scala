@@ -1,13 +1,13 @@
-package com.oceanum.exec.process
+package com.oceanum.exec.tasks
 
 import com.oceanum.common.Environment
-import com.oceanum.exec.{InputStreamHandler, LineHandler}
+import com.oceanum.exec.InputStreamHandler
 
 /**
  * @author chenmingkun
  * @date 2020/5/1
  */
-case class PythonProp(pyFile: String,
+case class PythonTask(pyFile: String,
                       args: Array[String] = Array.empty,
                       options: Array[String] = Array.empty,
                       env: Map[String, String] = Map.empty,
@@ -15,7 +15,7 @@ case class PythonProp(pyFile: String,
                       waitForTimeout: Long = -1,
                       stdoutHandler: InputStreamHandler,
                       stderrHandler: InputStreamHandler)
-  extends ProcessProp(
+  extends ProcessTask(
     Environment.EXEC_PYTHON +: pyFile +: args,
     env,
     directory,

@@ -1,14 +1,15 @@
-package com.oceanum.exec.multi
+package com.oceanum.exec.executors
 
 import com.oceanum.exec.ExitCode.{ERROR, KILL, OK, UN_SUPPORT}
 import com.oceanum.exec._
+import com.oceanum.exec.tasks.MultiOperatorTask
 
 /**
  * @author chenmingkun
  * @date 2020/5/10
  */
-class MultiOperatorExecutor extends Executor[MultiOperatorProp] {
-  override protected def typedExecute(operatorProp: Operator[_ <: MultiOperatorProp]): ExitCode = {
+class MultiOperatorExecutor extends TypedExecutor[MultiOperatorTask] {
+  override protected def typedExecute(operatorProp: Operator[_ <: MultiOperatorTask]): ExitCode = {
     for (elem <- operatorProp.prop.props) {
       val operator = operatorProp.copy(prop = elem)
       RootExecutor.execute(operator) match {
@@ -25,5 +26,5 @@ class MultiOperatorExecutor extends Executor[MultiOperatorProp] {
     OK
   }
 
-  override def executable(p: OperatorProp): Boolean = p.isInstanceOf[MultiOperatorProp]
+  override def executable(p: OperatorTask): Boolean = p.isInstanceOf[MultiOperatorTask]
 }

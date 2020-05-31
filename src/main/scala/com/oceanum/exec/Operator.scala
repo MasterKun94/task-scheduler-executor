@@ -6,7 +6,7 @@ import java.util.concurrent.atomic.{AtomicBoolean, AtomicReference}
  * @author chenmingkun
  * @date 2020/4/29
  */
-case class Operator[T <: OperatorProp](name: String,
+case class Operator[T <: OperatorTask](name: String,
                                        retryCount: Int,
                                        retryInterval: Int,
                                        priority: Int,
