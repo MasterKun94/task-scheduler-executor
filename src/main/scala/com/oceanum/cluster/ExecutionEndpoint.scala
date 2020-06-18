@@ -1,13 +1,10 @@
-package com.oceanum.actors
+package com.oceanum.cluster
 
 import akka.actor.{Actor, ActorRef, Props}
 import akka.cluster.pubsub.DistributedPubSub
 import akka.cluster.pubsub.DistributedPubSubMediator.Subscribe
-import com.oceanum.client.{AvailableExecutor, AvailableExecutorRequest, ExecuteOperatorRequest}
 import com.oceanum.common.Environment
 import com.oceanum.exec.ExecuteManager
-
-import scala.concurrent.ExecutionContext
 
 /**
  * @author chenmingkun

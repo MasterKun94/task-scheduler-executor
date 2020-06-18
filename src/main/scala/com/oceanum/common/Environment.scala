@@ -1,9 +1,10 @@
 package com.oceanum.common
 
-import java.io.File
+import java.io.{File, FileInputStream, FileOutputStream}
 import java.util.Properties
 
-import com.oceanum.exec.executors.{MultiOperatorExecutor, ProcessExecutor}
+import akka.actor.ActorSystem
+import com.oceanum.exec.executors.ProcessExecutor
 import com.oceanum.exec.{OperatorTask, OutputManager, TypedExecutor}
 
 import scala.collection.JavaConversions.asScalaSet
@@ -17,60 +18,77 @@ import scala.util.matching.Regex
  */
 object Environment {
 
-  private val properties = {
-    val loader = new PropLoader
-    loader.load("application-env.properties")
-    loader.load("application.properties")
-    loader.get
-  }
+  private val propLoader: PropLoader = new PropLoader
+
+  private val properties = new Properties()
 
 
-  val EXEC_PYTHON: String = getProperty("exec.python.cmd", "python3")
-  val EXEC_PYTHON_ENABLED: Boolean = getProperty("exec.python.enabled", "false").toBoolean
-  val EXEC_JAVA: String = getProperty("exec.java.cmd", "java")
-  val EXEC_JAVA_ENABLED: Boolean = getProperty("exec.java.enabled", "false").toBoolean
-  val EXEC_SCALA: String = getProperty("exec.scala.cmd", "scala")
-  val EXEC_SCALA_ENABLED: Boolean = getProperty("exec.scala.enabled", "false").toBoolean
-  val EXEC_SHELL: String = getProperty("exec.shell.cmd", "bash")
-  val EXEC_SPARK: String = getProperty("exec.spark.cmd", "spark-submit")
-  val EXEC_SPARK_ENABLED: String = getProperty("exec.spark.enabled", "false")
-  val EXEC_SPARK_HOME: String = getProperty("exec.spark.home")
+  lazy val EXEC_PYTHON: String = getProperty("exec.python.cmd", "python3")
+  lazy val EXEC_PYTHON_ENABLED: Boolean = getProperty("exec.python.enabled", "false").toBoolean
+  lazy val EXEC_JAVA: String = getProperty("exec.java.cmd", "java")
+  lazy val EXEC_JAVA_ENABLED: Boolean = getProperty("exec.java.enabled", "false").toBoolean
+  lazy val EXEC_SCALA: String = getProperty("exec.scala.cmd", "scala")
+  lazy val EXEC_SCALA_ENABLED: Boolean = getProperty("exec.scala.enabled", "false").toBoolean
+  lazy val EXEC_SHELL: String = getProperty("exec.shell.cmd", "bash")
+  lazy val EXEC_SPARK: String = getProperty("exec.spark.cmd", "spark-submit")
+  lazy val EXEC_SPARK_ENABLED: String = getProperty("exec.spark.enabled", "false")
+  lazy val EXEC_SPARK_HOME: String = getProperty("exec.spark.home")
 
-  val EXEC_SHELL_ENABLED: Boolean = true
-  val EXEC_WORK_DIR: String = getProperty("exec.work-dir", ".")
-  val EXEC_THREAD_NUM: Int = getProperty("exec.thread-num", "16").toInt
-  val EXEC_MAX_TIMEOUT: Duration = Duration(getProperty("exec.max-timeout", "24h"))
+  lazy val EXEC_SHELL_ENABLED: Boolean = true
+  lazy val EXEC_WORK_DIR: String = getProperty("exec.work-dir", ".")
+  lazy val EXEC_THREAD_NUM: Int = getProperty("exec.thread-num", "16").toInt
+  lazy val EXEC_MAX_TIMEOUT: Duration = Duration(getProperty("exec.max-timeout", "24h"))
 
-  val CLUSTER_SYSTEM_NAME: String = getProperty("cluster.system-name", "cluster")
-  val CLUSTER_NODE_PORT: Int = getProperty("cluster.node.port", "3551").toInt
-  val CLUSTER_NODE_HOST: String = getProperty("cluster.node.host", "127.0.0.1")
-  val CLUSTER_SEED_NODE: Seq[String] = getProperty("cluster.seed-node", "127.0.0.1:3551").split(",").map(node => s"akka.tcp://$CLUSTER_SYSTEM_NAME@$node").toSeq
+  lazy val CLUSTER_SYSTEM_NAME: String = getProperty("cluster.system-name", "cluster")
+  lazy val CLUSTER_NODE_PORT: Int = getProperty("cluster.node.port", "3551").toInt
+  lazy val CLUSTER_NODE_HOST: String = getProperty("cluster.node.host", "127.0.0.1")
+  lazy val CLUSTER_SEED_NODE: Seq[String] = getProperty("cluster.seed-node", "127.0.0.1:3551").split(",").map(node => s"akka.tcp://$CLUSTER_SYSTEM_NAME@$node").toSeq
 
-  val CLIENT_SYSTEM_NAME: String = getProperty("client.system-name", "client")
-  val CLIENT_PORT: Int = getProperty("client.port", "4551").toInt
+  lazy val CLIENT_SYSTEM_NAME: String = getProperty("client.system-name", "client")
+  lazy val CLIENT_PORT: Int = getProperty("client.port", "4551").toInt
 
-  val DEV_MODE: Boolean = getProperty("dev-mode", "false").toBoolean
-  val EXECUTORS: Array[TypedExecutor[_ <: OperatorTask]] = Array(new ProcessExecutor(OutputManager.global), new MultiOperatorExecutor())
+  lazy val DEV_MODE: Boolean = getProperty("dev-mode", "false").toBoolean
+  lazy val EXECUTORS: Array[TypedExecutor[_ <: OperatorTask]] = Array(new ProcessExecutor(OutputManager.global))
 
-  val SCHEDULE_EXECUTION_CONTEXT: ExecutionContext = ExecutionContext.global
-  val ACTOR_ALIVE_TIME_MAX: FiniteDuration = FiniteDuration(1, "d")
+  lazy val SCHEDULE_EXECUTION_CONTEXT: ExecutionContext = ExecutionContext.global
+  lazy val ACTOR_ALIVE_TIME_MAX: FiniteDuration = FiniteDuration(1, "d")
 
-  val OS: OS = {
+  lazy val OS: OS = {
     val sys = scala.util.Properties
     if (sys.isWin) WINDOWS
     else if (sys.isMac) MAC
     else LINUX
   }
-  val PATH_SEPARATOR: String = {
+  lazy val PATH_SEPARATOR: String = {
     File.separator
   }
-  val CLUSTER_NODE_TOPICS: Array[String] = getProperty("cluster.node.topics").split(",").map(_.trim)
+  lazy val CLUSTER_NODE_TOPICS: Array[String] = getProperty("cluster.node.topics").split(",").map(_.trim)
 
   def getProperty(key: String): String = properties.getProperty(key)
 
   def getProperty(key: String, orElse: String): String = properties.getProperty(key, orElse)
 
   def toPath(uri: String): String = new File(uri).getPath
+
+  private var sys: ActorSystem = _
+
+  def load(files: Array[String]): Unit = {
+    for (file <- files) {
+      propLoader.load(file)
+      properties.putAll(propLoader.get)
+    }
+    println(properties)
+  }
+
+  def parse(): Unit = {
+
+  }
+
+  def registrySystem(actorSystem: ActorSystem): Unit = {
+    sys = actorSystem
+  }
+
+  def actorSystem: ActorSystem = sys
 
   abstract class OS
   case object WINDOWS extends OS
@@ -101,7 +119,8 @@ object Environment {
     }
 
     def load(file: String): Unit = {
-      properties.load(this.getClass.getClassLoader.getResourceAsStream(file))
+      println("load: " + file)
+      properties.load(new FileInputStream(new File(file)))
 
     }
 

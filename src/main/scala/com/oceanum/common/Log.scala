@@ -1,11 +1,11 @@
 package com.oceanum.common
 
-import org.slf4j.{Logger, LoggerFactory}
+import akka.event.{Logging, LoggingAdapter}
 
 /**
  * @author chenmingkun
  * @date 2020/4/30
  */
 trait Log {
-  val LOGGER: Logger = LoggerFactory.getLogger(this.getClass)
+  lazy val LOGGER: LoggingAdapter = Logging.getLogger(Environment.actorSystem, this)
 }

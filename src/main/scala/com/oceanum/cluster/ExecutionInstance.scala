@@ -1,7 +1,6 @@
-package com.oceanum.actors
+package com.oceanum.cluster
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Cancellable}
-import com.oceanum.client._
 import com.oceanum.common.Environment
 import com.oceanum.exec.State._
 import com.oceanum.exec.{EventListener, ExecuteManager, ExecutorHook}

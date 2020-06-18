@@ -1,8 +1,7 @@
-package com.oceanum.actors
+package com.oceanum.cluster
 
 import akka.actor.{Actor, ActorLogging, ActorRef}
 import akka.cluster.client.ClusterClient.Publish
-import com.oceanum.client._
 
 import scala.concurrent.ExecutionContext
 

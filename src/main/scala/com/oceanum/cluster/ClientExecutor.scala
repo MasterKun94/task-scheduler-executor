@@ -1,7 +1,7 @@
-package com.oceanum.actors
+package com.oceanum.cluster
 
 import akka.actor.{Actor, ActorLogging, ActorRef}
-import com.oceanum.client._
+import com.oceanum.api.TaskInstance
 import com.oceanum.exec.State._
 
 class ClientExecutor(executor: ActorRef) extends Actor with ActorLogging {
@@ -19,28 +19,28 @@ class ClientExecutor(executor: ActorRef) extends Actor with ActorLogging {
 
     case res: ExecuteOperatorResponse =>
       log.info("receive operator response from " + sender())
-      actor ! ExecutorInstance(Seq(self))
+      actor ! TaskInstance(Seq(self))
       context.become(onRunning(sender(), res.checkStateScheduled.handler))
   }
 
   def onRunning(executor: ActorRef, stateHandler: StateHandler): Receive = {
     case CheckStateOnce =>
-      log.info("send check stat from [{}], to [{}]", sender(), executor)
+      log.info("send check stat to [{}]", executor)
       executor ! CheckStateOnce
 
     case scheduleCheckState: CheckStateScheduled =>
-      log.info("send schedule check stat from [{}], to [{}]", sender(), executor)
+      log.info("send schedule check stat to [{}]", executor)
       executor ! scheduleCheckState
       context.become(onRunning(executor, scheduleCheckState.handler))
       sender() ! "OK"
 
     case KillAction =>
-      log.info("send kill action from [{}], to [{}]", sender(), executor)
+      log.info("send kill action to [{}]", executor)
       executor ! KillAction
       sender() ! "OK"
 
     case TerminateAction =>
-      log.info("terminating [{}] and [{}]", sender(), executor)
+      log.info("terminating [{}]", executor)
       executor ! TerminateAction
       context.stop(self)
       sender() ! "OK"

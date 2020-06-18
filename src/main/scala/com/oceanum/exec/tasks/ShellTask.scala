@@ -1,6 +1,6 @@
 package com.oceanum.exec.tasks
 
-import com.oceanum.exec.InputStreamHandler
+import com.oceanum.api.InputStreamHandler
 
 /**
  * @author chenmingkun

@@ -2,7 +2,8 @@ package com.oceanum.exec.tasks
 
 import java.io.IOException
 
-import com.oceanum.exec.{InputStreamHandler, OperatorTask}
+import com.oceanum.api.InputStreamHandler
+import com.oceanum.exec.OperatorTask
 
 class ProcessTask(val propCmd: Array[String] = Array.empty,
                   val propEnv: Map[String, String] = Map.empty,

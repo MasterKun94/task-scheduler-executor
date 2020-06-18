@@ -1,12 +1,10 @@
 package com.oceanum.exec
 
-import com.oceanum.common.Log
-
 /**
  * @author chenmingkun
  * @date 2020/5/30
  */
-trait TypedExecutor[T <: OperatorTask] extends Executor with Log {
+trait TypedExecutor[T <: OperatorTask] extends Executor {
 
     def execute(operatorProp: Operator[_ <: OperatorTask]): ExitCode = {
       if (executable(operatorProp.prop)) {

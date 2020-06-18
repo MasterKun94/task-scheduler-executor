@@ -1,12 +1,12 @@
 package com.oceanum.exec
 
-import com.oceanum.common.{Environment, Log}
+import com.oceanum.common.Environment
 
 /**
  * @author chenmingkun
  * @date 2020/5/9
  */
-object RootExecutor extends Executor with Log {
+object RootExecutor extends  Executor {
 
   override def execute(operatorProp: Operator[_ <: OperatorTask]): ExitCode = {
     Environment.EXECUTORS.find(_.executable(operatorProp.prop)) match {
@@ -17,7 +17,7 @@ object RootExecutor extends Executor with Log {
           executor.execute(operatorProp)
         }
       case None =>
-        LOGGER.warn(s"no executable executor exists for prop ${operatorProp.prop.getClass}")
+        LOGGER.warning(s"no executable executor exists for prop ${operatorProp.prop.getClass}")
         ExitCode.UN_SUPPORT(operatorProp.prop.getClass)
     }
   }

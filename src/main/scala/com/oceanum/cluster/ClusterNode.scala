@@ -1,4 +1,4 @@
-package com.oceanum.actors
+package com.oceanum.cluster
 
 import akka.actor.{Actor, ActorLogging}
 import akka.cluster.ClusterEvent.{MemberEvent, MemberRemoved, MemberUp, UnreachableMember}

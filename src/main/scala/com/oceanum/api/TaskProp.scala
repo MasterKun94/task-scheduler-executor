@@ -1,45 +1,16 @@
-package com.oceanum.client
+package com.oceanum.api
 
-import akka.actor.ActorRef
-import com.oceanum.actors.StateHandler
+import com.oceanum.exec.OperatorTask
 import com.oceanum.exec.tasks.{JavaTask, ProcessTask, PythonTask, ScalaTask, ShellScriptTask, ShellTask, SuUserTask}
-import com.oceanum.exec.{EventListener, InputStreamHandler, LineHandler, Operator, OperatorTask}
 
-import scala.concurrent.duration.FiniteDuration
 
-case class PrepareMessage(message: Any)
-case class RunningMessage(message: Any)
-case class FailedMessage(message: Any)
-case class SuccessMessage(message: Any)
-case class RetryMessage(message: Any)
-case class KillMessage(message: Any)
-case class TimeoutMessage(message: Any)
-case class StartMessage(message: Any)
-
-case object KillAction
-case object TerminateAction
-case object CheckStateOnce
-case class CheckStateScheduled(duration: FiniteDuration, handler: StateHandler = StateHandler.empty())
-
-case class AvailableExecutorRequest(topic: String)
-case class AvailableExecutorsRequest(topic: String, maxWait: FiniteDuration)
-case class AvailableExecutorResponse(executor: TraversableOnce[AvailableExecutor])
-case class AvailableExecutor(actor: ActorRef, queueSize: Int, topics: Array[String])
-case class ExecuteOperatorRequest(operatorMessage: Task, checkStateScheduled: CheckStateScheduled)
-case class ExecuteOperatorResponse(operatorMessage: Task, checkStateScheduled: CheckStateScheduled)
-case class HandleState(handler: StateHandler)
-case class HandleOnComplete(handler: StateHandler)
-
-case class Task(name: String, retryCount: Int, retryInterval: Int, priority: Int, prop: TaskProp) {
-  def toOperator(listener: EventListener): Operator[_ <: OperatorTask] = Operator(name, retryCount, retryInterval, priority, prop.toOperatorProp, listener)
-}
 
 trait TaskProp {
-  def toOperatorProp: OperatorTask
+  def toTask: OperatorTask
 }
 
 abstract class ProcessTaskProp extends TaskProp {
-  override def toOperatorProp: ProcessTask
+  override def toTask: ProcessTask
 }
 
 case class ShellTaskProp(cmd: Array[String] = Array.empty,
@@ -48,7 +19,7 @@ case class ShellTaskProp(cmd: Array[String] = Array.empty,
                          waitForTimeout: Long = -1,
                          stdoutLineHandler: () => InputStreamHandler,
                          stderrLineHandler: () => InputStreamHandler) extends ProcessTaskProp {
-  override def toOperatorProp: ProcessTask = ShellTask(
+  override def toTask: ProcessTask = ShellTask(
     cmd, env, directory.getOrElse(""), waitForTimeout, stdoutLineHandler(), stderrLineHandler())
 }
 
@@ -59,7 +30,7 @@ case class ShellScriptTaskProp(scriptFile: String,
                                waitForTimeout: Long = -1,
                                stdoutLineHandler: () => InputStreamHandler,
                                stderrLineHandler: () => InputStreamHandler) extends ProcessTaskProp {
-  override def toOperatorProp: ProcessTask = ShellScriptTask(
+  override def toTask: ProcessTask = ShellScriptTask(
     scriptFile, args, env, directory.getOrElse(""), waitForTimeout, stdoutLineHandler(), stderrLineHandler())
 }
 
@@ -72,7 +43,7 @@ case class JavaTaskProp(jars: Array[String],
                         waitForTimeout: Long = -1,
                         stdoutLineHandler: () => InputStreamHandler,
                         stderrLineHandler: () => InputStreamHandler) extends ProcessTaskProp {
-  override def toOperatorProp: ProcessTask = JavaTask(
+  override def toTask: ProcessTask = JavaTask(
     jars, mainClass, args, options, env, directory.getOrElse(""), waitForTimeout, stdoutLineHandler(), stderrLineHandler())
 }
 
@@ -85,7 +56,7 @@ case class ScalaTaskProp(jars: Array[String],
                          waitForTimeout: Long = -1,
                          stdoutLineHandler: () => InputStreamHandler,
                          stderrLineHandler: () => InputStreamHandler) extends ProcessTaskProp {
-  override def toOperatorProp: ProcessTask = ScalaTask(
+  override def toTask: ProcessTask = ScalaTask(
     jars, mainClass, args, options, env, directory.getOrElse(""), waitForTimeout, stdoutLineHandler(), stderrLineHandler())
 }
 case class PythonTaskProp(pyFile: String,
@@ -96,10 +67,10 @@ case class PythonTaskProp(pyFile: String,
                           waitForTimeout: Long = -1,
                           stdoutLineHandler: () => InputStreamHandler,
                           stderrLineHandler: () => InputStreamHandler) extends ProcessTaskProp {
-  override def toOperatorProp: ProcessTask = PythonTask(
+  override def toTask: ProcessTask = PythonTask(
     pyFile, args, options, env, directory, waitForTimeout, stdoutLineHandler(), stderrLineHandler())
 }
 
 case class SuUserTaskProp(user: String, prop: ProcessTaskProp) extends TaskProp {
-  override def toOperatorProp: ProcessTask = SuUserTask(user, prop.toOperatorProp)
+  override def toTask: ProcessTask = SuUserTask(user, prop.toTask)
 }

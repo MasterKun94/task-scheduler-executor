@@ -1,4 +1,4 @@
-package com.oceanum.actors
+package com.oceanum.cluster
 
 import akka.actor._
 import akka.cluster.client._
