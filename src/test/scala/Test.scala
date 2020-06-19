@@ -17,7 +17,8 @@ import scala.util.{Failure, Success}
  */
 object Test {
   def startCluster(args: Array[String]): Unit = {
-    ClusterStarter.main(Array("--port=3551", "--topics=t1,a1", "--prop=application.properties,application-env.properties"))
+
+    ClusterStarter.main(Array("--port=3551", "--topics=t1,a1", "--prop=src\\main\\resources\\application.properties,src\\main\\resources\\application-env.properties"))
 //    ClusterStarter.main(Array("--port=3552", "--topics=t2,a2", "--prop=application.properties,application-env.properties"))
 //    ClusterStarter.main(Array("--port=3553", "--topics=t3,a3", "--prop=application.properties,application-env.properties"))
   }

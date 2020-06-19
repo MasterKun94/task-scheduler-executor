@@ -36,9 +36,27 @@
               </filters>
               <transformers>
                 <transformer>
-                  <mainClass>com.oceanum.StreamingJob</mainClass>
+                  <mainClass>com.oceanum.ClusterStarter</mainClass>
                 </transformer>
               </transformers>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <artifactId>maven-assembly-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>make-assembly</id>
+            <phase>package</phase>
+            <goals>
+              <goal>single</goal>
+            </goals>
+            <configuration>
+              <finalName>${project.name}</finalName>
+              <descriptors>
+                <descriptor>src/main/resources/assembly.xml</descriptor>
+              </descriptors>
             </configuration>
           </execution>
         </executions>

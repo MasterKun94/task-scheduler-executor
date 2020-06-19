@@ -19,12 +19,12 @@ object ClusterStarter {
       .map(arr => (arr(0), arr(1)))
       .toMap
     arg.foreach(println)
-    val paths = arg.getOrElse("--prop", "")
+    val paths = arg.getOrElse("--prop", s"conf${Environment.PATH_SEPARATOR}application.properties,conf${Environment.PATH_SEPARATOR}application-env.properties")
       .split(",")
       .map(_.trim)
       .filter(_.nonEmpty)
     Environment.load(paths)
-    val conf = arg.getOrElse("--akka-conf", "application.conf")
+    val conf = Environment.parsePath(arg.getOrElse("--akka-conf", Environment.AKKA_CONF))
     val topics = arg
       .get("--topics")
       .map(_.split(",").map(_.trim))
@@ -47,9 +47,22 @@ object ClusterStarter {
       .parseMap(Map(
         "akka.cluster.seed-nodes" -> seqAsJavaList(seedNodes),
         "akka.remote.netty.tcp.port" -> port,
-        "akka.remote.netty.tcp.host" -> host
+        "akka.remote.netty.tcp.hostname" -> host
       ))
-      .withFallback(ConfigFactory.load(conf))
+      .withFallback(ConfigFactory.parseString(
+        s"""
+          |akka {
+          |    actor {
+          |        provider = "akka.cluster.ClusterActorRefProvider"
+          |    }
+          |    remote {
+          |        enabled-transports = ["akka.remote.netty.tcp"]
+          |        log-remote-lifecycle-events = off
+          |    }
+          |    extensions = ["akka.cluster.client.ClusterClientReceptionist"]
+          |}
+          |""".stripMargin))
+    println(conf)
     println(config)
     val system = ActorSystem.create(Environment.CLUSTER_SYSTEM_NAME, config)
     Environment.registrySystem(system)

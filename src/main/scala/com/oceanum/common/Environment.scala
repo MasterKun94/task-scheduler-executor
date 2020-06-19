@@ -21,8 +21,8 @@ object Environment {
   private val propLoader: PropLoader = new PropLoader
 
   private val properties = new Properties()
-
-
+  lazy val AKKA_CONF: String = parsePath(getProperty("akka.conf", s"conf${PATH_SEPARATOR}application.conf"))
+  lazy val BASE_PATH: String = new File(".").getCanonicalPath
   lazy val EXEC_PYTHON: String = getProperty("exec.python.cmd", "python3")
   lazy val EXEC_PYTHON_ENABLED: Boolean = getProperty("exec.python.enabled", "false").toBoolean
   lazy val EXEC_JAVA: String = getProperty("exec.java.cmd", "java")
@@ -74,10 +74,18 @@ object Environment {
 
   def load(files: Array[String]): Unit = {
     for (file <- files) {
-      propLoader.load(file)
-      properties.putAll(propLoader.get)
+      val path = parsePath(file)
+      propLoader.load(path)
     }
+    properties.putAll(propLoader.get)
     println(properties)
+  }
+
+  def parsePath(file: String): String = {
+    if (file.startsWith("/"))
+      file
+    else
+      BASE_PATH + PATH_SEPARATOR + file
   }
 
   def parse(): Unit = {
