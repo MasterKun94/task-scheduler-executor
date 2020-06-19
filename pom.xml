@@ -50,30 +50,20 @@ under the License.
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<scala.binary.version>2.11</scala.binary.version>
 		<scala.version>2.11.12</scala.version>
-		<akka.version>2.5.30</akka.version>
+		<akka.version>2.5.31</akka.version>
 	</properties>
 
 	<dependencies>
 		<dependency>
 			<groupId>com.typesafe.akka</groupId>
-			<artifactId>akka-actor_2.11</artifactId>
-			<version>${akka.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>com.typesafe.akka</groupId>
-			<artifactId>akka-remote_2.11</artifactId>
-			<version>${akka.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>com.typesafe.akka</groupId>
 			<artifactId>akka-cluster_${scala.binary.version}</artifactId>
 			<version>${akka.version}</version>
 		</dependency>
-		<dependency>
-			<groupId>com.typesafe.akka</groupId>
-			<artifactId>akka-cluster-metrics_${scala.binary.version}</artifactId>
-			<version>${akka.version}</version>
-		</dependency>
+<!--		<dependency>-->
+<!--			<groupId>com.typesafe.akka</groupId>-->
+<!--			<artifactId>akka-cluster-metrics_${scala.binary.version}</artifactId>-->
+<!--			<version>${akka.version}</version>-->
+<!--		</dependency>-->
 		<dependency>
 			<groupId>com.typesafe.akka</groupId>
 			<artifactId>akka-cluster-tools_${scala.binary.version}</artifactId>
@@ -86,36 +76,10 @@ under the License.
 			<version>${scala.version}</version>
 		</dependency>
 
-		<!-- Add logging framework, to produce console output when running in the IDE. -->
-		<!-- These dependencies are excluded from the application JAR by default. -->
-		<dependency>
-			<groupId>org.slf4j</groupId>
-			<artifactId>slf4j-simple</artifactId>
-			<version>1.7.30</version>
-		</dependency>
-		<dependency>
-			<groupId>org.slf4j</groupId>
-			<artifactId>slf4j-api</artifactId>
-			<version>1.7.30</version>
-		</dependency>
 	</dependencies>
 
 	<build>
 		<plugins>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-jar-plugin</artifactId>
-				<version>2.6</version>
-				<configuration>
-					<archive>
-						<manifest>
-							<addClasspath>true</addClasspath>
-							<classpathPrefix>lib/</classpathPrefix>
-							<mainClass>com.oceanum.ClusterStarter</mainClass>
-						</manifest>
-					</archive>
-				</configuration>
-			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-dependency-plugin</artifactId>
@@ -133,68 +97,6 @@ under the License.
 					</execution>
 				</executions>
 			</plugin>
-<!--			&lt;!&ndash; We use the maven-shade plugin to create a fat jar that contains all necessary dependencies. &ndash;&gt;-->
-<!--			&lt;!&ndash; Change the value of <mainClass>...</mainClass> if your program entry point changes. &ndash;&gt;-->
-<!--			<plugin>-->
-<!--				<groupId>org.apache.maven.plugins</groupId>-->
-<!--				<artifactId>maven-shade-plugin</artifactId>-->
-<!--				<version>3.1.1</version>-->
-<!--				<executions>-->
-<!--					&lt;!&ndash; Run shade goal on package phase &ndash;&gt;-->
-<!--					<execution>-->
-<!--						<phase>package</phase>-->
-<!--						<goals>-->
-<!--							<goal>shade</goal>-->
-<!--						</goals>-->
-<!--						<configuration>-->
-<!--							<artifactSet>-->
-<!--								<excludes>-->
-<!--									<exclude>org.apache.flink:force-shading</exclude>-->
-<!--									<exclude>com.google.code.findbugs:jsr305</exclude>-->
-<!--&lt;!&ndash;									<exclude>org.slf4j:*</exclude>&ndash;&gt;-->
-<!--&lt;!&ndash;									<exclude>log4j:*</exclude>&ndash;&gt;-->
-<!--								</excludes>-->
-<!--							</artifactSet>-->
-<!--							<filters>-->
-<!--								<filter>-->
-<!--									&lt;!&ndash; Do not copy the signatures in the META-INF folder.-->
-<!--									Otherwise, this might cause SecurityExceptions when using the JAR. &ndash;&gt;-->
-<!--									<artifact>*:*</artifact>-->
-<!--									<excludes>-->
-<!--										<exclude>META-INF/*.SF</exclude>-->
-<!--										<exclude>META-INF/*.DSA</exclude>-->
-<!--										<exclude>META-INF/*.RSA</exclude>-->
-<!--									</excludes>-->
-<!--								</filter>-->
-<!--							</filters>-->
-<!--							<transformers>-->
-<!--								<transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">-->
-<!--									<mainClass>com.oceanum.ClusterStarter</mainClass>-->
-<!--								</transformer>-->
-<!--							</transformers>-->
-<!--						</configuration>-->
-<!--					</execution>-->
-<!--				</executions>-->
-<!--			</plugin>-->
-<!--			<plugin>-->
-<!--				<groupId>org.apache.maven.plugins</groupId>-->
-<!--				<artifactId>maven-assembly-plugin</artifactId>-->
-<!--				<executions>-->
-<!--					<execution>&lt;!&ndash; 配置执行器 &ndash;&gt;-->
-<!--						<id>make-assembly</id>-->
-<!--						<phase>package</phase>&lt;!&ndash; 绑定到package生命周期阶段上 &ndash;&gt;-->
-<!--						<goals>-->
-<!--							<goal>single</goal>&lt;!&ndash; 只运行一次 &ndash;&gt;-->
-<!--						</goals>-->
-<!--						<configuration>-->
-<!--							<finalName>${project.name}</finalName>-->
-<!--							<descriptors>-->
-<!--								<descriptor>src/main/resources/assembly.xml</descriptor>-->
-<!--							</descriptors>-->
-<!--						</configuration>-->
-<!--					</execution>-->
-<!--				</executions>-->
-<!--			</plugin>-->
 			<!-- Java Compiler -->
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
@@ -210,7 +112,7 @@ under the License.
 			<plugin>
 				<groupId>net.alchim31.maven</groupId>
 				<artifactId>scala-maven-plugin</artifactId>
-				<version>3.2.2</version>
+				<version>3.4.2</version>
 				<executions>
 					<execution>
 						<goals>
@@ -230,7 +132,7 @@ under the License.
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-eclipse-plugin</artifactId>
-				<version>2.8</version>
+				<version>2.10</version>
 				<configuration>
 					<downloadSources>true</downloadSources>
 					<projectnatures>
@@ -257,7 +159,7 @@ under the License.
 			<plugin>
 				<groupId>org.codehaus.mojo</groupId>
 				<artifactId>build-helper-maven-plugin</artifactId>
-				<version>1.7</version>
+				<version>1.9.1</version>
 				<executions>
 					<!-- Add src/main/scala to eclipse build path -->
 					<execution>

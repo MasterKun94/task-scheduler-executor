@@ -1,0 +1,18 @@
+
++++++++++++++ START +++++++++++++
+Traceback (most recent call last):
+  File "E:\chenmingkun\task-scheduler-executor\src\main\resources\test.py", line 6, in <module>
+    print("123123" + i)
+TypeError: can only concatenate str (not "int") to str
+
++++++++++++++ START +++++++++++++
+Traceback (most recent call last):
+  File "E:\chenmingkun\task-scheduler-executor\src\main\resources\test.py", line 6, in <module>
+    print("123123" + i)
+TypeError: can only concatenate str (not "int") to str
+
++++++++++++++ START +++++++++++++
+Traceback (most recent call last):
+  File "E:\chenmingkun\task-scheduler-executor\src\main\resources\test.py", line 6, in <module>
+    print("123123" + i)
+TypeError: can only concatenate str (not "int") to str
