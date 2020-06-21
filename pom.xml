@@ -97,7 +97,7 @@ under the License.
 							<goal>copy-dependencies</goal>
 						</goals>
 						<configuration>
-							<outputDirectory>${project.build.directory}/lib</outputDirectory>
+							<outputDirectory>${project.build.directory}/executor/lib</outputDirectory>
 						</configuration>
 					</execution>
 				</executions>
@@ -160,6 +160,71 @@ under the License.
 						<sourceInclude>**/*.java</sourceInclude>
 					</sourceIncludes>
 				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-jar-plugin</artifactId>
+				<version>3.2.0</version>
+				<configuration>
+					<!-- 指定打包的jar包输出路径-->
+					<outputDirectory>
+						${project.build.directory}/executor/lib
+					</outputDirectory>
+					<!--不打入jar包的文件类型或者路径-->
+					<excludes>
+						<exclude>**/*.properties</exclude>
+						<exclude>**/*.xml</exclude>
+						<exclude>**/*.yml</exclude>
+						<exclude>static/**</exclude>
+						<exclude>templates/**</exclude>
+					</excludes>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-resources-plugin</artifactId>
+				<version>3.1.0</version>
+				<executions>
+					<execution>
+						<id>copy-resources</id>
+						<phase>package</phase>
+						<goals>
+							<goal>copy-resources</goal>
+						</goals>
+						<configuration>
+							<encoding>UTF-8</encoding>
+							<!--打成jar包后复制到的路径-->
+							<outputDirectory>
+								${project.build.directory}/executor/conf
+							</outputDirectory>
+							<resources>
+								<resource>
+									<!--项目中的路径-->
+									<directory>src/main/resources/</directory>
+								</resource>
+							</resources>
+						</configuration>
+					</execution>
+					<!--可配置多个提取复制路径只需要 “<id>”名字不一样即可-->
+					<execution>
+						<id>copy-bulid</id>
+						<phase>package</phase>
+						<goals>
+							<goal>copy-resources</goal>
+						</goals>
+						<configuration>
+							<encoding>UTF-8</encoding>
+							<outputDirectory>
+								${project.build.directory}/executor
+							</outputDirectory>
+							<resources>
+								<resource>
+									<directory>build/</directory>
+								</resource>
+							</resources>
+						</configuration>
+					</execution>
+				</executions>
 			</plugin>
 			<plugin>
 				<groupId>org.codehaus.mojo</groupId>
