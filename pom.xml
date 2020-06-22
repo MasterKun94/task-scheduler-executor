@@ -51,6 +51,7 @@ under the License.
 		<scala.binary.version>2.11</scala.binary.version>
 		<scala.version>2.11.12</scala.version>
 		<akka.version>2.5.31</akka.version>
+		<output.dir>executor</output.dir>
 	</properties>
 
 	<dependencies>
@@ -97,7 +98,7 @@ under the License.
 							<goal>copy-dependencies</goal>
 						</goals>
 						<configuration>
-							<outputDirectory>${project.build.directory}/executor/lib</outputDirectory>
+							<outputDirectory>${project.build.directory}/${output.dir}/lib</outputDirectory>
 						</configuration>
 					</execution>
 				</executions>
@@ -173,7 +174,7 @@ under the License.
 				<configuration>
 					<!-- 指定打包的jar包输出路径-->
 					<outputDirectory>
-						${project.build.directory}/executor/lib
+						${project.build.directory}/${output.dir}/lib
 					</outputDirectory>
 					<!--不打入jar包的文件类型或者路径-->
 					<excludes>
@@ -200,12 +201,20 @@ under the License.
 							<encoding>UTF-8</encoding>
 							<!--打成jar包后复制到的路径-->
 							<outputDirectory>
-								${project.build.directory}/executor/conf
+								${project.build.directory}/${output.dir}/conf
 							</outputDirectory>
 							<resources>
 								<resource>
 									<!--项目中的路径-->
 									<directory>src/main/resources/</directory>
+									<includes>
+										<include>**/*.properties</include>
+<!--										<include>**/*.conf</include>-->
+									</includes>
+									<excludes>
+										<exclude>**/*.txt</exclude>
+										<exclude>**/*.xml</exclude>
+									</excludes>
 								</resource>
 							</resources>
 						</configuration>
@@ -220,7 +229,7 @@ under the License.
 						<configuration>
 							<encoding>UTF-8</encoding>
 							<outputDirectory>
-								${project.build.directory}/executor
+								${project.build.directory}/${output.dir}
 							</outputDirectory>
 							<resources>
 								<resource>

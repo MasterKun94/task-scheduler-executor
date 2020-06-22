@@ -4,6 +4,7 @@ import akka.actor.{ActorPaths, ActorRef, ActorSystem, Props}
 import akka.cluster.client.{ClusterClient, ClusterClientSettings}
 import akka.pattern.ask
 import akka.util.Timeout
+import com.oceanum.ClusterStarter
 import com.oceanum.api.{SchedulerClient, Task, TaskInstance}
 import com.oceanum.cluster._
 import com.oceanum.common.Environment
