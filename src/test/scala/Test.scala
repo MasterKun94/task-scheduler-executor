@@ -9,6 +9,7 @@ import com.oceanum.api.{LineHandler, PythonTaskProp, SchedulerClient, Task}
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, ExecutionContextExecutor}
 import scala.util.{Failure, Success}
+import com.oceanum.api.Implicits._
 
 
 /**
@@ -17,10 +18,9 @@ import scala.util.{Failure, Success}
  */
 object Test {
   def startCluster(args: Array[String]): Unit = {
-
-    ClusterStarter.main(Array("--port=3551", "--topics=t1,a1", "--prop=src\\main\\resources\\application.properties,src\\main\\resources\\application-env.properties"))
-//    ClusterStarter.main(Array("--port=3552", "--topics=t2,a2", "--prop=application.properties,application-env.properties"))
-//    ClusterStarter.main(Array("--port=3553", "--topics=t3,a3", "--prop=application.properties,application-env.properties"))
+    ClusterStarter.main(Array("--port=3551", "--topics=t1,a1", "--host=192.168.10.55", "--seed-node=192.168.10.55:3551", "--conf=src\\main\\resources\\application.properties,src\\main\\resources\\application-env.properties"))
+//    ClusterStarter.main(Array("--port=3552", "--topics=t2,a2", "--conf=application.properties,application-env.properties"))
+//    ClusterStarter.main(Array("--port=3553", "--topics=t3,a3", "--conf=application.properties,application-env.properties"))
   }
 
 
@@ -28,8 +28,8 @@ object Test {
     //    val path = "C:\\Users\\chenmingkun\\work\\idea\\work\\task-scheduler-core\\task-scheduler-executor\\src\\main\\resources"
     val path = "E:\\chenmingkun\\task-scheduler-executor\\src\\main\\resources"
     implicit val executionContext: ExecutionContextExecutor = ExecutionContext.global
-    implicit val timeout: Timeout = 10 second
-    implicit val timeWait: FiniteDuration = 2 second
+    implicit val timeout: Timeout = fd"10 second"
+    implicit val timeWait: FiniteDuration = fd"2 second"
     val client = SchedulerClient.create
     val future = client
       .executeAll("test", Task(
@@ -50,7 +50,7 @@ object Test {
     future
       .onComplete {
         case Success(value) =>
-          value.handleState(2 second, state => println("state is: " + state))
+          value.handleState(fd"2s", state => println("state is: " + state))
           value.onComplete(stat => {
             println("result is: " + stat)
             value.close()
@@ -65,7 +65,7 @@ object Test {
   }
 
   def main(args: Array[String]): Unit = {
-    startCluster(args)
+//    startCluster(args)
     Thread.sleep(2000)
     startClient(args)
   }

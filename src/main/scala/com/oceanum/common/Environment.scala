@@ -19,37 +19,37 @@ import scala.util.matching.Regex
 object Environment {
 
   private val propLoader: PropLoader = new PropLoader
-
   private val properties = new Properties()
-  lazy val AKKA_CONF: String = parsePath(getProperty("akka.conf", s"conf${PATH_SEPARATOR}application.conf"))
-  lazy val BASE_PATH: String = new File(".").getCanonicalPath
-  lazy val EXEC_PYTHON: String = getProperty("exec.python.cmd", "python3")
-  lazy val EXEC_PYTHON_ENABLED: Boolean = getProperty("exec.python.enabled", "false").toBoolean
-  lazy val EXEC_JAVA: String = getProperty("exec.java.cmd", "java")
-  lazy val EXEC_JAVA_ENABLED: Boolean = getProperty("exec.java.enabled", "false").toBoolean
-  lazy val EXEC_SCALA: String = getProperty("exec.scala.cmd", "scala")
-  lazy val EXEC_SCALA_ENABLED: Boolean = getProperty("exec.scala.enabled", "false").toBoolean
-  lazy val EXEC_SHELL: String = getProperty("exec.shell.cmd", "bash")
-  lazy val EXEC_SPARK: String = getProperty("exec.spark.cmd", "spark-submit")
-  lazy val EXEC_SPARK_ENABLED: String = getProperty("exec.spark.enabled", "false")
-  lazy val EXEC_SPARK_HOME: String = getProperty("exec.spark.home")
 
-  lazy val EXEC_SHELL_ENABLED: Boolean = true
-  lazy val EXEC_WORK_DIR: String = getProperty("exec.work-dir", ".")
-  lazy val EXEC_THREAD_NUM: Int = getProperty("exec.thread-num", "16").toInt
-  lazy val EXEC_MAX_TIMEOUT: Duration = Duration(getProperty("exec.max-timeout", "24h"))
+  lazy val AKKA_CONF: String = parsePath(getProperty(Key.AKKA_CONF, s"conf${PATH_SEPARATOR}application.conf"))
+  lazy val BASE_PATH: String = getProperty(Key.BASE_PATH)
+  lazy val EXEC_PYTHON: String = getProperty(Key.EXEC_PYTHON, "python3")
+  lazy val EXEC_PYTHON_ENABLED: Boolean = getProperty(Key.EXEC_PYTHON_ENABLED, "false").toBoolean
+  lazy val EXEC_JAVA: String = getProperty(Key.EXEC_JAVA, "java")
+  lazy val EXEC_JAVA_ENABLED: Boolean = getProperty(Key.EXEC_JAVA_ENABLED, "false").toBoolean
+  lazy val EXEC_SCALA: String = getProperty(Key.EXEC_SCALA, "scala")
+  lazy val EXEC_SCALA_ENABLED: Boolean = getProperty(Key.EXEC_SCALA_ENABLED, "false").toBoolean
+  lazy val EXEC_SHELL: String = getProperty(Key.EXEC_SHELL, "bash")
+  lazy val EXEC_SPARK: String = getProperty(Key.EXEC_SPARK, "spark-submit")
+  lazy val EXEC_SPARK_ENABLED: String = getProperty(Key.EXEC_SPARK_ENABLED, "false")
+  lazy val EXEC_SPARK_HOME: String = getProperty(Key.EXEC_SPARK_HOME)
 
-  lazy val CLUSTER_SYSTEM_NAME: String = getProperty("cluster.system-name", "cluster")
-  lazy val CLUSTER_NODE_PORT: Int = getProperty("cluster.node.port", "3551").toInt
-  lazy val CLUSTER_NODE_HOST: String = getProperty("cluster.node.host", "127.0.0.1")
-  lazy val CLUSTER_SEED_NODE: Seq[String] = getProperty("cluster.seed-node", "127.0.0.1:3551").split(",").map(node => s"akka.tcp://$CLUSTER_SYSTEM_NAME@$node").toSeq
+  lazy val EXEC_SHELL_ENABLED: Boolean = getProperty(Key.EXEC_SHELL_ENABLED, "true").toBoolean
+  lazy val EXEC_WORK_DIR: String = getProperty(Key.EXEC_WORK_DIR, ".")
+  lazy val EXEC_THREAD_NUM: Int = getProperty(Key.EXEC_THREAD_NUM, "16").toInt
+  lazy val EXEC_MAX_TIMEOUT: Duration = Duration(getProperty(Key.EXEC_MAX_TIMEOUT, "24h"))
 
-  lazy val CLIENT_SYSTEM_NAME: String = getProperty("client.system-name", "client")
-  lazy val CLIENT_PORT: Int = getProperty("client.port", "4551").toInt
+  lazy val CLUSTER_SYSTEM_NAME: String = getProperty(Key.CLUSTER_SYSTEM_NAME, "cluster")
+  lazy val CLUSTER_NODE_PORT: Int = getProperty(Key.CLUSTER_NODE_PORT, "3551").toInt
+  lazy val CLUSTER_NODE_HOST: String = getProperty(Key.CLUSTER_NODE_HOST, "127.0.0.1")
+  lazy val CLUSTER_SEED_NODE: Seq[String] = getProperty(Key.CLUSTER_SEED_NODE, "127.0.0.1:3551").split(",").map(node => s"akka.tcp://$CLUSTER_SYSTEM_NAME@$node").toSeq
 
-  lazy val DEV_MODE: Boolean = getProperty("dev-mode", "false").toBoolean
+  lazy val CLIENT_SYSTEM_NAME: String = getProperty(Key.CLIENT_SYSTEM_NAME, "client")
+  lazy val CLIENT_PORT: Int = getProperty(Key.CLIENT_PORT, "4551").toInt
+
+  lazy val DEV_MODE: Boolean = getProperty(Key.DEV_MODE, "false").toBoolean
+
   lazy val EXECUTORS: Array[TypedExecutor[_ <: OperatorTask]] = Array(new ProcessExecutor(OutputManager.global))
-
   lazy val SCHEDULE_EXECUTION_CONTEXT: ExecutionContext = ExecutionContext.global
   lazy val ACTOR_ALIVE_TIME_MAX: FiniteDuration = FiniteDuration(1, "d")
 
@@ -62,7 +62,13 @@ object Environment {
   lazy val PATH_SEPARATOR: String = {
     File.separator
   }
-  lazy val CLUSTER_NODE_TOPICS: Array[String] = getProperty("cluster.node.topics").split(",").map(_.trim)
+  lazy val CLUSTER_NODE_TOPICS: Seq[String] = getProperty("cluster.node.topics").split(",").map(_.trim).toSeq
+
+  def print(): Unit = {
+    import scala.collection.JavaConversions.mapAsScalaMap
+    println("config:")
+    properties.foreach(kv => println(s"\t${kv._1} -> ${kv._2}"))
+  }
 
   def getProperty(key: String): String = properties.getProperty(key)
 
@@ -73,12 +79,17 @@ object Environment {
   private var sys: ActorSystem = _
 
   def load(files: Array[String]): Unit = {
+    println("load:")
     for (file <- files) {
       val path = parsePath(file)
+      println("\t" + path)
       propLoader.load(path)
     }
     properties.putAll(propLoader.get)
-    println(properties)
+  }
+
+  def load(key: String, value: String): Unit = {
+    properties.put(key, value)
   }
 
   def parsePath(file: String): String = {
@@ -127,9 +138,7 @@ object Environment {
     }
 
     def load(file: String): Unit = {
-      println("load: " + file)
       properties.load(new FileInputStream(new File(file)))
-
     }
 
     def get: Properties = {
@@ -138,6 +147,37 @@ object Environment {
       }
       properties
     }
+  }
+
+  object Key {
+    val AKKA_CONF: String = "akka.conf"
+    val BASE_PATH: String = "base.path"
+    val EXEC_PYTHON: String = "exec.python.cmd"
+    val EXEC_PYTHON_ENABLED: String = "exec.python.enabled"
+    val EXEC_JAVA: String = "exec.java.cmd"
+    val EXEC_JAVA_ENABLED: String = "exec.java.enabled"
+    val EXEC_SCALA: String = "exec.scala.cmd"
+    val EXEC_SCALA_ENABLED: String = "exec.scala.enabled"
+    val EXEC_SHELL: String = "exec.shell.cmd"
+    val EXEC_SHELL_ENABLED: String = "exec.shell.enabled"
+    val EXEC_SPARK: String = "exec.spark.cmd"
+    val EXEC_SPARK_ENABLED: String = "exec.spark.enabled"
+    val EXEC_SPARK_HOME: String = "exec.spark.home"
+
+    val EXEC_WORK_DIR: String = "exec.work-dir"
+    val EXEC_THREAD_NUM: String = "exec.thread-num"
+    val EXEC_MAX_TIMEOUT: String = "exec.max-timeout"
+
+    val CLUSTER_SYSTEM_NAME: String = "cluster.system-name"
+    val CLUSTER_NODE_PORT: String = "cluster.node.port"
+    val CLUSTER_NODE_HOST: String = "cluster.node.host"
+    val CLUSTER_SEED_NODE: String = "cluster.seed-node"
+
+    val CLIENT_SYSTEM_NAME: String = "client.system-name"
+    val CLIENT_PORT: String = "client.port"
+
+    val DEV_MODE: String = "dev-mode"
+    val CLUSTER_NODE_TOPICS: String = "cluster.node.topics"
   }
 
   def main(args: Array[String]): Unit = {

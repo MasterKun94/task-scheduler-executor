@@ -6,6 +6,7 @@ import com.oceanum.cluster.StateHandler
 
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
+import Implicits._
 
 /**
  * @author chenmingkun
@@ -18,7 +19,7 @@ trait SchedulerClient {
 
   def executeAll(topic: String,
                  task: Task,
-                 stateHandler: StateHandler = StateHandler.empty())(implicit timeWait: FiniteDuration = 1 seconds): Future[TaskInstance]
+                 stateHandler: StateHandler = StateHandler.empty())(implicit timeWait: FiniteDuration = fd"1s"): Future[TaskInstance]
 }
 
 object SchedulerClient {

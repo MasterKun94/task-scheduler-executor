@@ -22,7 +22,7 @@ case class CheckStateScheduled(duration: FiniteDuration, handler: StateHandler =
 case class AvailableExecutorRequest(topic: String)
 case class AvailableExecutorsRequest(topic: String, maxWait: FiniteDuration)
 case class AvailableExecutorResponse(executor: TraversableOnce[AvailableExecutor])
-case class AvailableExecutor(actor: ActorRef, queueSize: Int, topics: Array[String])
+case class AvailableExecutor(actor: ActorRef, queueSize: Int, topics: Seq[String])
 case class ExecuteOperatorRequest(operatorMessage: Task, checkStateScheduled: CheckStateScheduled)
 case class ExecuteOperatorResponse(operatorMessage: Task, checkStateScheduled: CheckStateScheduled)
 case class HandleState(handler: StateHandler)
