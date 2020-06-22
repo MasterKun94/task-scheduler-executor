@@ -3,7 +3,7 @@ package scala
 import java.io.File
 
 import akka.util.Timeout
-import com.oceanum.ClusterStarter
+import com.oceanum.{ClusterStarter, JavaClusterStarter}
 import com.oceanum.api.{LineHandler, PythonTaskProp, SchedulerClient, Task}
 
 import scala.concurrent.duration._
@@ -18,7 +18,7 @@ import scala.util.{Failure, Success}
 object Test {
   def startCluster(args: Array[String]): Unit = {
 
-    ClusterStarter.main(Array("--port=3551", "--topics=t1,a1", "--prop=src\\main\\resources\\application.properties,src\\main\\resources\\application-env.properties"))
+    JavaClusterStarter.main(Array("--port=3551", "--topics=t1,a1", "--prop=src\\main\\resources\\application.properties,src\\main\\resources\\application-env.properties"))
 //    ClusterStarter.main(Array("--port=3552", "--topics=t2,a2", "--prop=application.properties,application-env.properties"))
 //    ClusterStarter.main(Array("--port=3553", "--topics=t3,a3", "--prop=application.properties,application-env.properties"))
   }
@@ -26,7 +26,7 @@ object Test {
 
   def startClient(args: Array[String]): Unit = {
     //    val path = "C:\\Users\\chenmingkun\\work\\idea\\work\\task-scheduler-core\\task-scheduler-executor\\src\\main\\resources"
-    val path = "E:\\chenmingkun\\task-scheduler-executor\\src\\main\\resources"
+    val path = "C:\\Users\\chenmingkun\\work\\idea\\work\\task-scheduler-core\\task-scheduler-executor\\src\\main\\resources"
     implicit val executionContext: ExecutionContextExecutor = ExecutionContext.global
     implicit val timeout: Timeout = 10 second
     implicit val timeWait: FiniteDuration = 2 second
