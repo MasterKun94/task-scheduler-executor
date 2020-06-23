@@ -8,7 +8,7 @@ import java.util.concurrent.atomic.{AtomicBoolean, AtomicReference}
  */
 case class Operator[T <: OperatorTask](name: String,
                                        retryCount: Int,
-                                       retryInterval: Int,
+                                       retryInterval: String,
                                        priority: Int,
                                        prop: T,
                                        eventListener: EventListener

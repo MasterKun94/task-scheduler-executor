@@ -3,6 +3,8 @@ package com.oceanum.api
 import com.oceanum.exec.OperatorTask
 import com.oceanum.exec.tasks._
 
+import scala.concurrent.duration.Duration
+
 
 
 trait TaskProp {
@@ -79,4 +81,29 @@ case class PythonTaskProp(pyFile: String,
 @SerialVersionUID(22222206L)
 case class SuUserTaskProp(user: String, prop: ProcessTaskProp) extends TaskProp {
   override def toTask: ProcessTask = SuUserTask(user, prop.toTask)
+}
+
+object TaskPropBuilder {
+  def python: PythonTaskPropBuilder = new PythonTaskPropBuilder(PythonTaskProp(
+    pyFile = "",
+    stdoutHandler = () => null,
+    stderrHandler = () => null)
+  )
+}
+
+class PythonTaskPropBuilder(pythonTaskProp: PythonTaskProp) {
+
+  def pyFile(path: String): PythonTaskPropBuilder = new PythonTaskPropBuilder(pythonTaskProp.copy(pyFile = path))
+
+  def args(args: String*): PythonTaskPropBuilder = new PythonTaskPropBuilder(pythonTaskProp.copy(args = args.toArray))
+
+  def directory(dir: String): PythonTaskPropBuilder = new PythonTaskPropBuilder(pythonTaskProp.copy(directory = Some(dir)))
+
+  def waitForTimeout(timeout: String): PythonTaskPropBuilder = new PythonTaskPropBuilder(pythonTaskProp.copy(waitForTimeout = Duration(timeout).toMillis))
+
+  def handleStdout(stdoutHandler: => InputStreamHandler): PythonTaskPropBuilder = new PythonTaskPropBuilder(pythonTaskProp.copy(stdoutHandler = () => stdoutHandler))
+
+  def handleStderr(stdoutHandler: => InputStreamHandler): PythonTaskPropBuilder = new PythonTaskPropBuilder(pythonTaskProp.copy(stderrHandler = () => stdoutHandler))
+
+  def build: PythonTaskProp = pythonTaskProp
 }

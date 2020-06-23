@@ -4,6 +4,8 @@ import java.util.concurrent.{Delayed, TimeUnit}
 
 import com.oceanum.common.{Environment, Log}
 
+import scala.concurrent.duration.Duration
+
 /**
  * @author chenmingkun
  * @date 2020/4/29
@@ -48,7 +50,7 @@ object ExecuteManager extends Log {
       case ExitCode.ERROR =>
         if (operatorProp.retryCount > 1) {
           val newOperatorProp = operatorProp.copy(retryCount = operatorProp.retryCount - 1)
-          delayedMailbox.send(RetryProp(newOperatorProp, newOperatorProp.retryInterval))
+          delayedMailbox.send(RetryProp(newOperatorProp, Duration(newOperatorProp.retryInterval).toMillis))
           operatorProp.eventListener.retry()
           LOGGER.info("task begin retry: " + operatorProp.name)
         } else {
