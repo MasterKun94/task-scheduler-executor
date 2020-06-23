@@ -20,18 +20,18 @@ class ClientExecutor(executor: ActorRef) extends Actor with ActorLogging {
     case res: ExecuteOperatorResponse =>
       log.info("receive operator response from " + sender())
       actor ! TaskInstance(Seq(self))
-      context.become(onRunning(sender(), res.checkStateScheduled.handler))
+      context.become(onRunning(sender(), res.stateHandler))
   }
 
   def onRunning(executor: ActorRef, stateHandler: StateHandler): Receive = {
-    case CheckStateOnce =>
+    case CheckState =>
       log.info("send check stat to [{}]", executor)
-      executor ! CheckStateOnce
+      executor ! CheckState
 
-    case scheduleCheckState: CheckStateScheduled =>
+    case handler: StateHandler =>
       log.info("send schedule check stat to [{}]", executor)
-      executor ! scheduleCheckState
-      context.become(onRunning(executor, scheduleCheckState.handler))
+      executor ! handler
+      context.become(onRunning(executor, handler))
       sender() ! "OK"
 
     case KillAction =>
@@ -53,7 +53,7 @@ class ClientExecutor(executor: ActorRef) extends Actor with ActorLogging {
       val newHandler: State => Unit = state => {
         stateHandler.handle(state)
         state match {
-          case KILL | SUCCESS | FAILED => handler(state)
+          case KILL | SUCCESS | FAILED => handler.handle(state)
           case _ =>
         }
       }
@@ -61,6 +61,6 @@ class ClientExecutor(executor: ActorRef) extends Actor with ActorLogging {
 
     case stat: State =>
       log.info("receive stat from [{}], state: {}", sender(), stat)
-      stateHandler(stat)
+      stateHandler.handle(stat)
   }
 }

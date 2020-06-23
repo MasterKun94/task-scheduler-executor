@@ -5,25 +5,44 @@ import com.oceanum.api.Task
 
 import scala.concurrent.duration.FiniteDuration
 
-case class PrepareMessage(message: Any)
-case class RunningMessage(message: Any)
-case class FailedMessage(message: Any)
-case class SuccessMessage(message: Any)
-case class RetryMessage(message: Any)
-case class KillMessage(message: Any)
-case class TimeoutMessage(message: Any)
-case class StartMessage(message: Any)
+trait Message {}
+@SerialVersionUID(11111000L)
+case class PrepareMessage(message: Any) extends Message
+@SerialVersionUID(11111001L)
+case class RunningMessage(message: Any) extends Message
+@SerialVersionUID(11111002L)
+case class FailedMessage(message: Any) extends Message
+@SerialVersionUID(11111003L)
+case class SuccessMessage(message: Any) extends Message
+@SerialVersionUID(11111004L)
+case class RetryMessage(message: Any) extends Message
+@SerialVersionUID(11111005L)
+case class KillMessage(message: Any) extends Message
+@SerialVersionUID(11111006L)
+case class TimeoutMessage(message: Any) extends Message
+@SerialVersionUID(11111007L)
+case class StartMessage(message: Any) extends Message
 
-case object KillAction
-case object TerminateAction
-case object CheckStateOnce
-case class CheckStateScheduled(duration: FiniteDuration, handler: StateHandler = StateHandler.empty())
+@SerialVersionUID(11111008L)
+case object KillAction extends Message
+@SerialVersionUID(11111009L)
+case object TerminateAction extends Message
+@SerialVersionUID(11111010L)
+case object CheckState extends Message
 
-case class AvailableExecutorRequest(topic: String)
-case class AvailableExecutorsRequest(topic: String, maxWait: FiniteDuration)
-case class AvailableExecutorResponse(executor: TraversableOnce[AvailableExecutor])
-case class AvailableExecutor(actor: ActorRef, queueSize: Int, topics: Seq[String])
-case class ExecuteOperatorRequest(operatorMessage: Task, checkStateScheduled: CheckStateScheduled)
-case class ExecuteOperatorResponse(operatorMessage: Task, checkStateScheduled: CheckStateScheduled)
-case class HandleState(handler: StateHandler)
-case class HandleOnComplete(handler: StateHandler)
+@SerialVersionUID(11111011L)
+case class AvailableExecutorRequest(topic: String) extends Message
+@SerialVersionUID(11111012L)
+case class AvailableExecutorsRequest(topic: String, maxWait: String) extends Message
+@SerialVersionUID(11111013L)
+case class AvailableExecutorResponse(executor: TraversableOnce[AvailableExecutor]) extends Message
+@SerialVersionUID(11111014L)
+case class AvailableExecutor(actor: ActorRef, queueSize: Int, topics: Seq[String]) extends Message
+@SerialVersionUID(11111015L)
+case class ExecuteOperatorRequest(operatorMessage: Task, stateHandler: StateHandler) extends Message
+@SerialVersionUID(11111016L)
+case class ExecuteOperatorResponse(operatorMessage: Task, stateHandler: StateHandler) extends Message
+@SerialVersionUID(11111017L)
+case class HandleState(handler: StateHandler) extends Message
+@SerialVersionUID(11111018L)
+case class HandleOnComplete(handler: StateHandler) extends Message

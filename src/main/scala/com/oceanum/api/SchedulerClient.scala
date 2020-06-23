@@ -19,12 +19,15 @@ trait SchedulerClient {
 
   def executeAll(topic: String,
                  task: Task,
-                 stateHandler: StateHandler = StateHandler.empty())(implicit timeWait: FiniteDuration = fd"1s"): Future[TaskInstance]
+                 stateHandler: StateHandler = StateHandler.empty())(implicit timeWait: String = "1s"): Future[TaskInstance]
 }
 
 object SchedulerClient {
 
-  def create(implicit executionContext: ExecutionContext, timeout: Timeout): SchedulerClient = SchedulerClientImpl.create
+  def create(host: String, port: Int, seedNodes: String)(implicit executionContext: ExecutionContext, timeout: Timeout): SchedulerClient = {
+
+    SchedulerClientImpl.create(host, port, seedNodes)
+  }
 
   def terminate(): Unit = SchedulerClientImpl.clientSystem.terminate()
 }

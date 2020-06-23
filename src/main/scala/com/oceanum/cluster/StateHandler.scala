@@ -9,11 +9,10 @@ import scala.concurrent.duration.FiniteDuration
  * @date 2020/5/8
  */
 trait StateHandler extends Serializable {
-  def apply(state: State): Unit = handle(state)
 
   def handle(state: State): Unit
 
-  def checkInterval(): FiniteDuration = FiniteDuration(10, "s")
+  def checkInterval(): String = "10s"
 }
 
 object StateHandler {

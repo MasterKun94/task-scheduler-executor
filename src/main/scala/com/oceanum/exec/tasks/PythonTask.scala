@@ -9,7 +9,6 @@ import com.oceanum.common.Environment
  */
 case class PythonTask(pyFile: String,
                       args: Array[String] = Array.empty,
-                      options: Array[String] = Array.empty,
                       env: Map[String, String] = Map.empty,
                       directory: String = "",
                       waitForTimeout: Long = -1,

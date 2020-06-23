@@ -18,7 +18,7 @@ trait TaskInstance {
 
   def handleState(handler: StateHandler): Future[Unit]
 
-  def handleState(interval: FiniteDuration, handler: State => Unit): Future[Unit]
+  def handleState(interval: String, handler: State => Unit): Future[Unit]
 
   def close(): Future[Unit]
 

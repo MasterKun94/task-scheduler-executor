@@ -4,10 +4,9 @@ import akka.actor.ActorRef
 import akka.pattern.ask
 import akka.util.Timeout
 import com.oceanum.api.TaskInstance
-import com.oceanum.cluster.{CheckStateScheduled, HandleOnComplete, KillAction, StateHandler, TerminateAction}
+import com.oceanum.cluster.{HandleOnComplete, KillAction, StateHandler, TerminateAction}
 import com.oceanum.exec.State.State
 
-import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ExecutionContext, Future}
 import scala.language.postfixOps
 
@@ -23,14 +22,14 @@ extends TaskInstance {
   }
 
   override def handleState(handler: StateHandler): Future[Unit] = {
-    Future.sequence(executor.map(client => client ? CheckStateScheduled(handler.checkInterval(), handler))) map (_ => Unit) mapTo
+    Future.sequence(executor.map(client => client ? handler)) map (_ => Unit) mapTo
   }
 
-  override def handleState(interval: FiniteDuration, handler: State => Unit): Future[Unit] = {
+  override def handleState(interval: String, handler: State => Unit): Future[Unit] = {
     val stateHandler = new StateHandler {
       override def handle(state: State): Unit = handler(state)
 
-      override def checkInterval(): FiniteDuration = interval
+      override def checkInterval(): String = interval
     }
     handleState(stateHandler)
   }

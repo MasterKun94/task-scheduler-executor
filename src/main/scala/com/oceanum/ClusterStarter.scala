@@ -44,15 +44,20 @@ object ClusterStarter {
       .toSeq
 
     Environment.load(Environment.Key.CLUSTER_NODE_TOPICS, topics.mkString(","))
-    val host = arg.getOrElse("--host", Environment.getProperty(Environment.Key.CLUSTER_NODE_HOST))
 
+    val host = arg.getOrElse("--host", Environment.getProperty(Environment.Key.CLUSTER_NODE_HOST))
     Environment.load(Environment.Key.CLUSTER_NODE_HOST, host)
+
     val port = arg.getOrElse("--port", Environment.getProperty(Environment.Key.CLUSTER_NODE_PORT)).toInt
     Environment.load(Environment.Key.CLUSTER_NODE_PORT, port.toString)
 
     val seedNodes: Seq[String] = str2arr(arg
       .getOrElse("--seed-node", Environment.getProperty(Environment.Key.CLUSTER_SEED_NODE)))
+      .map(_.split(":"))
+      .map(arr => if (arr.length == 1) arr :+ "3551" else arr)
+      .map(_.mkString(":"))
       .toSeq
+
     Environment.load(Environment.Key.CLUSTER_SEED_NODE, seedNodes.mkString(","))
     Environment.print()
   }
@@ -62,22 +67,25 @@ object ClusterStarter {
     val config = ConfigFactory
       .parseMap(Map(
         "akka.cluster.seed-nodes" -> seqAsJavaList(Environment.CLUSTER_SEED_NODE),
+        "akka.remote.netty.tcp.hostname" -> Environment.CLUSTER_NODE_HOST,
         "akka.remote.netty.tcp.port" -> Environment.CLUSTER_NODE_PORT,
-        "akka.remote.netty.tcp.hostname" -> Environment.CLUSTER_NODE_HOST
+        "akka.remote.netty.tcp.bind-hostname" -> "0.0.0.0",
+        "akka.remote.netty.tcp.bind-port" -> Environment.CLUSTER_NODE_PORT
       ))
       .withFallback(ConfigFactory.parseString(
         s"""
-          |akka {
-          |    actor {
-          |        provider = "akka.cluster.ClusterActorRefProvider"
-          |    }
-          |    remote {
-          |        enabled-transports = ["akka.remote.netty.tcp"]
-          |        log-remote-lifecycle-events = off
-          |    }
-          |    extensions = ["akka.cluster.client.ClusterClientReceptionist"]
-          |}
-          |""".stripMargin))
+           |akka {
+           | actor {
+           |   provider = "akka.cluster.ClusterActorRefProvider"
+           |   warn-about-java-serializer-usage = false
+           |  }
+           | remote {
+           |  enabled-transports = ["akka.remote.netty.tcp"]
+           |  log-remote-lifecycle-events = off
+           | }
+           | extensions = ["akka.cluster.client.ClusterClientReceptionist"]
+           |}
+           |""".stripMargin))
     val system = ActorSystem.create(Environment.CLUSTER_SYSTEM_NAME, config)
     Environment.registrySystem(system)
     system.actorOf(Props(classOf[ClusterNode]), "cluster-node")

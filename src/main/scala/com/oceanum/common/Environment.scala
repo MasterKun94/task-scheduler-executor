@@ -46,6 +46,7 @@ object Environment {
 
   lazy val CLIENT_SYSTEM_NAME: String = getProperty(Key.CLIENT_SYSTEM_NAME, "client")
   lazy val CLIENT_PORT: Int = getProperty(Key.CLIENT_PORT, "4551").toInt
+  lazy val CLIENT_HOST: String = getProperty(Key.CLIENT_HOST, "127.0.0.1")
 
   lazy val DEV_MODE: Boolean = getProperty(Key.DEV_MODE, "false").toBoolean
 
@@ -175,6 +176,7 @@ object Environment {
 
     val CLIENT_SYSTEM_NAME: String = "client.system-name"
     val CLIENT_PORT: String = "client.port"
+    val CLIENT_HOST: String = "client.host"
 
     val DEV_MODE: String = "dev-mode"
     val CLUSTER_NODE_TOPICS: String = "cluster.node.topics"

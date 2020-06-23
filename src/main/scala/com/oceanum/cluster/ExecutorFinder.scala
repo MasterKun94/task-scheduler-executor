@@ -5,6 +5,8 @@ import akka.cluster.client.ClusterClient.Publish
 
 import scala.concurrent.ExecutionContext
 
+import com.oceanum.api.Implicits._
+
 /**
  * @author chenmingkun
  * @date 2020/5/3
@@ -16,7 +18,7 @@ class ExecutorFinder(clusterClient: ActorRef, executionContext: ExecutionContext
     case req: AvailableExecutorsRequest =>
       clusterClient ! Publish(req.topic, AvailableExecutorRequest(req.topic))
       context.become(receiveExecutors(sender(), Array.empty))
-      context.system.scheduler.scheduleOnce(req.maxWait) {
+      context.system.scheduler.scheduleOnce(fd"${req.maxWait}") {
         self ! req
       }
 

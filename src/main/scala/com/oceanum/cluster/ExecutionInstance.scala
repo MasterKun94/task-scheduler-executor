@@ -7,6 +7,7 @@ import com.oceanum.exec.{EventListener, ExecuteManager, ExecutorHook}
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.FiniteDuration
+import com.oceanum.api.Implicits._
 /**
  * @author chenmingkun
  * @date 2020/5/2
@@ -58,16 +59,19 @@ class ExecutionInstance extends Actor with ActorLogging {
   }
 
   override def receive: Receive = {
-    case ExecuteOperatorRequest(operatorMessage, scheduled) =>
+    case ExecuteOperatorRequest(operatorMessage, handler) =>
       val operator = operatorMessage.toOperator(listener)
-      log.info("receive operator: [{}], receive schedule check state request from [{}], start schedule with duration [{}]", operator, sender, scheduled.duration)
+      val finiteDuration = fd"${handler.checkInterval()}"
+      log.info("receive operator: [{}], receive schedule check state request from [{}], start schedule with duration [{}]", operator, sender, finiteDuration)
       implicit val hook: ExecutorHook = ExecuteManager.submit(operator)
-      implicit val cancelable: Cancellable = context.system.scheduler.schedule(scheduled.duration, scheduled.duration) {
-        self.tell(CheckStateOnce, sender())
-      }
+      implicit val cancelable: Cancellable = context
+        .system.scheduler
+        .schedule(finiteDuration, finiteDuration) {
+          self.tell(CheckState, sender())
+        }
       implicit val clientHolder: ClientHolder = ClientHolder(sender())
       context.become(offline)
-      sender ! ExecuteOperatorResponse(operatorMessage, scheduled)
+      sender ! ExecuteOperatorResponse(operatorMessage, handler)
     case message => println("unknown message: " + message)
   }
 
@@ -139,14 +143,15 @@ class ExecutionInstance extends Actor with ActorLogging {
   }
 
   private def caseCheckState(state: State, receive: (ExecutorHook, Cancellable, ClientHolder) => Receive)(implicit hook: ExecutorHook, cancellable: Cancellable, client: ClientHolder): Receive = {
-    case CheckStateOnce =>
+    case CheckState =>
       log.info("send state: [{}] to sender: [{}]", state, sender)
       sender ! state
-    case CheckStateScheduled(duration, _) =>
+    case handler: StateHandler =>
+      val finiteDuration = fd"${handler.checkInterval()}"
       cancellable.cancel
-      log.info("receive schedule check state request from [{}], start schedule with duration [{}]", sender, duration)
-      val cancelable: Cancellable = context.system.scheduler.schedule(duration, duration) {
-        self.tell(CheckStateOnce, client.client)
+      log.info("receive schedule check state request from [{}], start schedule with duration [{}]", sender, finiteDuration)
+      val cancelable: Cancellable = context.system.scheduler.schedule(finiteDuration, finiteDuration) {
+        self.tell(CheckState, client.client)
       }
       context.become(receive(hook, cancelable, client))
   }
@@ -220,6 +225,6 @@ class ExecutionInstance extends Actor with ActorLogging {
   }
 
   private def checkState(implicit client: ClientHolder): Unit = {
-    self.tell(CheckStateOnce, client.client)
+    self.tell(CheckState, client.client)
   }
 }
