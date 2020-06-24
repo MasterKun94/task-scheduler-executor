@@ -1,18 +1,20 @@
-import com.oceanum.cluster.PrepareMessage
+import java.net.{InetAddress, UnknownHostException}
 
 /**
  * @author chenmingkun
  * @date 2020/6/23
  */
 object PicklingTest {
+  def getSelfAddress: String = {
+    try {
+      InetAddress.getLocalHost.getHostAddress
+    } catch {
+      case _: UnknownHostException => "127.0.0.1"
+      case e: Throwable => throw e
+    }
+  }
+
   def main(args: Array[String]): Unit = {
-
-
-//    import boopickle.Default._
-//    val data = Person("lalal", 20)
-//    val buf = Pickle.intoBytes(data)
-//
-//    val helloWorld = Unpickle.apply[Person].fromBytes(buf)
-//    println(helloWorld)
+    println(getSelfAddress)
   }
 }
