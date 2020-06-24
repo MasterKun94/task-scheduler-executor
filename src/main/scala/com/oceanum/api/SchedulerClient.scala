@@ -4,9 +4,7 @@ import akka.util.Timeout
 import com.oceanum.api.impl.SchedulerClientImpl
 import com.oceanum.cluster.StateHandler
 
-import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
-import Implicits._
 
 /**
  * @author chenmingkun
