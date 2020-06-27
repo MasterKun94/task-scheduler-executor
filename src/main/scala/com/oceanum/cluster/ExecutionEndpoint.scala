@@ -2,9 +2,9 @@ package com.oceanum.cluster
 
 import akka.actor.{Actor, ActorRef, Props}
 import akka.cluster.pubsub.DistributedPubSub
-import akka.cluster.pubsub.DistributedPubSubMediator.Subscribe
-import com.oceanum.common.Environment
-import com.oceanum.exec.ExecuteManager
+import akka.cluster.pubsub.DistributedPubSubMediator.{Subscribe, Unsubscribe}
+import com.oceanum.cluster.exec.ExecuteManager
+import com.oceanum.common.{AvailableExecutor, AvailableExecutorRequest, Environment, ExecuteOperatorRequest}
 
 /**
  * @author chenmingkun
@@ -18,6 +18,12 @@ class ExecutionEndpoint(topics: Seq[String]) extends Actor {
   override def preStart(): Unit = {
     for (topic <- topics) {
       mediator ! Subscribe(topic, self)
+    }
+  }
+
+  override def postStop(): Unit = {
+    for (topic <- topics) {
+      mediator ! Unsubscribe(topic, self)
     }
   }
 

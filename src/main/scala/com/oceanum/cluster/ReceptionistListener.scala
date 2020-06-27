@@ -11,7 +11,7 @@ class ReceptionistListener(receptionist: ActorRef) extends Actor with ActorLoggi
 
   override def receive: Receive = {
     case ClusterClients(cs) =>
-      cs.map{aref => println(s"*******ClusterClients: ${aref.path.address.toString}*******")}
+      cs.map{aref => log.info(s"*******ClusterClients: ${aref.path.address.toString}*******")}
     case ClusterClientUp(cc) =>
       log.info(s"*******ClusterClientUp: ${cc.path.address.toString}*******")
     case ClusterClientUnreachable(cc) =>

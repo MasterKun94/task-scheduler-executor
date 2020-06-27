@@ -4,12 +4,13 @@ import java.io.{File, FileInputStream}
 import java.util.Properties
 
 import akka.actor.ActorSystem
-import com.oceanum.exec.executors.ProcessExecutor
-import com.oceanum.exec.{OperatorTask, OutputManager, TypedExecutor}
+import com.oceanum.cluster.exec.{OperatorTask, OutputManager, TypedRunner}
+import com.oceanum.cluster.executors.ProcessRunner
+import com.typesafe.config.ConfigFactory
 
-import scala.collection.JavaConversions.asScalaSet
+import scala.collection.JavaConversions.{asScalaSet, seqAsJavaList}
 import scala.concurrent.ExecutionContext
-import scala.concurrent.duration.{Duration, FiniteDuration}
+import scala.concurrent.duration.Duration
 import scala.util.matching.Regex
 
 /**
@@ -18,7 +19,6 @@ import scala.util.matching.Regex
  */
 object Environment {
 
-  private val propLoader: PropLoader = new PropLoader
   private val properties = new Properties()
 
   lazy val AKKA_CONF: String = parsePath(getProperty(Key.AKKA_CONF, s"conf${PATH_SEPARATOR}application.conf"))
@@ -35,35 +35,53 @@ object Environment {
   lazy val EXEC_SPARK_HOME: String = getProperty(Key.EXEC_SPARK_HOME)
 
   lazy val EXEC_SHELL_ENABLED: Boolean = getProperty(Key.EXEC_SHELL_ENABLED, "true").toBoolean
-  lazy val EXEC_WORK_DIR: String = getProperty(Key.EXEC_WORK_DIR, ".")
+  lazy val EXEC_WORK_DIR: String = getProperty(Key.EXEC_WORK_DIR, "")
   lazy val EXEC_THREAD_NUM: Int = getProperty(Key.EXEC_THREAD_NUM, "16").toInt
   lazy val EXEC_MAX_TIMEOUT: Duration = Duration(getProperty(Key.EXEC_MAX_TIMEOUT, "24h"))
 
-  lazy val CLUSTER_SYSTEM_NAME: String = getProperty(Key.CLUSTER_SYSTEM_NAME, "cluster")
+  lazy val HOST: String = getProperty(Key.HOST, "127.0.0.1")
+  lazy val CLUSTER_NODE_SYSTEM_NAME: String = getProperty(Key.CLUSTER_NODE_SYSTEM_NAME, "cluster")
   lazy val CLUSTER_NODE_PORT: Int = getProperty(Key.CLUSTER_NODE_PORT, "3551").toInt
-  lazy val CLUSTER_NODE_HOST: String = getProperty(Key.CLUSTER_NODE_HOST, "127.0.0.1")
-  lazy val CLUSTER_SEED_NODE: Seq[String] = getProperty(Key.CLUSTER_SEED_NODE, "127.0.0.1:3551").split(",").map(node => s"akka.tcp://$CLUSTER_SYSTEM_NAME@$node").toSeq
+  lazy val CLUSTER_NODE_SEEDS: Seq[String] = getProperty(Key.CLUSTER_NODE_SEEDS, "127.0.0.1:3551").split(",").map(node => s"akka.tcp://$CLUSTER_NODE_SYSTEM_NAME@$node").toSeq
+  lazy val CLUSTER_NODE_TOPICS: Seq[String] = getProperty(Key.CLUSTER_NODE_TOPICS).split(",").map(_.trim).toSeq
+  lazy val CLUSTER_NODE_SYSTEM: ActorSystem = clusterSystem()
 
-  lazy val CLIENT_SYSTEM_NAME: String = getProperty(Key.CLIENT_SYSTEM_NAME, "client")
-  lazy val CLIENT_PORT: Int = getProperty(Key.CLIENT_PORT, "4551").toInt
-  lazy val CLIENT_HOST: String = getProperty(Key.CLIENT_HOST, "127.0.0.1")
+  lazy val CLIENT_NODE_SYSTEM_NAME: String = getProperty(Key.CLIENT_NODE_SYSTEM_NAME, "client")
+  lazy val CLIENT_NODE_PORT: Int = getProperty(Key.CLIENT_NODE_PORT, "4551").toInt
+  lazy val CLIENT_SYSTEM: ActorSystem = clientSystem()
+  lazy val CLUSTER_NODE_METRICS_SAMPLE_INTERVAL: String = getProperty(Key.CLUSTER_NODE_METRICS_SAMPLE_INTERVAL, "5s")
+  lazy val CLUSTER_NODE_METRICS_TOPIC: String = "cluster-node-metrics"
+
+  lazy val REGISTRY_NODE_SYSTEM_NAME: String = getProperty(Key.REGISTRY_NODE_SYSTEM_NAME, "registry")
+  lazy val REGISTRY_NODE_PORT: Int = getProperty(Key.REGISTRY_NODE_PORT, "4551").toInt
+  lazy val REGISTRY_NODE_SYSTEM: ActorSystem = ???
+
+  lazy val FILE_SERVER_SYSTEM: ActorSystem = fileServerSystem()
+  lazy val FILE_SERVER_CONTEXT_PATH: String = getProperty(Key.FILE_SERVER_CONTEXT_PATH, "file")
+  lazy val FILE_SERVER_PORT: Int = getProperty(Key.FILE_SERVER_PORT, "8011").toInt
+  lazy val FILE_SERVER_SYSTEM_NAME: String = getProperty(Key.FILE_SERVER_SYSTEM_NAME, "file-server")
+  lazy val FILE_SERVER_CHUNK_SIZE: Int = getProperty(Key.FILE_SERVER_CHUNK_SIZE, "8192").toInt
+  lazy val FILE_SERVER_BASE_PATH: String = getProperty(Key.FILE_SERVER_BASE_PATH, if (OS == WINDOWS) "" else "/")
+  lazy val FILE_SERVER_RECURSIVE_TRANSFER_MAX: Int = getProperty(Key.FILE_SERVER_RECURSIVE_TRANSFER_MAX, "100").toInt
+  lazy val FILE_SERVER_DISPATCHER_PARALLELISM_MIN: Int = getProperty(Key.FILE_SERVER_DISPATCHER_PARALLELISM_MIN, "6").toInt
+  lazy val FILE_SERVER_DISPATCHER_PARALLELISM_FACTOR: Int = getProperty(Key.FILE_SERVER_DISPATCHER_PARALLELISM_MIN, "12").toInt
+  lazy val FILE_SERVER_DISPATCHER_PARALLELISM_MAX: Int = getProperty(Key.FILE_SERVER_DISPATCHER_PARALLELISM_MAX, "288").toInt
+  lazy val FILE_SERVER_HOST_CONNECTION_POOL_MAX_CONNECTIONS: Int = getProperty(Key.FILE_SERVER_HOST_CONNECTION_POOL_MAX_CONNECTIONS, "12").toInt
+  lazy val FILE_SERVER_HOST_CONNECTION_POOL_MIN_CONNECTIONS: Int = getProperty(Key.FILE_SERVER_HOST_CONNECTION_POOL_MIN_CONNECTIONS, "1").toInt
+  lazy val FILE_SERVER_HOST_CONNECTION_POOL_MAX_RETRIES: Int = getProperty(Key.FILE_SERVER_HOST_CONNECTION_POOL_MAX_RETRIES, "5").toInt
+  lazy val FILE_SERVER_HOST_CONNECTION_POOL_MAX_OPEN_REQUESTS: Int = getProperty(Key.FILE_SERVER_HOST_CONNECTION_POOL_MAX_OPEN_REQUESTS, "64").toInt
+
+  lazy val TASK_RUNNERS: Array[TypedRunner[_ <: OperatorTask]] = Array(new ProcessRunner(OutputManager.global))
+  lazy val SCHEDULE_EXECUTION_CONTEXT: ExecutionContext = ExecutionContext.global
+  lazy val PATH_SEPARATOR: String = File.separator
 
   lazy val DEV_MODE: Boolean = getProperty(Key.DEV_MODE, "false").toBoolean
-
-  lazy val EXECUTORS: Array[TypedExecutor[_ <: OperatorTask]] = Array(new ProcessExecutor(OutputManager.global))
-  lazy val SCHEDULE_EXECUTION_CONTEXT: ExecutionContext = ExecutionContext.global
-  lazy val ACTOR_ALIVE_TIME_MAX: FiniteDuration = FiniteDuration(1, "d")
-
   lazy val OS: OS = {
     val sys = scala.util.Properties
     if (sys.isWin) WINDOWS
     else if (sys.isMac) MAC
     else LINUX
   }
-  lazy val PATH_SEPARATOR: String = {
-    File.separator
-  }
-  lazy val CLUSTER_NODE_TOPICS: Seq[String] = getProperty("cluster.node.topics").split(",").map(_.trim).toSeq
 
   def print(): Unit = {
     import scala.collection.JavaConversions.mapAsScalaMap
@@ -71,83 +89,98 @@ object Environment {
     properties.foreach(kv => println(s"\t${kv._1} -> ${kv._2}"))
   }
 
-  def getProperty(key: String): String = properties.getProperty(key)
+  def getProperty(key: String): String = parse(properties.getProperty(key), properties)
 
-  def getProperty(key: String, orElse: String): String = properties.getProperty(key, orElse)
-
-  def toPath(uri: String): String = new File(uri).getPath
-
-  private var sys: ActorSystem = _
+  def getProperty(key: String, orElse: String): String = parse(properties.getProperty(key, orElse), properties)
 
   def load(files: Array[String]): Unit = {
     println("load:")
     for (file <- files) {
       val path = parsePath(file)
       println("\t" + path)
-      propLoader.load(path)
+      properties.load(new FileInputStream(new File(path)))
     }
-    properties.putAll(propLoader.get)
   }
 
   def load(key: String, value: String): Unit = {
     properties.put(key, value)
   }
 
-  def parsePath(file: String): String = {
+  def loadArgs(args: Array[String]): Unit = {
+    val arg: Map[String, String] = args
+      .map(str => str.split("="))
+      .map(arr => (arr(0), arr(1)))
+      .toMap
+    println("args: ")
+    arg.foreach(kv => println("\t" + kv))
+
+    load(Key.BASE_PATH, arg.getOrElse("--base-path", new File(".").getCanonicalPath))
+
+    val paths = arg.getOrElse("--conf", s"conf${PATH_SEPARATOR}application.properties,conf${PATH_SEPARATOR}application-env.properties")
+      .split(",")
+      .map(_.trim)
+      .filter(_.nonEmpty)
+    load(paths)
+
+    val topics = arg
+      .get("--topics")
+      .map(str2arr)
+      .getOrElse(Array.empty)
+      .union(str2arr(getProperty(Key.CLUSTER_NODE_TOPICS)))
+      .distinct
+      .toSeq
+
+    load(Key.CLUSTER_NODE_TOPICS, topics.mkString(","))
+
+    val host = arg.getOrElse("--host", getProperty(Key.HOST))
+    load(Key.HOST, host)
+
+    val port = arg.getOrElse("--port", getProperty(Key.CLUSTER_NODE_PORT)).toInt
+    load(Key.CLUSTER_NODE_PORT, port.toString)
+
+    val seedNodes: Seq[String] = str2arr(arg
+      .getOrElse("--seed-node", getProperty(Key.CLUSTER_NODE_SEEDS)))
+      .map(_.split(":"))
+      .map(arr => if (arr.length == 1) arr :+ "3551" else arr)
+      .map(_.mkString(":"))
+      .toSeq
+
+    load(Key.CLUSTER_NODE_SEEDS, seedNodes.mkString(","))
+    print()
+  }
+
+  private def str2arr(string: String): Array[String] = {
+    string.split(",")
+      .map(_.trim)
+      .filter(_.nonEmpty)
+  }
+
+  private def parsePath(file: String): String = {
     if (file.startsWith("/"))
       file
     else
       BASE_PATH + PATH_SEPARATOR + file
   }
 
-  def parse(): Unit = {
-
-  }
-
-  def registrySystem(actorSystem: ActorSystem): Unit = {
-    sys = actorSystem
-  }
-
-  def actorSystem: ActorSystem = sys
-
-  abstract class OS
-  case object WINDOWS extends OS
-  case object LINUX extends OS
-  case object MAC extends OS
-
-  private class PropLoader {
-    private val properties = new Properties()
     val pattern: Regex = """(.*)\$\{(.*)}(.*)""".r  //新建一个正则表达式
 
-    def parse(line: String, prop: Properties): String = {
-      if (line == null || line.trim.isEmpty)
-        ""
-      else
-        line match {
-          case pattern(pre, reg, str) =>
-            val regValue = parse(prop.getProperty(reg, System.getenv(reg)), prop)
-            prop.setProperty(reg, regValue)
-            if (regValue == null || regValue.trim.isEmpty) {
-              throw new RuntimeException("需要在配置文件或环境变量中设置变量：" + reg)
-            }
-            parse(pre, prop) + regValue + parse(str, prop)
-          case str: String => str
-          case unknown =>
-            println(unknown)
-            unknown
-        }
-    }
-
-    def load(file: String): Unit = {
-      properties.load(new FileInputStream(new File(file)))
-    }
-
-    def get: Properties = {
-      for (elem <- properties.keySet().map(_.toString)) {
-        properties.setProperty(elem, parse(properties.getProperty(elem), properties))
+  private def parse(line: String, prop: Properties): String = {
+    if (line == null || line.trim.isEmpty)
+      ""
+    else
+      line match {
+        case pattern(pre, reg, str) =>
+          val regValue = parse(prop.getProperty(reg, System.getenv(reg)), prop)
+          prop.setProperty(reg, regValue)
+          if (regValue == null || regValue.trim.isEmpty) {
+            throw new RuntimeException("需要在配置文件或环境变量中设置变量：" + reg)
+          }
+          parse(pre, prop) + regValue + parse(str, prop)
+        case str: String => str
+        case unknown =>
+          println(unknown)
+          unknown
       }
-      properties
-    }
   }
 
   object Key {
@@ -169,23 +202,118 @@ object Environment {
     val EXEC_THREAD_NUM: String = "exec.thread-num"
     val EXEC_MAX_TIMEOUT: String = "exec.max-timeout"
 
-    val CLUSTER_SYSTEM_NAME: String = "cluster.system-name"
-    val CLUSTER_NODE_PORT: String = "cluster.node.port"
-    val CLUSTER_NODE_HOST: String = "cluster.node.host"
-    val CLUSTER_SEED_NODE: String = "cluster.seed-node"
-
-    val CLIENT_SYSTEM_NAME: String = "client.system-name"
-    val CLIENT_PORT: String = "client.port"
-    val CLIENT_HOST: String = "client.host"
-
+    val HOST: String = "server.host"
+    val CLUSTER_NODE_SYSTEM_NAME: String = "cluster-node.system-name"
+    val CLUSTER_NODE_PORT: String = "cluster-node.port"
+    val CLUSTER_NODE_SEEDS: String = "cluster-node.seeds"
+    val CLUSTER_NODE_TOPICS: String = "cluster-node.topics"
+    val CLUSTER_NODE_METRICS_SAMPLE_INTERVAL = "cluster-node.metrics.sample-interval"
+    val CLIENT_NODE_SYSTEM_NAME: String = "client-node.system-name"
+    val CLIENT_NODE_PORT: String = "client-node.port"
+    val REGISTRY_NODE_SYSTEM_NAME = "registry-node.system-name"
+    val REGISTRY_NODE_PORT = "registry-node.port"
+    val FILE_SERVER_PORT = "file-server.port"
+    val FILE_SERVER_SYSTEM_NAME = "file-server.system-name"
+    val FILE_SERVER_CHUNK_SIZE: String = "file-server.chunk-size"
+    val FILE_SERVER_BASE_PATH: String = "file-server.base-path"
+    val FILE_SERVER_CONTEXT_PATH = "file-server.context-path"
+    val FILE_SERVER_RECURSIVE_TRANSFER_MAX = "file-server.recursive-transfer-max"
+    val FILE_SERVER_DISPATCHER_PARALLELISM_MIN = "file-server.dispatcher.parallelism-min"
+    val FILE_SERVER_DISPATCHER_PARALLELISM_FACTOR = "file-server.dispatcher.parallelism-factor"
+    val FILE_SERVER_DISPATCHER_PARALLELISM_MAX = "file-server.dispatcher.parallelism-max"
+    val FILE_SERVER_HOST_CONNECTION_POOL_MAX_CONNECTIONS = "file-server.host-connection.pool.max-connections"
+    val FILE_SERVER_HOST_CONNECTION_POOL_MIN_CONNECTIONS = "file-server.host-connection.pool.min-connections"
+    val FILE_SERVER_HOST_CONNECTION_POOL_MAX_RETRIES = "file-server.host-connection.pool.max-retries"
+    val FILE_SERVER_HOST_CONNECTION_POOL_MAX_OPEN_REQUESTS = "file-server.host-connection.pool.max-open-requests"
     val DEV_MODE: String = "dev-mode"
-    val CLUSTER_NODE_TOPICS: String = "cluster.node.topics"
-
 
   }
 
+  private def clusterSystem(): ActorSystem = {
+    import scala.collection.JavaConversions.mapAsJavaMap
+    val config = ConfigFactory
+      .parseMap(Map(
+        "akka.cluster.seed-nodes" -> seqAsJavaList(CLUSTER_NODE_SEEDS),
+        "akka.remote.netty.tcp.hostname" -> HOST,
+        "akka.remote.netty.tcp.port" -> CLUSTER_NODE_PORT,
+        "akka.remote.netty.tcp.bind-hostname" -> HOST,
+        "akka.remote.netty.tcp.bind-port" -> CLUSTER_NODE_PORT,
+        "akka.cluster.metrics.collector.sample-interval" -> CLUSTER_NODE_METRICS_SAMPLE_INTERVAL
+      ))
+      .withFallback(ConfigFactory.parseString(
+        """
+           |akka {
+           | actor {
+           |   provider = "akka.cluster.ClusterActorRefProvider"
+           |   warn-about-java-serializer-usage = false
+           |  }
+           | remote {
+           |  enabled-transports = ["akka.remote.netty.tcp"]
+           |  log-remote-lifecycle-events = off
+           | }
+           | extensions = ["akka.cluster.client.ClusterClientReceptionist", "akka.cluster.metrics.ClusterMetricsExtension"]
+           |}
+           |""".stripMargin))
+    ActorSystem.create(CLUSTER_NODE_SYSTEM_NAME, config)
+  }
+
+  private def clientSystem(): ActorSystem = {
+    val configString =
+      s"""
+         |akka {
+         | actor {
+         |   provider = remote
+         |   warn-about-java-serializer-usage = false
+         |   serializers {
+         |     java = "akka.serialization.JavaSerializer"
+         |     proto = "akka.remote.serialization.ProtobufSerializer"
+         |   }
+         | }
+         |  remote {
+         |    enabled-transports = ["akka.remote.netty.tcp"]
+         |    log-remote-lifecycle-events = off
+         |    netty.tcp {
+         |      hostname = "$HOST"
+         |      port = $CLIENT_NODE_PORT
+         |      bind-hostname = "$HOST"
+         |      bind-port = $CLIENT_NODE_PORT
+         |    }
+         |  }
+         |}
+         |""".stripMargin
+    ConfigFactory.parseString(configString)
+    ActorSystem(CLIENT_NODE_SYSTEM_NAME, ConfigFactory.parseString(configString))
+  }
+
+  private def fileServerSystem(): ActorSystem = {
+    val configString =
+      s"""
+         |file-io-dispatcher {
+         |  type = Dispatcher
+         |  executor = "thread-pool-executor"
+         |  fork-join-executor {
+         |    parallelism-min = $FILE_SERVER_DISPATCHER_PARALLELISM_MIN
+         |    parallelism-factor = $FILE_SERVER_DISPATCHER_PARALLELISM_FACTOR
+         |    parallelism-max = $FILE_SERVER_DISPATCHER_PARALLELISM_MAX
+         |  }
+         |  throughput = 1000
+         |}
+         |
+         |akka.http {
+         |  host-connection-pool {
+         |    max-connections = $FILE_SERVER_HOST_CONNECTION_POOL_MAX_CONNECTIONS
+         |    min-connections = $FILE_SERVER_HOST_CONNECTION_POOL_MIN_CONNECTIONS
+         |    min-retries = $FILE_SERVER_HOST_CONNECTION_POOL_MAX_RETRIES
+         |    max-open-requests = $FILE_SERVER_HOST_CONNECTION_POOL_MAX_OPEN_REQUESTS
+         |  }
+         |}
+         |""".stripMargin
+    ConfigFactory.parseString(configString)
+    ActorSystem(FILE_SERVER_SYSTEM_NAME, ConfigFactory.parseString(configString))
+  }
+
   def main(args: Array[String]): Unit = {
-    println(Environment.properties)
+    println(properties)
     properties.keySet().foreach(key => println(s"$key = ${properties.get(key)}"))
     val uri: File = new File(getProperty("HADOOP_CONF_DIR"))
     println(uri.getPath)

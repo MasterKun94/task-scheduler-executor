@@ -1,13 +1,13 @@
 package com.oceanum.cluster
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Cancellable}
-import com.oceanum.common.Environment
-import com.oceanum.exec.State._
-import com.oceanum.exec.{EventListener, ExecuteManager, ExecutorHook}
+import com.oceanum.client.Implicits._
+import com.oceanum.client.StateHandler
+import com.oceanum.cluster.exec.State._
+import com.oceanum.cluster.exec.{EventListener, ExecuteManager, ExecutorHook}
+import com.oceanum.common._
 
-import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.FiniteDuration
-import com.oceanum.api.Implicits._
 /**
  * @author chenmingkun
  * @date 2020/5/2
@@ -49,9 +49,9 @@ class ExecutionInstance extends Actor with ActorLogging {
     }
   }
 
-  implicit val executionContext: ExecutionContext = Environment.SCHEDULE_EXECUTION_CONTEXT
   var execTimeoutMax: Cancellable = _
 
+  import context.dispatcher
   override def preStart(): Unit = {
     execTimeoutMax = context.system.scheduler.scheduleOnce(FiniteDuration(Environment.EXEC_MAX_TIMEOUT._1, Environment.EXEC_MAX_TIMEOUT._2)) {
       context.stop(self)
@@ -88,19 +88,23 @@ class ExecutionInstance extends Actor with ActorLogging {
 
   private def offline(implicit hook: ExecutorHook, cancellable: Cancellable, client: ClientHolder): Receive = {
     caseCheckState(OFFLINE, offline_)
+      .orElse(caseKillAction)
       .orElse(casePrepare)
+      .orElse(caseKill)
   }
 
   private def prepare(implicit hook: ExecutorHook, cancellable: Cancellable, client: ClientHolder): Receive = {
     caseCheckState(PREPARE, prepare_)
       .orElse(caseKillAction)
       .orElse(caseStart)
+      .orElse(caseKill)
   }
 
   private def start(implicit hook: ExecutorHook, cancellable: Cancellable, client: ClientHolder): Receive = {
     caseCheckState(START, start_)
       .orElse(caseKillAction)
       .orElse(caseRunning)
+      .orElse(caseKill)
   }
 
   private def running(implicit hook: ExecutorHook, cancellable: Cancellable, client: ClientHolder): Receive = {
@@ -117,6 +121,7 @@ class ExecutionInstance extends Actor with ActorLogging {
     caseCheckState(RETRY, retry_)
       .orElse(caseKillAction)
       .orElse(casePrepare)
+      .orElse(caseKill)
   }
 
   private def timeout(implicit hook: ExecutorHook, cancellable: Cancellable, client: ClientHolder): Receive = {
@@ -124,6 +129,7 @@ class ExecutionInstance extends Actor with ActorLogging {
       .orElse(caseKillAction)
       .orElse(caseRetry)
       .orElse(caseFailed)
+      .orElse(caseKill)
   }
 
   private def success(implicit hook: ExecutorHook, cancellable: Cancellable, client: ClientHolder): Receive = {

@@ -4,6 +4,8 @@ import akka.actor.{Actor, ActorLogging}
 import akka.cluster.ClusterEvent.{MemberEvent, MemberRemoved, MemberUp, UnreachableMember}
 import akka.cluster.{Cluster, ClusterEvent}
 
+import scala.concurrent.duration.FiniteDuration
+
 /**
  * @author chenmingkun
  * @date 2020/5/3
