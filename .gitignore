@@ -8,3 +8,5 @@
 out
 gen
 target
+src/main/resources/file
+src/main/resources/file2
