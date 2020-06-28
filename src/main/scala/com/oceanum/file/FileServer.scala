@@ -27,7 +27,6 @@ object FileServer extends Log {
 
   private implicit lazy val httpSys: ActorSystem = Environment.FILE_SERVER_SYSTEM
   private implicit lazy val httpMat: ActorMaterializer = ActorMaterializer()
-  private implicit lazy val httpEC: ExecutionContextExecutor = httpSys.dispatcher
 
   private def fileStream(filePath: String): Source[ByteString, Future[IOResult]] = {
     val file: Path = Paths.get(filePath)

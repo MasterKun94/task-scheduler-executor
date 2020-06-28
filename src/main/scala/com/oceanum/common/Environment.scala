@@ -64,9 +64,9 @@ object Environment {
   lazy val FILE_SERVER_CHUNK_SIZE: Int = getProperty(Key.FILE_SERVER_CHUNK_SIZE, "8192").toInt
   lazy val FILE_SERVER_BASE_PATH: String = getProperty(Key.FILE_SERVER_BASE_PATH, if (OS == WINDOWS) "" else "/")
   lazy val FILE_SERVER_RECURSIVE_TRANSFER_MAX: Int = getProperty(Key.FILE_SERVER_RECURSIVE_TRANSFER_MAX, "100").toInt
-  lazy val FILE_SERVER_DISPATCHER_PARALLELISM_MIN: Int = getProperty(Key.FILE_SERVER_DISPATCHER_PARALLELISM_MIN, "6").toInt
-  lazy val FILE_SERVER_DISPATCHER_PARALLELISM_FACTOR: Int = getProperty(Key.FILE_SERVER_DISPATCHER_PARALLELISM_MIN, "12").toInt
-  lazy val FILE_SERVER_DISPATCHER_PARALLELISM_MAX: Int = getProperty(Key.FILE_SERVER_DISPATCHER_PARALLELISM_MAX, "288").toInt
+  lazy val FILE_SERVER_DISPATCHER_CORE_POOL_SIZE_MIN: Int = getProperty(Key.FILE_SERVER_DISPATCHER_CORE_POOL_SIZE_MIN, "6").toInt
+  lazy val FILE_SERVER_DISPATCHER_CORE_POOL_SIZE_FACTOR: Int = getProperty(Key.FILE_SERVER_DISPATCHER_CORE_POOL_SIZE_MIN, "5").toInt
+  lazy val FILE_SERVER_DISPATCHER_CORE_POOL_SIZE_MAX: Int = getProperty(Key.FILE_SERVER_DISPATCHER_CORE_POOL_SIZE_MAX, "60").toInt
   lazy val FILE_SERVER_HOST_CONNECTION_POOL_MAX_CONNECTIONS: Int = getProperty(Key.FILE_SERVER_HOST_CONNECTION_POOL_MAX_CONNECTIONS, "12").toInt
   lazy val FILE_SERVER_HOST_CONNECTION_POOL_MIN_CONNECTIONS: Int = getProperty(Key.FILE_SERVER_HOST_CONNECTION_POOL_MIN_CONNECTIONS, "1").toInt
   lazy val FILE_SERVER_HOST_CONNECTION_POOL_MAX_RETRIES: Int = getProperty(Key.FILE_SERVER_HOST_CONNECTION_POOL_MAX_RETRIES, "5").toInt
@@ -223,9 +223,9 @@ object Environment {
     val FILE_SERVER_BASE_PATH: String = "file-server.base-path"
     val FILE_SERVER_CONTEXT_PATH = "file-server.context-path"
     val FILE_SERVER_RECURSIVE_TRANSFER_MAX = "file-server.recursive-transfer-max"
-    val FILE_SERVER_DISPATCHER_PARALLELISM_MIN = "file-server.dispatcher.parallelism-min"
-    val FILE_SERVER_DISPATCHER_PARALLELISM_FACTOR = "file-server.dispatcher.parallelism-factor"
-    val FILE_SERVER_DISPATCHER_PARALLELISM_MAX = "file-server.dispatcher.parallelism-max"
+    val FILE_SERVER_DISPATCHER_CORE_POOL_SIZE_MIN = "file-server.dispatcher.core-pool-size-min"
+    val FILE_SERVER_DISPATCHER_CORE_POOL_SIZE_FACTOR = "file-server.dispatcher.core-pool-size-factor"
+    val FILE_SERVER_DISPATCHER_CORE_POOL_SIZE_MAX = "file-server.dispatcher.core-pool-size-max"
     val FILE_SERVER_HOST_CONNECTION_POOL_MAX_CONNECTIONS = "file-server.host-connection.pool.max-connections"
     val FILE_SERVER_HOST_CONNECTION_POOL_MIN_CONNECTIONS = "file-server.host-connection.pool.min-connections"
     val FILE_SERVER_HOST_CONNECTION_POOL_MAX_RETRIES = "file-server.host-connection.pool.max-retries"
@@ -258,6 +258,10 @@ object Environment {
            |  log-remote-lifecycle-events = off
            | }
            | extensions = ["akka.cluster.client.ClusterClientReceptionist", "akka.cluster.metrics.ClusterMetricsExtension"]
+           |}
+           |task-runner-dispatcher {
+           | type = PinnedDispatcher
+           | executor = "thread-pool-executor"
            |}
            |""".stripMargin))
     ActorSystem.create(CLUSTER_NODE_SYSTEM_NAME, config)
@@ -298,10 +302,10 @@ object Environment {
          |file-io-dispatcher {
          |  type = Dispatcher
          |  executor = "thread-pool-executor"
-         |  fork-join-executor {
-         |    parallelism-min = $FILE_SERVER_DISPATCHER_PARALLELISM_MIN
-         |    parallelism-factor = $FILE_SERVER_DISPATCHER_PARALLELISM_FACTOR
-         |    parallelism-max = $FILE_SERVER_DISPATCHER_PARALLELISM_MAX
+         |  thread-pool-executor {
+         |    core-pool-size-min = $FILE_SERVER_DISPATCHER_CORE_POOL_SIZE_MIN
+         |    core-pool-size-factor = $FILE_SERVER_DISPATCHER_CORE_POOL_SIZE_FACTOR
+         |    core-pool-size-max = $FILE_SERVER_DISPATCHER_CORE_POOL_SIZE_MAX
          |  }
          |  throughput = 1000
          |}
