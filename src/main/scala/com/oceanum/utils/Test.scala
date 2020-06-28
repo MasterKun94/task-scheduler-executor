@@ -69,15 +69,18 @@ object Test {
   }
 
   def main(args: Array[String]): Unit = {
-    startCluster(args)
+//    startCluster(args)
     //    MetricsListener.start()
     import com.oceanum.client.Implicits._
     implicit val timeout: Timeout = fd"10 second"
+
     scala.io.StdIn.readLine()
-    val client = SchedulerClient(ip, 5555, ip)
+    val client = SchedulerClient(ip, 5555, "192.168.10.131")
     scala.io.StdIn.readLine()
     println("handle cluster metrics")
-    val hook = client.handleClusterMetrics("2s")(println)
+    val hook = client.handleClusterMetrics("2s") { m =>
+      m.nodeMetrics.foreach(println)
+    }
     scala.io.StdIn.readLine()
     println("stop handle cluster metrics")
     hook.kill()
