@@ -7,10 +7,8 @@ import com.oceanum.common.{Ping, Pong}
  * @author chenmingkun
  * @date 2020/6/28
  */
-class HandlerActor[T](handler: T => Unit) extends Actor {
-  override def receive: Receive = {
+class HandlerActor[T](handler: Actor.Receive) extends Actor {
+  override def receive: Receive = handler orElse {
     case Ping => sender() ! Pong
-
-    case t: T => handler(t)
   }
 }

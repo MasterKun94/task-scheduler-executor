@@ -42,7 +42,7 @@ object FileClient extends Log {
           entity.dataBytes
             .map(_.utf8String)
             .runForeach(str => LOGGER.info(s"Transfer file success from: [$srcHost0/$srcPath] to: [$destHost0/$str]"))
-            .map(_ => null)
+            .map(_ => Unit)
         case r: HttpResponse =>
           r.discardEntityBytes()
           Future.failed(new Exception(s"Transfer file failed, response: ${r.toString()}"))
@@ -61,7 +61,7 @@ object FileClient extends Log {
           entity.dataBytes
             .map(_.utf8String)
             .runForeach(str => LOGGER.info(s"Delete file success from: [$host0/$path]"))
-            .map(_ => null)
+            .map(_ => Unit)
         case r: HttpResponse =>
           r.discardEntityBytes()
           Future.failed(new Exception(s"Delete file failed, response: ${r.toString()}"))
@@ -84,7 +84,7 @@ object FileClient extends Log {
           entity.dataBytes
             .map(_.utf8String)
             .runForeach(str => LOGGER.info(s"Save upload file from: [/$srcPath] to: [$host0/$str]"))
-            .map[Unit](_ => null)
+            .map[Unit](_ => Unit)
         case r: HttpResponse =>
           r.discardEntityBytes()
           Future.failed(new Exception(s"Upload request failed, response: ${r.toString()}"))

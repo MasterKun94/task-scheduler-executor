@@ -5,7 +5,7 @@ import com.oceanum.ShutdownHook
 import com.oceanum.client.impl.SchedulerClientImpl
 import com.oceanum.common.{ClusterInfoResponse, ClusterMetricsResponse, Environment}
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.Future
 
 /**
  * @author chenmingkun
@@ -27,9 +27,8 @@ trait SchedulerClient {
 
 object SchedulerClient {
 
-  def create(host: String, port: Int, seedNodes: String)(implicit timeout: Timeout): SchedulerClient = {
-
-    SchedulerClientImpl.create(host, port, seedNodes)
+  def apply(host: String, port: Int, seedNodes: String)(implicit timeout: Timeout): SchedulerClient = {
+    SchedulerClientImpl(host, port, seedNodes)
   }
 
   def terminate(): Unit = Environment.CLIENT_SYSTEM.terminate()

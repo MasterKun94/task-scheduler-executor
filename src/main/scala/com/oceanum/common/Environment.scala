@@ -8,7 +8,7 @@ import com.oceanum.cluster.exec.{OperatorTask, OutputManager, TypedRunner}
 import com.oceanum.cluster.executors.ProcessRunner
 import com.typesafe.config.ConfigFactory
 
-import scala.collection.JavaConversions.{asScalaSet, seqAsJavaList}
+import scala.collection.JavaConversions.seqAsJavaList
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.Duration
 import scala.util.matching.Regex
@@ -48,13 +48,14 @@ object Environment {
 
   lazy val CLIENT_NODE_SYSTEM_NAME: String = getProperty(Key.CLIENT_NODE_SYSTEM_NAME, "client")
   lazy val CLIENT_NODE_PORT: Int = getProperty(Key.CLIENT_NODE_PORT, "4551").toInt
+  lazy val CLIENT_NODE_LOGGER: String = logger
   lazy val CLIENT_SYSTEM: ActorSystem = clientSystem()
   lazy val CLUSTER_NODE_METRICS_SAMPLE_INTERVAL: String = getProperty(Key.CLUSTER_NODE_METRICS_SAMPLE_INTERVAL, "5s")
   lazy val CLUSTER_NODE_METRICS_TOPIC: String = "cluster-node-metrics"
+  lazy val CLUSTER_NODE_LOGGER: String = logger
 
   lazy val REGISTRY_NODE_SYSTEM_NAME: String = getProperty(Key.REGISTRY_NODE_SYSTEM_NAME, "registry")
   lazy val REGISTRY_NODE_PORT: Int = getProperty(Key.REGISTRY_NODE_PORT, "4551").toInt
-  lazy val REGISTRY_NODE_SYSTEM: ActorSystem = ???
 
   lazy val FILE_SERVER_SYSTEM: ActorSystem = fileServerSystem()
   lazy val FILE_SERVER_CONTEXT_PATH: String = getProperty(Key.FILE_SERVER_CONTEXT_PATH, "file")
@@ -70,6 +71,7 @@ object Environment {
   lazy val FILE_SERVER_HOST_CONNECTION_POOL_MIN_CONNECTIONS: Int = getProperty(Key.FILE_SERVER_HOST_CONNECTION_POOL_MIN_CONNECTIONS, "1").toInt
   lazy val FILE_SERVER_HOST_CONNECTION_POOL_MAX_RETRIES: Int = getProperty(Key.FILE_SERVER_HOST_CONNECTION_POOL_MAX_RETRIES, "5").toInt
   lazy val FILE_SERVER_HOST_CONNECTION_POOL_MAX_OPEN_REQUESTS: Int = getProperty(Key.FILE_SERVER_HOST_CONNECTION_POOL_MAX_OPEN_REQUESTS, "64").toInt
+  lazy val FILE_SERVER_LOGGER: String = logger
 
   lazy val TASK_RUNNERS: Array[TypedRunner[_ <: OperatorTask]] = Array(new ProcessRunner(OutputManager.global))
   lazy val SCHEDULE_EXECUTION_CONTEXT: ExecutionContext = ExecutionContext.global
@@ -82,6 +84,8 @@ object Environment {
     else if (sys.isMac) MAC
     else LINUX
   }
+
+  lazy val logger = "akka.event.slf4j.Slf4jLogger"
 
   def print(): Unit = {
     import scala.collection.JavaConversions.mapAsScalaMap
@@ -111,6 +115,7 @@ object Environment {
       .map(str => str.split("="))
       .map(arr => (arr(0), arr(1)))
       .toMap
+
     println("args: ")
     arg.foreach(kv => println("\t" + kv))
 
@@ -238,7 +243,8 @@ object Environment {
         "akka.remote.netty.tcp.port" -> CLUSTER_NODE_PORT,
         "akka.remote.netty.tcp.bind-hostname" -> HOST,
         "akka.remote.netty.tcp.bind-port" -> CLUSTER_NODE_PORT,
-        "akka.cluster.metrics.collector.sample-interval" -> CLUSTER_NODE_METRICS_SAMPLE_INTERVAL
+        "akka.cluster.metrics.collector.sample-interval" -> CLUSTER_NODE_METRICS_SAMPLE_INTERVAL,
+        "akka.loggers" -> seqAsJavaList(Seq(CLUSTER_NODE_LOGGER))
       ))
       .withFallback(ConfigFactory.parseString(
         """
@@ -269,7 +275,8 @@ object Environment {
          |     proto = "akka.remote.serialization.ProtobufSerializer"
          |   }
          | }
-         |  remote {
+         | loggers = ["$CLIENT_NODE_LOGGER"]
+         | remote {
          |    enabled-transports = ["akka.remote.netty.tcp"]
          |    log-remote-lifecycle-events = off
          |    netty.tcp {
@@ -298,6 +305,7 @@ object Environment {
          |  }
          |  throughput = 1000
          |}
+         |akka.loggers = ["$FILE_SERVER_LOGGER"]
          |
          |akka.http {
          |  host-connection-pool {
@@ -314,6 +322,7 @@ object Environment {
 
   def main(args: Array[String]): Unit = {
     println(properties)
+    import scala.collection.JavaConversions.asScalaSet
     properties.keySet().foreach(key => println(s"$key = ${properties.get(key)}"))
     val uri: File = new File(getProperty("HADOOP_CONF_DIR"))
     println(uri.getPath)

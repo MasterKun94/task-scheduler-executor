@@ -28,7 +28,7 @@ object Test {
 //    val path = "/root/test"
     implicit val executionContext: ExecutionContextExecutor = ExecutionContext.global
     implicit val timeout: Timeout = fd"10 second"
-    val client = SchedulerClient.create(ip, 5551, ip)
+    val client = SchedulerClient(ip, 5551, ip)
     val future = client
       .executeAll("test", Task(
         "test",
@@ -74,7 +74,7 @@ object Test {
     import com.oceanum.client.Implicits._
     implicit val timeout: Timeout = fd"10 second"
     scala.io.StdIn.readLine()
-    val client = SchedulerClient.create(ip, 5555, ip)
+    val client = SchedulerClient(ip, 5555, ip)
     scala.io.StdIn.readLine()
     println("handle cluster metrics")
     val hook = client.handleClusterMetrics("2s")(println)

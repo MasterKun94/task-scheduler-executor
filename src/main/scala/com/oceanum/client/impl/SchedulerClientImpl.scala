@@ -1,6 +1,6 @@
 package com.oceanum.client.impl
 
-import akka.actor.{ActorPaths, ActorRef, PoisonPill, Props}
+import akka.actor.{Actor, ActorPaths, ActorRef, PoisonPill, Props}
 import akka.cluster.client.{ClusterClient, ClusterClientSettings}
 import akka.pattern.ask
 import akka.util.Timeout
@@ -44,7 +44,10 @@ class SchedulerClientImpl(endpoint: ActorRef)(implicit executionContext: Executi
   }
 
   override def handleClusterMetrics(interval: String)(handler: ClusterMetricsResponse => Unit): ShutdownHook = {
-    val handlerActor = Environment.CLIENT_SYSTEM.actorOf(Props(new HandlerActor(handler)))
+    val receive: Actor.Receive = {
+      case res: ClusterMetricsResponse => handler(res)
+    }
+    val handlerActor = Environment.CLIENT_SYSTEM.actorOf(Props(new HandlerActor(receive)))
     metricsClient.tell(ClusterMetricsRequest(interval, interval), handlerActor)
     new ShutdownHook {
       override def kill(): Future[Boolean] = {
@@ -55,7 +58,10 @@ class SchedulerClientImpl(endpoint: ActorRef)(implicit executionContext: Executi
   }
 
   override def handleClusterInfo(interval: String)(handler: ClusterInfoResponse => Unit): ShutdownHook = {
-    val handlerActor = Environment.CLIENT_SYSTEM.actorOf(Props(new HandlerActor(handler)))
+    val receive: Actor.Receive = {
+      case res: ClusterInfoResponse => handler(res)
+    }
+    val handlerActor = Environment.CLIENT_SYSTEM.actorOf(Props(new HandlerActor(receive)))
     metricsClient.tell(ClusterInfoRequest(interval, interval), handlerActor)
     new ShutdownHook {
       override def kill(): Future[Boolean] = {
@@ -84,7 +90,7 @@ object SchedulerClientImpl {
   }
 
 
-  def create(host: String, port: Int, seedNodes: String)(implicit timeout: Timeout): SchedulerClient = {
+  def apply(host: String, port: Int, seedNodes: String)(implicit timeout: Timeout): SchedulerClient = {
 
     import ExecutionContext.Implicits.global
     Environment.load(Environment.Key.HOST, host)
