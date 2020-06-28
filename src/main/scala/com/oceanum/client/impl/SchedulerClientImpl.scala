@@ -1,21 +1,19 @@
 package com.oceanum.client.impl
 
-import akka.actor.{ActorPaths, ActorRef, ActorSystem, Props}
+import akka.actor.{ActorPaths, ActorRef, PoisonPill, Props}
 import akka.cluster.client.{ClusterClient, ClusterClientSettings}
 import akka.pattern.ask
 import akka.util.Timeout
-import com.oceanum.ClusterStarter
-import com.oceanum.client.actors.{ClientExecutor, ClientListener, ExecutorFinder}
+import com.oceanum.ShutdownHook
+import com.oceanum.client.actors.{ClientExecutor, ClientListener, ExecutorFinder, HandlerActor}
 import com.oceanum.client.{SchedulerClient, StateHandler, Task, TaskInstance}
-import com.oceanum.cluster._
-import com.oceanum.common.{AvailableExecutorRequest, AvailableExecutorResponse, AvailableExecutorsRequest, Environment, ExecuteOperatorRequest}
-import com.typesafe.config.{Config, ConfigFactory}
+import com.oceanum.common._
 
-import scala.collection.JavaConversions.seqAsJavaList
-import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
 
 class SchedulerClientImpl(endpoint: ActorRef)(implicit executionContext: ExecutionContext, timeout: Timeout) extends SchedulerClient {
+  private lazy val metricsClient = Environment.CLIENT_SYSTEM.actorOf(Props(classOf[ExecutorFinder], endpoint, executionContext), "metrics-client")
+
   override def execute(topic: String, task: Task, stateHandler: StateHandler = StateHandler.empty()): Future[TaskInstance] = {
     doExecute(AvailableExecutorRequest(topic), task, stateHandler)
   }
@@ -24,12 +22,12 @@ class SchedulerClientImpl(endpoint: ActorRef)(implicit executionContext: Executi
     doExecute(AvailableExecutorsRequest(topic, timeWait), task, stateHandler)
   }
 
-  private def getClient(executionContext: ExecutionContext): ActorRef = {
+  private def getClient(implicit executionContext: ExecutionContext): ActorRef = {
     Environment.CLIENT_SYSTEM.actorOf(Props(classOf[ExecutorFinder], endpoint, executionContext), "client-actor")
   }
 
   private def doExecute(requestMsg: Any, task: Task, stateHandler: StateHandler = StateHandler.empty()): Future[TaskInstance] = {
-    val client = getClient(executionContext)
+    val client = getClient
     client
       .ask(requestMsg)
       .mapTo[AvailableExecutorResponse]
@@ -44,9 +42,48 @@ class SchedulerClientImpl(endpoint: ActorRef)(implicit executionContext: Executi
         Future.sequence(res).map(TaskInstance(_))
       })
   }
+
+  override def handleClusterMetrics(interval: String)(handler: ClusterMetricsResponse => Unit): ShutdownHook = {
+    val handlerActor = Environment.CLIENT_SYSTEM.actorOf(Props(new HandlerActor(handler)))
+    metricsClient.tell(ClusterMetricsRequest(interval, interval), handlerActor)
+    new ShutdownHook {
+      override def kill(): Future[Boolean] = {
+        handlerActor ! PoisonPill
+        metricsClient.ask(ClusterMetricsStopRequest(handlerActor)).mapTo
+      }
+    }
+  }
+
+  override def handleClusterInfo(interval: String)(handler: ClusterInfoResponse => Unit): ShutdownHook = {
+    val handlerActor = Environment.CLIENT_SYSTEM.actorOf(Props(new HandlerActor(handler)))
+    metricsClient.tell(ClusterInfoRequest(interval, interval), handlerActor)
+    new ShutdownHook {
+      override def kill(): Future[Boolean] = {
+        handlerActor ! PoisonPill
+        metricsClient.ask(ClusterInfoStopRequest(handlerActor)).mapTo
+      }
+    }
+  }
 }
 
 object SchedulerClientImpl {
+  private lazy val clientSystem = Environment.CLIENT_SYSTEM
+  private lazy val clusterClient = {
+    //先放一个contact-point, 系统会自动增加其它的点
+    val initialContacts = Environment.CLUSTER_NODE_SEEDS
+      .map(s => s + "/system/receptionist")
+      .map(ActorPaths.fromString)
+      .toSet
+    val client = clientSystem.actorOf(
+      ClusterClient.props(
+        ClusterClientSettings(clientSystem)
+          .withInitialContacts(initialContacts)),
+      "client-endpoint")
+    clientSystem.actorOf(Props(classOf[ClientListener], client), "client-event-listener")
+    client
+  }
+
+
   def create(host: String, port: Int, seedNodes: String)(implicit timeout: Timeout): SchedulerClient = {
 
     import ExecutionContext.Implicits.global
@@ -60,19 +97,6 @@ object SchedulerClientImpl {
       .map(arr => if (arr.length == 1) arr :+ "3551" else arr)
       .map(_.mkString(":"))
     Environment.load(Environment.Key.CLUSTER_NODE_SEEDS, seeds.mkString(","))
-
-    //先放一个contact-point, 系统会自动增加其它的点
-    val initialContacts = Environment.CLUSTER_NODE_SEEDS
-      .map(s => s + "/system/receptionist")
-      .map(ActorPaths.fromString)
-      .toSet
-    val clientSystem = Environment.CLIENT_SYSTEM
-    val clusterClient = clientSystem.actorOf(
-      ClusterClient.props(
-        ClusterClientSettings(clientSystem)
-          .withInitialContacts(initialContacts)),
-      "client-endpoint")
-    val actor = clientSystem.actorOf(Props(classOf[ClientListener], clusterClient), "client-event-listener")
     new SchedulerClientImpl(clusterClient)
   }
 }

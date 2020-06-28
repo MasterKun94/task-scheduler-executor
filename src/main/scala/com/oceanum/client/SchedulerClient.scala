@@ -1,8 +1,9 @@
 package com.oceanum.client
 
 import akka.util.Timeout
+import com.oceanum.ShutdownHook
 import com.oceanum.client.impl.SchedulerClientImpl
-import com.oceanum.common.Environment
+import com.oceanum.common.{ClusterInfoResponse, ClusterMetricsResponse, Environment}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -18,6 +19,10 @@ trait SchedulerClient {
   def executeAll(topic: String,
                  task: Task,
                  stateHandler: StateHandler = StateHandler.empty(), timeWait: String = "3s"): Future[TaskInstance]
+
+  def handleClusterMetrics(interval: String)(handler: ClusterMetricsResponse => Unit): ShutdownHook
+
+  def handleClusterInfo(interval: String)(handler: ClusterInfoResponse => Unit): ShutdownHook
 }
 
 object SchedulerClient {

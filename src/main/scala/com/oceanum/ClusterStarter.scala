@@ -26,10 +26,4 @@ object ClusterStarter {
     system.actorOf(Props(classOf[ReceptionistListener], receptionist),"event-listener")
     MetricsListener.start()
   }
-
-  private def str2arr(string: String): Array[String] = {
-    string.split(",")
-      .map(_.trim)
-      .filter(_.nonEmpty)
-  }
 }

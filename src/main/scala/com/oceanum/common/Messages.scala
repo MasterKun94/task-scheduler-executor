@@ -1,56 +1,73 @@
 package com.oceanum.common
 
 import akka.actor.ActorRef
+import akka.cluster.ClusterEvent.CurrentClusterState
+import akka.cluster.metrics.NodeMetrics
 import com.oceanum.client.{StateHandler, Task}
 
 trait Message {}
-@SerialVersionUID(11111000L)
+@SerialVersionUID(1L)
 case class PrepareMessage(message: Any) extends Message
-@SerialVersionUID(11111001L)
+@SerialVersionUID(1L)
 case class RunningMessage(message: Any) extends Message
-@SerialVersionUID(11111002L)
+@SerialVersionUID(1L)
 case class FailedMessage(message: Any) extends Message
-@SerialVersionUID(11111003L)
+@SerialVersionUID(1L)
 case class SuccessMessage(message: Any) extends Message
-@SerialVersionUID(11111004L)
+@SerialVersionUID(1L)
 case class RetryMessage(message: Any) extends Message
-@SerialVersionUID(11111005L)
+@SerialVersionUID(1L)
 case class KillMessage(message: Any) extends Message
-@SerialVersionUID(11111006L)
+@SerialVersionUID(1L)
 case class TimeoutMessage(message: Any) extends Message
-@SerialVersionUID(11111007L)
+@SerialVersionUID(1L)
 case class StartMessage(message: Any) extends Message
 
-@SerialVersionUID(11111008L)
+@SerialVersionUID(1L)
 case object KillAction extends Message
-@SerialVersionUID(11111009L)
+@SerialVersionUID(1L)
 case object TerminateAction extends Message
-@SerialVersionUID(11111010L)
+@SerialVersionUID(1L)
 case object CheckState extends Message
 
-@SerialVersionUID(11111011L)
+@SerialVersionUID(1L)
 case class AvailableExecutorRequest(topic: String) extends Message
-@SerialVersionUID(11111012L)
+@SerialVersionUID(1L)
 case class AvailableExecutorsRequest(topic: String, maxWait: String) extends Message
-@SerialVersionUID(11111013L)
+@SerialVersionUID(1L)
 case class AvailableExecutorResponse(executor: TraversableOnce[AvailableExecutor]) extends Message
-@SerialVersionUID(11111014L)
+@SerialVersionUID(1L)
 case class AvailableExecutor(actor: ActorRef, queueSize: Int, topics: Seq[String]) extends Message
-@SerialVersionUID(11111015L)
+@SerialVersionUID(1L)
 case class ExecuteOperatorRequest(operatorMessage: Task, stateHandler: StateHandler) extends Message
-@SerialVersionUID(11111016L)
+@SerialVersionUID(1L)
 case class ExecuteOperatorResponse(operatorMessage: Task, stateHandler: StateHandler) extends Message
-@SerialVersionUID(11111017L)
+@SerialVersionUID(1L)
 case class HandleState(handler: StateHandler) extends Message
-@SerialVersionUID(11111018L)
+@SerialVersionUID(1L)
 case class HandleOnComplete(handler: StateHandler) extends Message
 
-@SerialVersionUID(11111019L)
-case object ClusterMetricsRequest extends Message
-@SerialVersionUID(11111020L)
-case object ClusterInfoRequest extends Message
+trait ClusterInfoMessage extends Message
+@SerialVersionUID(1L)
+case class ClusterInfoMessageHolder(message: ClusterInfoMessage, actorRef: ActorRef) extends Message
+@SerialVersionUID(1L)
+case object ClusterMetricsRequest extends ClusterInfoMessage
+@SerialVersionUID(1L)
+case class ClusterMetricsRequest(initialDelay: String, interval: String) extends ClusterInfoMessage
+@SerialVersionUID(1L)
+case class ClusterMetricsStopRequest(handler: ActorRef) extends ClusterInfoMessage
+@SerialVersionUID(1L)
+case class ClusterMetricsResponse(nodeMetrics: Set[NodeMetrics]) extends ClusterInfoMessage
+@SerialVersionUID(1L)
+case object ClusterInfoRequest extends ClusterInfoMessage
+@SerialVersionUID(1L)
+case class ClusterInfoRequest(initialDelay: String, interval: String) extends ClusterInfoMessage
+@SerialVersionUID(1L)
+case class ClusterInfoStopRequest(handler: ActorRef) extends ClusterInfoMessage
+@SerialVersionUID(1L)
+case class ClusterInfoResponse(clusterState: CurrentClusterState) extends ClusterInfoMessage
 
-@SerialVersionUID(11111021L)
+@SerialVersionUID(1L)
 case object Ping extends Message
-@SerialVersionUID(11111022L)
+@SerialVersionUID(1L)
 case object Pong extends Message

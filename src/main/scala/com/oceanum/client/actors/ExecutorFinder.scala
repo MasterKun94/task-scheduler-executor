@@ -3,7 +3,7 @@ package com.oceanum.client.actors
 import akka.actor.{Actor, ActorLogging, ActorRef}
 import akka.cluster.client.ClusterClient.Publish
 import com.oceanum.client.Implicits._
-import com.oceanum.common.{AvailableExecutor, AvailableExecutorRequest, AvailableExecutorResponse, AvailableExecutorsRequest}
+import com.oceanum.common._
 
 import scala.concurrent.ExecutionContext
 
@@ -25,6 +25,9 @@ class ExecutorFinder(clusterClient: ActorRef, executionContext: ExecutionContext
     case req: AvailableExecutorRequest =>
       clusterClient ! Publish(req.topic, req)
       context.become(receiveExecutor(sender()))
+
+    case req: ClusterInfoMessage =>
+      clusterClient ! Publish(Environment.CLUSTER_NODE_METRICS_TOPIC, ClusterInfoMessageHolder(req, sender()))
   }
 
   def receiveExecutors(receiver: ActorRef, executors: Array[AvailableExecutor]): Receive = {

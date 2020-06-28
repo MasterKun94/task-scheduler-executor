@@ -1,30 +1,42 @@
 package com.oceanum.metrics
 
-import akka.actor.{Actor, ActorLogging, ActorRef, PoisonPill, Props}
+import java.util.Date
+
+import akka.actor.{Actor, ActorLogging, ActorRef, Cancellable, PoisonPill, Props}
 import akka.cluster.Cluster
-import akka.cluster.ClusterEvent.CurrentClusterState
-import akka.cluster.metrics.StandardMetrics.{Cpu, HeapMemory}
-import akka.cluster.metrics.{ClusterMetricsChanged, ClusterMetricsExtension, NodeMetrics}
+import akka.cluster.metrics.protobuf.msg.ClusterMetricsMessages
+import akka.cluster.metrics.{ClusterMetricsChanged, ClusterMetricsExtension}
 import akka.cluster.pubsub.DistributedPubSub
 import akka.cluster.pubsub.DistributedPubSubMediator.{Subscribe, Unsubscribe}
 import akka.cluster.singleton.{ClusterSingletonManager, ClusterSingletonManagerSettings}
-import com.oceanum.common.Environment
+import com.oceanum.client.Implicits.DurationHelper
+import com.oceanum.common._
 
-import scala.concurrent.duration.FiniteDuration
+import scala.collection.mutable
+import scala.concurrent.ExecutionContext
 
 class MetricsListener extends Actor with ActorLogging {
   val cluster: Cluster = Cluster(context.system)
   val extension: ClusterMetricsExtension = ClusterMetricsExtension(context.system)
   val mediator: ActorRef = DistributedPubSub(context.system).mediator
+  var clusterMetricsChanged: ClusterMetricsChanged = _
+  implicit val schedulerContext: ExecutionContext = context.system.dispatcher
+  val scheduleNodes: mutable.Map[ActorRef, (Long, Cancellable)] = mutable.Map()
 
   // Subscribe unto ClusterMetricsEvent events.
   override def preStart(): Unit = {
     extension.subscribe(self)
-    import scala.concurrent.ExecutionContext.Implicits.global
-    context.system.scheduler.schedule(FiniteDuration(5L, "s"), FiniteDuration(5L, "s")) {
-      println(cluster.state)
-    }
     mediator ! Subscribe(Environment.CLUSTER_NODE_METRICS_TOPIC, self)
+    context.system.scheduler.schedule(fd"20s", fd"20s") {
+      for (actor <- scheduleNodes.keys) {
+        val (time, cancellable) = scheduleNodes(actor)
+        if (System.currentTimeMillis() - time > fd"100s".toMillis) {
+          scheduleNodes.remove(actor)
+          cancellable.cancel()
+        }
+        actor ! Ping
+      }
+    }
   }
  
   // Unsubscribe from ClusterMetricsEvent events.
@@ -33,23 +45,54 @@ class MetricsListener extends Actor with ActorLogging {
     mediator ! Unsubscribe(Environment.CLUSTER_NODE_METRICS_TOPIC, self)
   }
  
-  def receive = {
+  def receive: Receive = {
+    case m: ClusterMetricsChanged ⇒
+      clusterMetricsChanged = m
 
-    case ClusterMetricsChanged(clusterMetrics) ⇒
-      clusterMetrics.flatMap(f => f.metrics).foreach(m => println("metric: " + m))
-      println()
+    case ClusterInfoMessageHolder(message: ClusterInfoMessage, actor: ActorRef) => message match {
 
-    case state: CurrentClusterState ⇒ println("state: " + state)
+      case ClusterMetricsRequest(initialDelay, interval) =>
+        val scheduler = context.system.scheduler
+        val hook = scheduler.schedule(fd"$initialDelay", fd"$interval") {
+          self.tell(ClusterInfoMessageHolder(ClusterMetricsRequest, actor), actor)
+        }
+        scheduleNodes.put(actor, (System.currentTimeMillis(), hook))
 
-    case unknown => println("unknown: " + unknown)
+      case ClusterMetricsStopRequest(handler) =>
+        actor ! removeScheduleNodes(handler)
+
+      case ClusterMetricsRequest =>
+        actor ! ClusterMetricsResponse(clusterMetricsChanged.nodeMetrics)
+
+      case ClusterInfoRequest(initialDelay, interval) =>
+        val scheduler = context.system.scheduler
+        val hook = scheduler.schedule(fd"$initialDelay", fd"$interval") {
+          self.tell(ClusterInfoMessageHolder(ClusterInfoRequest, actor), actor)
+        }
+        scheduleNodes.put(actor, (System.currentTimeMillis(), hook))
+
+      case ClusterInfoStopRequest(handler) =>
+        actor ! removeScheduleNodes(handler)
+
+      case ClusterInfoRequest =>
+        actor ! ClusterInfoResponse(cluster.state)
+    }
+
+    case Pong =>
+      scheduleNodes.put(sender(), scheduleNodes(sender()).copy(_1 = System.currentTimeMillis()))
+
+    case unknown =>
+      println("unknown: " + unknown)
   }
- 
-  def logHeap(nodeMetrics: NodeMetrics): Unit = nodeMetrics match {
-    case HeapMemory(address, timestamp, used, committed, max) ⇒
-      log.info("Used heap: {} MB", used.doubleValue / 1024 / 1024)
-    case Cpu(address, timestamp, Some(systemLoadAverage), cpuCombined, cpuStolen, processors) ⇒
-      log.info("Load: {} ({} processors)", systemLoadAverage, processors)
-    case m ⇒
+
+  private def removeScheduleNodes(actorRef: ActorRef): Boolean = {
+    scheduleNodes.remove(actorRef) match {
+      case Some((_, cancellable)) =>
+        cancellable.cancel()
+        true
+      case None =>
+        false
+    }
   }
 }
 
