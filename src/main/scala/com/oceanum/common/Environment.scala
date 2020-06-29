@@ -10,8 +10,9 @@ import com.typesafe.config.ConfigFactory
 
 import scala.collection.JavaConversions.seqAsJavaList
 import scala.concurrent.ExecutionContext
-import scala.concurrent.duration.Duration
+import scala.concurrent.duration.{Duration, FiniteDuration}
 import scala.util.matching.Regex
+import com.oceanum.client.Implicits.DurationHelper
 
 /**
  * @author chenmingkun
@@ -37,7 +38,7 @@ object Environment {
   lazy val EXEC_SHELL_ENABLED: Boolean = getProperty(Key.EXEC_SHELL_ENABLED, "true").toBoolean
   lazy val EXEC_WORK_DIR: String = getProperty(Key.EXEC_WORK_DIR, "")
   lazy val EXEC_THREAD_NUM: Int = getProperty(Key.EXEC_THREAD_NUM, "16").toInt
-  lazy val EXEC_MAX_TIMEOUT: Duration = Duration(getProperty(Key.EXEC_MAX_TIMEOUT, "24h"))
+  lazy val EXEC_MAX_TIMEOUT: FiniteDuration = fd"${getProperty(Key.EXEC_MAX_TIMEOUT, "24h")}"
 
   lazy val HOST: String = getProperty(Key.HOST, "127.0.0.1")
   lazy val CLUSTER_NODE_SYSTEM_NAME: String = getProperty(Key.CLUSTER_NODE_SYSTEM_NAME, "cluster")

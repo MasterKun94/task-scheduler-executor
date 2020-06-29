@@ -19,13 +19,11 @@ import scala.concurrent.{ExecutionContextExecutor, Future}
  * @author chenmingkun
  * @date 2020/6/25
  */
-object FileServer extends Log {
+object FileServer extends Log(Environment.FILE_SERVER_SYSTEM) {
   private val host = Environment.HOST
   private val port = Environment.FILE_SERVER_PORT
   private val chunkSize = Environment.FILE_SERVER_CHUNK_SIZE
   private val basePath = Environment.FILE_SERVER_BASE_PATH
-
-  private implicit lazy val httpSys: ActorSystem = Environment.FILE_SERVER_SYSTEM
   private implicit lazy val httpMat: ActorMaterializer = ActorMaterializer()
 
   private def fileStream(filePath: String): Source[ByteString, Future[IOResult]] = {

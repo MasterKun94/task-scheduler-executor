@@ -19,13 +19,12 @@ import scala.util.{Failure, Success}
  * @author chenmingkun
  * @date 2020/6/25
  */
-object FileClient extends Log {
+object FileClient extends Log(Environment.FILE_SERVER_SYSTEM) {
 
-  private implicit lazy val sys: ActorSystem = Environment.FILE_SERVER_SYSTEM
   private implicit lazy val mat: ActorMaterializer = ActorMaterializer()
-  private implicit lazy val ec: ExecutionContextExecutor = sys.dispatcher
+  private implicit lazy val ec: ExecutionContextExecutor = system.dispatcher
   private implicit lazy val reqNumMax: Int = 100
-  private lazy val http = Http(sys)
+  private lazy val http = Http()
 
   def transfer(srcHost: String, srcPath: String, destHost: String, destPath: String): Future[Unit] = {
     val srcHost0 = getHost(srcHost)

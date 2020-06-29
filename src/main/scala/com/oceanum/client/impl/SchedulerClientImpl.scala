@@ -12,7 +12,7 @@ import com.oceanum.common._
 import scala.concurrent.{ExecutionContext, Future}
 
 class SchedulerClientImpl(endpoint: ActorRef)(implicit executionContext: ExecutionContext, timeout: Timeout) extends SchedulerClient {
-  private lazy val metricsClient = Environment.CLIENT_SYSTEM.actorOf(Props(classOf[ExecutorFinder], endpoint, executionContext), "metrics-client")
+  private lazy val metricsClient = Environment.CLIENT_SYSTEM.actorOf(Props(classOf[ExecutorFinder], endpoint), "metrics-client")
 
   override def execute(topic: String, task: Task, stateHandler: StateHandler = StateHandler.empty()): Future[TaskInstance] = {
     doExecute(AvailableExecutorRequest(topic), task, stateHandler)
@@ -23,7 +23,7 @@ class SchedulerClientImpl(endpoint: ActorRef)(implicit executionContext: Executi
   }
 
   private def getClient(implicit executionContext: ExecutionContext): ActorRef = {
-    Environment.CLIENT_SYSTEM.actorOf(Props(classOf[ExecutorFinder], endpoint, executionContext), "client-actor")
+    Environment.CLIENT_SYSTEM.actorOf(Props(classOf[ExecutorFinder], endpoint), "client-actor")
   }
 
   private def doExecute(requestMsg: Any, task: Task, stateHandler: StateHandler = StateHandler.empty()): Future[TaskInstance] = {

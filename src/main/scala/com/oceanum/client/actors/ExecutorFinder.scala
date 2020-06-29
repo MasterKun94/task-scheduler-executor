@@ -11,14 +11,13 @@ import scala.concurrent.ExecutionContext
  * @author chenmingkun
  * @date 2020/5/3
  */
-class ExecutorFinder(clusterClient: ActorRef, executionContext: ExecutionContext) extends Actor with ActorLogging {
-  implicit private val ec: ExecutionContext = executionContext
+class ExecutorFinder(clusterClient: ActorRef) extends Actor with ActorLogging {
 
   override def receive: Receive = {
     case req: AvailableExecutorsRequest =>
       clusterClient ! Publish(req.topic, AvailableExecutorRequest(req.topic))
       context.become(receiveExecutors(sender(), Array.empty))
-      context.system.scheduler.scheduleOnce(fd"${req.maxWait}") {
+      Scheduler.scheduleOnce(fd"${req.maxWait}") {
         self ! req
       }
 
@@ -34,7 +33,7 @@ class ExecutorFinder(clusterClient: ActorRef, executionContext: ExecutionContext
     case executor: AvailableExecutor =>
       context.become(receiveExecutors(receiver, executors :+ executor))
 
-    case req: AvailableExecutorsRequest =>
+    case _: AvailableExecutorsRequest =>
       receiver ! AvailableExecutorResponse(executors)
       context.stop(self)
   }

@@ -9,4 +9,5 @@ import akka.event.{Logging, LoggingAdapter}
  */
 class Log(actorSystem: => ActorSystem = Environment.CLUSTER_NODE_SYSTEM) {
   lazy val log: LoggingAdapter = Logging.getLogger(actorSystem, this)
+  implicit lazy val system: ActorSystem = actorSystem
 }

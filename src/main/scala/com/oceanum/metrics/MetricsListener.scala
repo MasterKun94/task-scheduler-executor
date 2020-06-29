@@ -10,6 +10,7 @@ import akka.cluster.pubsub.DistributedPubSub
 import akka.cluster.pubsub.DistributedPubSubMediator.{Subscribe, Unsubscribe}
 import akka.cluster.singleton.{ClusterSingletonManager, ClusterSingletonManagerSettings}
 import com.oceanum.client.Implicits.DurationHelper
+import com.oceanum.common.Scheduler.schedule
 import com.oceanum.common._
 
 import scala.collection.mutable
@@ -20,14 +21,13 @@ class MetricsListener extends Actor with ActorLogging {
   val extension: ClusterMetricsExtension = ClusterMetricsExtension(context.system)
   val mediator: ActorRef = DistributedPubSub(context.system).mediator
   var clusterMetricsChanged: ClusterMetricsChanged = _
-  implicit val schedulerContext: ExecutionContext = context.system.dispatcher
   val scheduleNodes: mutable.Map[ActorRef, (Long, Cancellable)] = mutable.Map()
 
   // Subscribe unto ClusterMetricsEvent events.
   override def preStart(): Unit = {
     extension.subscribe(self)
     mediator ! Subscribe(Environment.CLUSTER_NODE_METRICS_TOPIC, self)
-    context.system.scheduler.schedule(fd"20s", fd"20s") {
+    schedule(fd"20s", fd"20s") {
       for (actor <- scheduleNodes.keys) {
         val (time, cancellable) = scheduleNodes(actor)
         if (System.currentTimeMillis() - time > fd"100s".toMillis) {
@@ -52,8 +52,7 @@ class MetricsListener extends Actor with ActorLogging {
     case ClusterInfoMessageHolder(message: ClusterInfoMessage, actor: ActorRef) => message match {
 
       case ClusterMetricsRequest(initialDelay, interval) =>
-        val scheduler = context.system.scheduler
-        val hook = scheduler.schedule(fd"$initialDelay", fd"$interval") {
+        val hook = schedule(fd"$initialDelay", fd"$interval") {
           self.tell(ClusterInfoMessageHolder(ClusterMetricsRequest, actor), actor)
         }
         scheduleNodes.put(actor, (System.currentTimeMillis(), hook))
@@ -65,8 +64,7 @@ class MetricsListener extends Actor with ActorLogging {
         actor ! ClusterMetricsResponse(clusterMetricsChanged.nodeMetrics)
 
       case ClusterInfoRequest(initialDelay, interval) =>
-        val scheduler = context.system.scheduler
-        val hook = scheduler.schedule(fd"$initialDelay", fd"$interval") {
+        val hook = schedule(fd"$initialDelay", fd"$interval") {
           self.tell(ClusterInfoMessageHolder(ClusterInfoRequest, actor), actor)
         }
         scheduleNodes.put(actor, (System.currentTimeMillis(), hook))

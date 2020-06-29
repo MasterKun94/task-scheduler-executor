@@ -23,8 +23,8 @@ object Test {
 
   def startClient(args: Array[String]): Unit = {
     import com.oceanum.client.Implicits._
-//    val path = "C:\\Users\\chenmingkun\\work\\idea\\work\\task-scheduler-core\\task-scheduler-executor\\src\\main\\resources"
-    val path = "E:\\chenmingkun\\task-scheduler-executor\\src\\main\\resources"
+    val path = "C:\\Users\\chenmingkun\\work\\idea\\work\\task-scheduler-core\\task-scheduler-executor\\src\\main\\resources"
+//    val path = "E:\\chenmingkun\\task-scheduler-executor\\src\\main\\resources"
 //    val path = "/root/test"
     implicit val executionContext: ExecutionContextExecutor = ExecutionContext.global
     implicit val timeout: Timeout = fd"10 second"
@@ -70,26 +70,26 @@ object Test {
 
   def main(args: Array[String]): Unit = {
     startCluster(args)
-    //    MetricsListener.start()
-    import com.oceanum.client.Implicits._
-    implicit val timeout: Timeout = fd"10 second"
-
-    scala.io.StdIn.readLine()
-    val client = SchedulerClient(ip, 5555, ip)
-    scala.io.StdIn.readLine()
-    println("handle cluster metrics")
-    val hook = client.handleClusterMetrics("2s") { m =>
-      m.nodeMetrics.foreach(println)
-    }
-    scala.io.StdIn.readLine()
-    println("stop handle cluster metrics")
-    hook.kill()
-    scala.io.StdIn.readLine()
-    println("handle cluster info")
-    val hook1 = client.handleClusterInfo("2s")(println)
-    scala.io.StdIn.readLine()
-    println("stop handle cluster info")
-    hook1.kill()
+//    //    MetricsListener.start()
+//    import com.oceanum.client.Implicits._
+//    implicit val timeout: Timeout = fd"10 second"
+//
+//    scala.io.StdIn.readLine()
+//    val client = SchedulerClient(ip, 5555, ip)
+//    scala.io.StdIn.readLine()
+//    println("handle cluster metrics")
+//    val hook = client.handleClusterMetrics("2s") { m =>
+//      m.nodeMetrics.foreach(println)
+//    }
+//    scala.io.StdIn.readLine()
+//    println("stop handle cluster metrics")
+//    hook.kill()
+//    scala.io.StdIn.readLine()
+//    println("handle cluster info")
+//    val hook1 = client.handleClusterInfo("2s")(println)
+//    scala.io.StdIn.readLine()
+//    println("stop handle cluster info")
+//    hook1.kill()
     scala.io.StdIn.readLine()
     startClient(args)
   }
