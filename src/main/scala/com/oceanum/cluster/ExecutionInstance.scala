@@ -4,7 +4,7 @@ import akka.actor.{Actor, ActorLogging, ActorRef, Cancellable}
 import com.oceanum.client.Implicits._
 import com.oceanum.client.StateHandler
 import com.oceanum.cluster.exec.State._
-import com.oceanum.cluster.exec.{EventListener, ExecuteManager, ExecutorHook}
+import com.oceanum.cluster.exec.{EventListener, RunnerManager, Hook}
 import com.oceanum.common._
 
 import scala.concurrent.duration.FiniteDuration
@@ -63,7 +63,7 @@ class ExecutionInstance extends Actor with ActorLogging {
       val operator = operatorMessage.toOperator(listener)
       val finiteDuration = fd"${handler.checkInterval()}"
       log.info("receive operator: [{}], receive schedule check state request from [{}], start schedule with duration [{}]", operator, sender, finiteDuration)
-      implicit val hook: ExecutorHook = ExecuteManager.submit(operator)
+      implicit val hook: Hook = RunnerManager.submit(operator)
       implicit val cancelable: Cancellable = context
         .system.scheduler
         .schedule(finiteDuration, finiteDuration) {
@@ -75,39 +75,39 @@ class ExecutionInstance extends Actor with ActorLogging {
     case message => println("unknown message: " + message)
   }
 
-  private val offline_ : (ExecutorHook, Cancellable, ClientHolder) => Receive = offline(_, _, _)
-  private val prepare_ : (ExecutorHook, Cancellable, ClientHolder) => Receive  = prepare(_, _, _)
-  private val start_ : (ExecutorHook, Cancellable, ClientHolder) => Receive  = start(_, _, _)
-  private val running_ : (ExecutorHook, Cancellable, ClientHolder) => Receive  = running(_, _, _)
-  private val retry_ : (ExecutorHook, Cancellable, ClientHolder) => Receive  = retry(_, _, _)
-  private val timeout_ : (ExecutorHook, Cancellable, ClientHolder) => Receive  = timeout(_, _, _)
-  private val success_ : (ExecutorHook, Cancellable, ClientHolder) => Receive  = success(_, _, _)
-  private val failed_ : (ExecutorHook, Cancellable, ClientHolder) => Receive  = failed(_, _, _)
-  private val kill_ : (ExecutorHook, Cancellable, ClientHolder) => Receive  = kill(_, _, _)
+  private val offline_ : (Hook, Cancellable, ClientHolder) => Receive = offline(_, _, _)
+  private val prepare_ : (Hook, Cancellable, ClientHolder) => Receive  = prepare(_, _, _)
+  private val start_ : (Hook, Cancellable, ClientHolder) => Receive  = start(_, _, _)
+  private val running_ : (Hook, Cancellable, ClientHolder) => Receive  = running(_, _, _)
+  private val retry_ : (Hook, Cancellable, ClientHolder) => Receive  = retry(_, _, _)
+  private val timeout_ : (Hook, Cancellable, ClientHolder) => Receive  = timeout(_, _, _)
+  private val success_ : (Hook, Cancellable, ClientHolder) => Receive  = success(_, _, _)
+  private val failed_ : (Hook, Cancellable, ClientHolder) => Receive  = failed(_, _, _)
+  private val kill_ : (Hook, Cancellable, ClientHolder) => Receive  = kill(_, _, _)
   case class ClientHolder(client: ActorRef)
 
-  private def offline(implicit hook: ExecutorHook, cancellable: Cancellable, client: ClientHolder): Receive = {
+  private def offline(implicit hook: Hook, cancellable: Cancellable, client: ClientHolder): Receive = {
     caseCheckState(OFFLINE, offline_)
       .orElse(caseKillAction)
       .orElse(casePrepare)
       .orElse(caseKill)
   }
 
-  private def prepare(implicit hook: ExecutorHook, cancellable: Cancellable, client: ClientHolder): Receive = {
+  private def prepare(implicit hook: Hook, cancellable: Cancellable, client: ClientHolder): Receive = {
     caseCheckState(PREPARE, prepare_)
       .orElse(caseKillAction)
       .orElse(caseStart)
       .orElse(caseKill)
   }
 
-  private def start(implicit hook: ExecutorHook, cancellable: Cancellable, client: ClientHolder): Receive = {
+  private def start(implicit hook: Hook, cancellable: Cancellable, client: ClientHolder): Receive = {
     caseCheckState(START, start_)
       .orElse(caseKillAction)
       .orElse(caseRunning)
       .orElse(caseKill)
   }
 
-  private def running(implicit hook: ExecutorHook, cancellable: Cancellable, client: ClientHolder): Receive = {
+  private def running(implicit hook: Hook, cancellable: Cancellable, client: ClientHolder): Receive = {
     caseCheckState(RUNNING, running_)
       .orElse(caseKillAction)
       .orElse(caseSuccess)
@@ -117,14 +117,14 @@ class ExecutionInstance extends Actor with ActorLogging {
       .orElse(caseKill)
   }
 
-  private def retry(implicit hook: ExecutorHook, cancellable: Cancellable, client: ClientHolder): Receive = {
+  private def retry(implicit hook: Hook, cancellable: Cancellable, client: ClientHolder): Receive = {
     caseCheckState(RETRY, retry_)
       .orElse(caseKillAction)
       .orElse(casePrepare)
       .orElse(caseKill)
   }
 
-  private def timeout(implicit hook: ExecutorHook, cancellable: Cancellable, client: ClientHolder): Receive = {
+  private def timeout(implicit hook: Hook, cancellable: Cancellable, client: ClientHolder): Receive = {
     caseCheckState(TIMEOUT, timeout_)
       .orElse(caseKillAction)
       .orElse(caseRetry)
@@ -132,23 +132,23 @@ class ExecutionInstance extends Actor with ActorLogging {
       .orElse(caseKill)
   }
 
-  private def success(implicit hook: ExecutorHook, cancellable: Cancellable, client: ClientHolder): Receive = {
+  private def success(implicit hook: Hook, cancellable: Cancellable, client: ClientHolder): Receive = {
     caseCheckState(SUCCESS, success_)
       .orElse(caseTerminateAction)
   }
 
-  private def failed(implicit hook: ExecutorHook, cancellable: Cancellable, client: ClientHolder): Receive = {
+  private def failed(implicit hook: Hook, cancellable: Cancellable, client: ClientHolder): Receive = {
     caseCheckState(FAILED, failed_)
       .orElse(caseTerminateAction)
   }
 
-  private def kill(implicit hook: ExecutorHook, cancellable: Cancellable, client: ClientHolder): Receive = {
+  private def kill(implicit hook: Hook, cancellable: Cancellable, client: ClientHolder): Receive = {
     caseCheckState(KILL, kill_)
       .orElse(caseTerminateAction)
       .orElse(caseFailed)
   }
 
-  private def caseCheckState(state: State, receive: (ExecutorHook, Cancellable, ClientHolder) => Receive)(implicit hook: ExecutorHook, cancellable: Cancellable, client: ClientHolder): Receive = {
+  private def caseCheckState(state: State, receive: (Hook, Cancellable, ClientHolder) => Receive)(implicit hook: Hook, cancellable: Cancellable, client: ClientHolder): Receive = {
     case CheckState =>
       log.info("send state: [{}] to sender: [{}]", state, sender)
       sender ! state
@@ -162,13 +162,13 @@ class ExecutionInstance extends Actor with ActorLogging {
       context.become(receive(hook, cancelable, client))
   }
 
-  private def caseKillAction(implicit hook: ExecutorHook, cancellable: Cancellable, client: ClientHolder): Receive = {
+  private def caseKillAction(implicit hook: Hook, cancellable: Cancellable, client: ClientHolder): Receive = {
     case KillAction =>
       hook.kill()
       self ! KillMessage("")
   }
 
-  private def caseTerminateAction(implicit hook: ExecutorHook, cancellable: Cancellable, client: ClientHolder): Receive = {
+  private def caseTerminateAction(implicit hook: Hook, cancellable: Cancellable, client: ClientHolder): Receive = {
     case TerminateAction =>
       log.info("terminate this action")
       if (cancellable != null || !cancellable.isCancelled) {
@@ -181,49 +181,49 @@ class ExecutionInstance extends Actor with ActorLogging {
       context.stop(self)
   }
 
-  private def casePrepare(implicit hook: ExecutorHook, cancellable: Cancellable, client: ClientHolder): Receive = {
+  private def casePrepare(implicit hook: Hook, cancellable: Cancellable, client: ClientHolder): Receive = {
     case _: PrepareMessage =>
       log.info("receive status changing, status: PREPARE")
       context.become(prepare)
       checkState
   }
-  private def caseStart(implicit hook: ExecutorHook, cancellable: Cancellable, client: ClientHolder): Receive = {
+  private def caseStart(implicit hook: Hook, cancellable: Cancellable, client: ClientHolder): Receive = {
     case _: StartMessage =>
       log.info("receive status changing, status: START")
       context.become(start)
       checkState
   }
-  private def caseRunning(implicit hook: ExecutorHook, cancellable: Cancellable, client: ClientHolder): Receive = {
+  private def caseRunning(implicit hook: Hook, cancellable: Cancellable, client: ClientHolder): Receive = {
     case _: RunningMessage =>
       log.info("receive status changing, status: RUNNING")
       context.become(running)
       checkState
   }
-  private def caseSuccess(implicit hook: ExecutorHook, cancellable: Cancellable, client: ClientHolder): Receive = {
+  private def caseSuccess(implicit hook: Hook, cancellable: Cancellable, client: ClientHolder): Receive = {
     case _: SuccessMessage =>
       log.info("receive status changing, status: SUCCESS")
       context.become(success)
       checkState
   }
-  private def caseFailed(implicit hook: ExecutorHook, cancellable: Cancellable, client: ClientHolder): Receive = {
+  private def caseFailed(implicit hook: Hook, cancellable: Cancellable, client: ClientHolder): Receive = {
     case _: FailedMessage =>
       log.info("receive status changing, status: FAILED")
       context.become(failed)
       checkState
   }
-  private def caseRetry(implicit hook: ExecutorHook, cancellable: Cancellable, client: ClientHolder): Receive = {
+  private def caseRetry(implicit hook: Hook, cancellable: Cancellable, client: ClientHolder): Receive = {
     case _: RetryMessage =>
       log.info("receive status changing, status: RETRY")
       context.become(retry)
       checkState
   }
-  private def caseKill(implicit hook: ExecutorHook, cancellable: Cancellable, client: ClientHolder): Receive = {
+  private def caseKill(implicit hook: Hook, cancellable: Cancellable, client: ClientHolder): Receive = {
     case _: KillMessage =>
       log.info("receive status changing, status: KILL")
       context.become(kill)
       checkState
   }
-  private def caseTimeout(implicit hook: ExecutorHook, cancellable: Cancellable, client: ClientHolder): Receive = {
+  private def caseTimeout(implicit hook: Hook, cancellable: Cancellable, client: ClientHolder): Receive = {
     case _: TimeoutMessage =>
       log.info("receive status changing, status: TIMEOUT")
       context.become(timeout)

@@ -12,10 +12,10 @@ case class Operator[T <: OperatorTask](name: String,
                                        priority: Int,
                                        prop: T,
                                        eventListener: EventListener,
-                                       private val hookRef: AtomicReference[ExecutorHook] = new AtomicReference(),
+                                       private val hookRef: AtomicReference[Hook] = new AtomicReference(),
                                        private val ref: AtomicBoolean = new AtomicBoolean(false)
                                        ) {
-  val hook: ExecutorHook = new ExecutorHook {
+  val hook: Hook = new Hook {
     override def kill(): Boolean = {
       ref.set(true)
       if (hookRef.get() != null) hookRef.get().kill() else false
@@ -26,7 +26,7 @@ case class Operator[T <: OperatorTask](name: String,
     }
   }
 
-  def receive(hook: ExecutorHook): Unit = {
+  def receive(hook: Hook): Unit = {
     hookRef.set(hook)
     if (this.hook.isKilled) {
       hook.kill()

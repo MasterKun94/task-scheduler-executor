@@ -3,7 +3,7 @@ package com.oceanum.cluster
 import akka.actor.{Actor, ActorRef, Props}
 import akka.cluster.pubsub.DistributedPubSub
 import akka.cluster.pubsub.DistributedPubSubMediator.{Subscribe, Unsubscribe}
-import com.oceanum.cluster.exec.ExecuteManager
+import com.oceanum.cluster.exec.RunnerManager
 import com.oceanum.common.{AvailableExecutor, AvailableExecutorRequest, Environment, ExecuteOperatorRequest}
 
 /**
@@ -34,6 +34,6 @@ class ExecutionEndpoint(topics: Seq[String]) extends Actor {
 
 
     case _: AvailableExecutorRequest =>
-      sender() ! AvailableExecutor(self, ExecuteManager.queueSize, Environment.CLUSTER_NODE_TOPICS)
+      sender() ! AvailableExecutor(self, RunnerManager.queueSize, Environment.CLUSTER_NODE_TOPICS)
   }
 }

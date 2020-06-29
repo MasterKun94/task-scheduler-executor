@@ -21,7 +21,7 @@ class ProcessRunner(outputManager: OutputManager) extends TypedRunner[ProcessTas
 
     val prop = operatorProp.prop
     val cmd = prop.propCmd.toList
-    LOGGER.info("exec cmd: [ {} ]", cmd.mkString(" "))
+    log.info("exec cmd: [ {} ]", cmd.mkString(" "))
     val builder: ProcessBuilder = new ProcessBuilder(cmd)
     builder.environment().putAll(prop.propEnv)
     val dir: File = {
@@ -41,7 +41,7 @@ class ProcessRunner(outputManager: OutputManager) extends TypedRunner[ProcessTas
     val error = process.getErrorStream
     outputManager.submit(input, prop.propStdoutHandler)
     outputManager.submit(error, prop.propStderrHandler)
-    val hook = new ShellExecutorHook(process)
+    val hook = new ShellHook(process)
     operatorProp.receive(hook)
     operatorProp.eventListener.running()
     val value =
@@ -68,7 +68,7 @@ class ProcessRunner(outputManager: OutputManager) extends TypedRunner[ProcessTas
     if (hook.isKilled) ExitCode.KILL else ExitCode(value)
   }
 
-  class ShellExecutorHook(process: Process) extends ExecutorHook {
+  class ShellHook(process: Process) extends Hook {
     var ref = new AtomicBoolean(false)
 
     override def kill(): Boolean = {

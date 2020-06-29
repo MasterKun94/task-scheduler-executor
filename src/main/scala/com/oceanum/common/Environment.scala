@@ -74,7 +74,6 @@ object Environment {
   lazy val FILE_SERVER_LOGGER: String = logger
 
   lazy val TASK_RUNNERS: Array[TypedRunner[_ <: OperatorTask]] = Array(new ProcessRunner(OutputManager.global))
-  lazy val SCHEDULE_EXECUTION_CONTEXT: ExecutionContext = ExecutionContext.global
   lazy val PATH_SEPARATOR: String = File.separator
 
   lazy val DEV_MODE: Boolean = getProperty(Key.DEV_MODE, "false").toBoolean
@@ -86,6 +85,7 @@ object Environment {
   }
 
   lazy val logger = "akka.event.slf4j.Slf4jLogger"
+  implicit lazy val SCHEDULE_EXECUTION_CONTEXT: ExecutionContext = ExecutionContext.global
 
   def print(): Unit = {
     import scala.collection.JavaConversions.mapAsScalaMap

@@ -42,7 +42,7 @@ object FileServer extends Log {
         complete(
           HttpEntity(
             ContentTypes.`text/plain(UTF-8)`,
-            file.list().mkString(",\n\r")
+            file.list().mkString(",\r\n")
           )
         )
       } else if (file.isFile) {
@@ -77,7 +77,7 @@ object FileServer extends Log {
         extractDataBytes { bytes =>
           val fut = bytes
             .map(_.utf8String)
-            .map(str => str.split(",\n\r")
+            .map(str => str.split(",\r\n")
               .map(_.split("="))
               .map(arr => (arr(0), arr(1)))
               .toMap

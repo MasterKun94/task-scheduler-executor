@@ -10,7 +10,7 @@ import scala.concurrent.duration.Duration
  * @author chenmingkun
  * @date 2020/4/29
  */
-object ExecuteManager extends Log {
+object RunnerManager extends Log {
   type Prop = Operator[_ <: OperatorTask]
   private val num = Environment.EXEC_THREAD_NUM
   private val exec = RootRunner
@@ -18,7 +18,7 @@ object ExecuteManager extends Log {
   private val delayedMailbox: MailBox[Delayed] = MailBox.delay(p => processDelay(p), 1)
   private val outputManager: OutputManager = OutputManager.global
 
-  def submit(operatorProp: Prop): ExecutorHook = {
+  def submit(operatorProp: Prop): Hook = {
     operatorProp.eventListener.prepare()
     priorityMailbox.send(operatorProp)
     operatorProp.hook
@@ -30,7 +30,7 @@ object ExecuteManager extends Log {
     delayedMailbox.close()
     priorityMailbox.close()
     outputManager.close()
-    LOGGER.info("execute manager closed")
+    log.info("execute manager closed")
   }
 
   private def processDelay(delayed: Delayed): Unit = {
@@ -38,7 +38,7 @@ object ExecuteManager extends Log {
       case closedProp: ClosedProp => closedProp.prop.close()
 
       case retryProp: RetryProp =>
-        LOGGER.debug("resubmit retry task: " + retryProp.prop.name)
+        log.debug("resubmit retry task: " + retryProp.prop.name)
         submit(retryProp.prop)
     }
   }
@@ -52,25 +52,25 @@ object ExecuteManager extends Log {
           val newOperatorProp = operatorProp.retry()
           delayedMailbox.send(RetryProp(newOperatorProp, Duration(newOperatorProp.retryInterval).toMillis))
           operatorProp.eventListener.retry()
-          LOGGER.info("task begin retry: " + operatorProp.name)
+          log.info("task begin retry: " + operatorProp.name)
         } else {
           delayedMailbox.send(ClosedProp(operatorProp.prop))
           operatorProp.eventListener.failed()
-          LOGGER.info("task failed: " + operatorProp.name)
+          log.info("task failed: " + operatorProp.name)
         }
 
       case ExitCode.OK =>
         delayedMailbox.send(ClosedProp(operatorProp.prop))
         operatorProp.eventListener.success()
-        LOGGER.info("task success: " + operatorProp.name)
+        log.info("task success: " + operatorProp.name)
 
       case ExitCode.KILL =>
         delayedMailbox.send(ClosedProp(operatorProp.prop))
         operatorProp.eventListener.kill()
-        LOGGER.info("task kill: " + operatorProp.name)
+        log.info("task kill: " + operatorProp.name)
 
       case unSupport: ExitCode.UN_SUPPORT =>
-        LOGGER.info(s"no executable executor exists for prop ${operatorProp.prop.getClass}")
+        log.info(s"no executable executor exists for prop ${operatorProp.prop.getClass}")
         operatorProp.eventListener.failed(unSupport)
     }
   }

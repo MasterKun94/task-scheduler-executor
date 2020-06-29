@@ -33,7 +33,7 @@ object FileClient extends Log {
     val request = HttpRequest(HttpMethods.PUT, uri = s"http://$destHost0/${Environment.FILE_SERVER_CONTEXT_PATH}/$destPath")
     val data = HttpEntity(
       ContentTypes.`text/plain(UTF-8)`,
-      s"host=$srcHost,\n\rpath=$srcPath"
+      s"host=$srcHost,\r\npath=$srcPath"
     )
     http
       .singleRequest(request.copy(entity = data))
@@ -41,7 +41,7 @@ object FileClient extends Log {
         case HttpResponse(StatusCodes.OK, _, entity, _) =>
           entity.dataBytes
             .map(_.utf8String)
-            .runForeach(str => LOGGER.info(s"Transfer file success from: [$srcHost0/$srcPath] to: [$destHost0/$str]"))
+            .runForeach(str => log.info(s"Transfer file success from: [$srcHost0/$srcPath] to: [$destHost0/$str]"))
             .map(_ => Unit)
         case r: HttpResponse =>
           r.discardEntityBytes()
@@ -60,7 +60,7 @@ object FileClient extends Log {
         case HttpResponse(StatusCodes.OK, _, entity, _) =>
           entity.dataBytes
             .map(_.utf8String)
-            .runForeach(str => LOGGER.info(s"Delete file success from: [$host0/$path]"))
+            .runForeach(str => log.info(s"Delete file success from: [$host0/$path]"))
             .map(_ => Unit)
         case r: HttpResponse =>
           r.discardEntityBytes()
@@ -71,6 +71,7 @@ object FileClient extends Log {
   }
 
   def upload(host: String, srcPath: String, destPath: String): Future[Unit] = {
+
     val host0 = getHost(host)
     val request = HttpRequest(HttpMethods.POST, uri = s"http://$host0/${Environment.FILE_SERVER_CONTEXT_PATH}/$destPath")
     val data = HttpEntity(
@@ -83,7 +84,7 @@ object FileClient extends Log {
         case HttpResponse(StatusCodes.OK, _, entity, _) =>
           entity.dataBytes
             .map(_.utf8String)
-            .runForeach(str => LOGGER.info(s"Save upload file from: [/$srcPath] to: [$host0/$str]"))
+            .runForeach(str => log.info(s"Save upload file from: [/$srcPath] to: [$host0/$str]"))
             .map[Unit](_ => Unit)
         case r: HttpResponse =>
           r.discardEntityBytes()
@@ -92,7 +93,7 @@ object FileClient extends Log {
           Future.failed(new Exception("Unable to upload file!"))
       }
       .andThen {
-        case Failure(err) => LOGGER.warning(s"Upload failed: ${err.getMessage}")
+        case Failure(err) => log.warning(s"Upload failed: ${err.getMessage}")
         case Success(_) =>
       }
   }
@@ -117,12 +118,12 @@ object FileClient extends Log {
               .map(result => result.status)
               .map {
                 case Success(_) =>
-                  LOGGER.info(s"Download file from: [$host0/$srcPath] to: [/$destPath]")
+                  log.info(s"Download file from: [$host0/$srcPath] to: [/$destPath]")
                 case _ =>
               }
           } else if (entity.contentType == ContentTypes.`text/plain(UTF-8)`) {
             entity.dataBytes
-              .map(_.utf8String.split(",\n\r"))
+              .map(_.utf8String.split(",\r\n"))
               .runWith(Sink.collection)
               .map(_.flatten)
               .map(seq => seq.map(sub => download(host, srcPath + "/" + sub, destPath + "/" + sub)))
@@ -139,7 +140,7 @@ object FileClient extends Log {
           Future.failed(new Exception("Unable to download file!"))
       }
       .andThen {
-        case Failure(err) => LOGGER.warning(s"Download failed: ${err.getMessage}")
+        case Failure(err) => log.warning(s"Download failed: ${err.getMessage}")
         case Success(_) =>
       }
   }

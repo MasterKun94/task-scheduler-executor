@@ -2,9 +2,8 @@ package com.oceanum.client.actors
 
 import akka.actor.{Actor, ActorLogging, ActorRef}
 import com.oceanum.client.{StateHandler, TaskInstance}
-import com.oceanum.cluster._
 import com.oceanum.cluster.exec.State._
-import com.oceanum.common.{CheckState, ExecuteOperatorRequest, ExecuteOperatorResponse, HandleOnComplete, HandleState, KillAction, TerminateAction}
+import com.oceanum.common._
 
 class ClientExecutor(executor: ActorRef) extends Actor with ActorLogging {
 

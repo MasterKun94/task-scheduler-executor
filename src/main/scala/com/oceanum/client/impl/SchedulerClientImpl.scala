@@ -47,7 +47,7 @@ class SchedulerClientImpl(endpoint: ActorRef)(implicit executionContext: Executi
     val receive: Actor.Receive = {
       case res: ClusterMetricsResponse => handler(res)
     }
-    val handlerActor = Environment.CLIENT_SYSTEM.actorOf(Props(new HandlerActor(receive)))
+    val handlerActor = Environment.CLIENT_SYSTEM.actorOf(Props(new HandlerActor(_ => receive)))
     metricsClient.tell(ClusterMetricsRequest(interval, interval), handlerActor)
     new ShutdownHook {
       override def kill(): Future[Boolean] = {
@@ -61,7 +61,7 @@ class SchedulerClientImpl(endpoint: ActorRef)(implicit executionContext: Executi
     val receive: Actor.Receive = {
       case res: ClusterInfoResponse => handler(res)
     }
-    val handlerActor = Environment.CLIENT_SYSTEM.actorOf(Props(new HandlerActor(receive)))
+    val handlerActor = Environment.CLIENT_SYSTEM.actorOf(Props(new HandlerActor(_ => receive)))
     metricsClient.tell(ClusterInfoRequest(interval, interval), handlerActor)
     new ShutdownHook {
       override def kill(): Future[Boolean] = {
