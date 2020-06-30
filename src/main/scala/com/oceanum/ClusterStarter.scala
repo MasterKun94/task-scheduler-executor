@@ -2,7 +2,7 @@ package com.oceanum
 
 import akka.actor.Props
 import akka.cluster.client.ClusterClientReceptionist
-import com.oceanum.cluster.{ClusterNode, ExecutionEndpoint, ReceptionistListener}
+import com.oceanum.cluster.{ClusterNode, ExecutionEndpoint, ReceptionistListener, TaskInfoGetter}
 import com.oceanum.common.Environment
 import com.oceanum.metrics.MetricsListener
 /**
@@ -25,5 +25,6 @@ object ClusterStarter {
     val receptionist = ClusterClientReceptionist(system).underlying
     system.actorOf(Props(classOf[ReceptionistListener], receptionist),"event-listener")
     MetricsListener.start()
+    TaskInfoGetter.start
   }
 }

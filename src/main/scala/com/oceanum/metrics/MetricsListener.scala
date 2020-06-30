@@ -60,7 +60,6 @@ class MetricsListener extends Actor with ActorLogging {
       context.become(receive(m))
 
     case taskInfo: NodeTaskInfoResponse =>
-      log.info(taskInfo.toString)
       for (actor <- taskInfoListeners.keys) {
         actor ! taskInfo
       }
@@ -92,19 +91,14 @@ class MetricsListener extends Actor with ActorLogging {
         actor ! ClusterStateResponse(cluster.state)
 
       case NodeTaskInfoRequest(initialDelay, interval) =>
-        log.info(NodeTaskInfoRequest(initialDelay, interval).toString)
-        val hook = schedule(fd"$initialDelay", fd"$interval") {
-          self ! ClusterInfoMessageHolder(NodeTaskInfoRequest, actor)
+        val hook = new  Cancellable {
+          override def cancel(): Boolean = true
+          override def isCancelled: Boolean = true
         }
         taskInfoListeners.put(actor, (System.currentTimeMillis(), hook))
 
       case NodeTaskInfoStopRequest(handler) =>
-        log.info(NodeTaskInfoStopRequest(handler).toString)
         actor ! removeScheduleNodes(handler, taskInfoListeners)
-
-      case NodeTaskInfoRequest =>
-        log.info(NodeTaskInfoRequest.toString)
-//        actor ! RunnerManager.getTaskInfo // TODO
     }
 
     case _: MemberEvent | UnreachableMember =>

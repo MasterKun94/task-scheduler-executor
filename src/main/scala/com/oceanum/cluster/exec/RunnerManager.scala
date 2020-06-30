@@ -3,8 +3,11 @@ package com.oceanum.cluster.exec
 import java.util.concurrent.atomic.AtomicInteger
 
 import akka.actor.ActorRef
+import akka.cluster.client.ClusterClient.Publish
+import akka.cluster.pubsub.DistributedPubSub
 import akka.cluster.singleton.{ClusterSingletonProxy, ClusterSingletonProxySettings}
 import com.oceanum.client.Implicits.DurationHelper
+import com.oceanum.cluster.TaskInfoGetter
 import com.oceanum.common.Scheduler.scheduleOnce
 import com.oceanum.common.{Environment, Log, NodeTaskInfoResponse, Scheduler}
 
@@ -25,14 +28,6 @@ object RunnerManager extends Log {
   private val failedNum: AtomicInteger = new AtomicInteger(0)
   private val killedNum: AtomicInteger = new AtomicInteger(0)
   private val completedNum: AtomicInteger = new AtomicInteger(0)
-  private val metrics: ActorRef = {
-    val proxySettings = ClusterSingletonProxySettings.create(system)
-    system.actorOf(ClusterSingletonProxy.props(s"/cluster/user/${Environment.CLUSTER_NODE_METRICS_NAME}/singleton", proxySettings))
-  }
-  private val cancellable = Scheduler.schedule(fd"5s", fd"5s") { // TODO
-    println(getTaskInfo)
-      metrics ! getTaskInfo
-    }
 
   def getTaskInfo: NodeTaskInfoResponse = {
     NodeTaskInfoResponse(
@@ -47,7 +42,7 @@ object RunnerManager extends Log {
 
   private def updateTask(action: => Unit): Unit = {
     action
-    metrics ! getTaskInfo
+    TaskInfoGetter.trigger()
   }
 
   def submit(operatorProp: Prop): Hook = {
@@ -61,7 +56,7 @@ object RunnerManager extends Log {
   def runningTaskNum: Int = tasks.size
 
   def close(): Unit = {
-    cancellable.cancel()
+    TaskInfoGetter.close()
     priorityMailbox.close()
     outputManager.close()
     log.info("execute manager closed")
