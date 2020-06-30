@@ -90,7 +90,7 @@ class MetricsListener extends Actor with ActorLogging {
       case ClusterStateRequest =>
         actor ! ClusterStateResponse(cluster.state)
 
-      case NodeTaskInfoRequest(initialDelay, interval) =>
+      case NodeTaskInfoRequest(_, _) =>
         val hook = new  Cancellable {
           override def cancel(): Boolean = true
           override def isCancelled: Boolean = true
