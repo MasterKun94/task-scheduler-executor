@@ -24,7 +24,7 @@ trait SchedulerClient {
 
   def handleClusterInfo(interval: String)(handler: ClusterStateResponse => Unit): ShutdownHook
 
-  def handleTaskInfo(interval: String)(handler: NodeTaskInfoResponse => Unit): ShutdownHook
+  def handleTaskInfo(handler: NodeTaskInfoResponse => Unit): ShutdownHook
 }
 
 object SchedulerClient {

@@ -92,7 +92,7 @@ object Test {
 //    hook1.kill()
     scala.io.StdIn.readLine()
     println("handle task info")
-    val hook2 = client.handleTaskInfo("2s")(println)
+    val hook2 = client.handleTaskInfo(println)
     scala.io.StdIn.readLine()
     println("stop handle task info")
     hook2.kill()

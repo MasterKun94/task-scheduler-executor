@@ -71,12 +71,12 @@ class SchedulerClientImpl(endpoint: ActorRef)(implicit executionContext: Executi
     }
   }
 
-  override def handleTaskInfo(interval: String)(handler: NodeTaskInfoResponse => Unit): ShutdownHook = {
+  override def handleTaskInfo(handler: NodeTaskInfoResponse => Unit): ShutdownHook = {
     val receive: Actor.Receive = {
       case res: NodeTaskInfoResponse => handler(res)
     }
     val handlerActor = Environment.CLIENT_SYSTEM.actorOf(Props(new HandlerActor(_ => receive)))
-    metricsClient.tell(NodeTaskInfoRequest(interval, interval), handlerActor)
+    metricsClient.tell(NodeTaskInfoRequest("", ""), handlerActor)
     new ShutdownHook {
       override def kill(): Future[Boolean] = {
         handlerActor ! PoisonPill
