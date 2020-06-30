@@ -30,6 +30,7 @@ object Implicits {
   }
 
   implicit class MetadataHelper(metadata: Metadata) {
+
     private def outputPath = {
       val path = Environment.BASE_PATH + Environment.PATH_SEPARATOR + "app-output" + Environment.PATH_SEPARATOR
       //创建文件路径//创建文件路径
@@ -43,11 +44,11 @@ object Implicits {
 
     def stderrHandler: InputStreamHandler = LineHandler.fileOutputHandler(new File(outputPath + metadata("appName") + "-stderr.out"))
 
-    def withTask(task: Task): Map[String, String] = {
-      metadata ++ Metadata(
+    def withTask(task: Task): Metadata = {
+      Metadata(metadata ++ Metadata(
         "appName" -> task.name,
         "taskType" -> task.prop.taskType
-      )
+      ))
     }
   }
 }
