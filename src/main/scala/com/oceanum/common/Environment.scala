@@ -25,7 +25,7 @@ object Environment {
   private val properties = new Properties()
 
   lazy val AKKA_CONF: String = parsePath(getProperty(Key.AKKA_CONF, "conf" / "application.conf"))
-  lazy val BASE_PATH: String = getProperty(Key.BASE_PATH).toPath()
+  lazy val BASE_PATH: String = getProperty(Key.BASE_PATH, System.getProperty("user.dir")).toPath()
   lazy val EXEC_PYTHON: String = getProperty(Key.EXEC_PYTHON, "python3")
   lazy val EXEC_PYTHON_ENABLED: Boolean = getProperty(Key.EXEC_PYTHON_ENABLED, "false").toBoolean
   lazy val EXEC_JAVA: String = getProperty(Key.EXEC_JAVA, SystemProp.javaHome / "path" / "java")
@@ -164,10 +164,10 @@ object Environment {
   }
 
   private def parsePath(file: String): String = {
-    if (file.startsWith("/"))
-      file
-    else
-      BASE_PATH / file
+      if (file.toFile.isAbsolute)
+        file.toPath()
+      else
+        BASE_PATH / file
   }
 
     val pattern: Regex = """(.*)\$\{(.*)}(.*)""".r  //新建一个正则表达式
@@ -328,10 +328,14 @@ object Environment {
   }
 
   def main(args: Array[String]): Unit = {
-    println(properties)
-    import scala.collection.JavaConversions.asScalaSet
-    properties.keySet().foreach(key => println(s"$key = ${properties.get(key)}"))
-    val uri: File = new File(getProperty("HADOOP_CONF_DIR"))
-    println(uri.getPath)
+//    println(properties)
+//    import scala.collection.JavaConversions.asScalaSet
+//    properties.keySet().foreach(key => println(s"$key = ${properties.get(key)}"))
+//    val uri: File = new File(getProperty("HADOOP_CONF_DIR"))
+//    println(uri.getPath)
+    println(BASE_PATH)
+    println(parsePath("C:/hello/test"))
+    println(parsePath("hello/test"))
+    println(parsePath("/home/hello"))
   }
 }
