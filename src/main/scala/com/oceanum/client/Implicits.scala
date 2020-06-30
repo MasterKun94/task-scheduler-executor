@@ -1,10 +1,12 @@
 package com.oceanum.client
 
 import java.io.File
+import java.util.regex.Matcher
 
 import com.oceanum.common.Environment
 
 import scala.concurrent.duration.{Duration, FiniteDuration}
+import scala.util.Properties
 
 /**
  * @author chenmingkun
@@ -29,26 +31,63 @@ object Implicits {
     private def toDuration(args: Seq[Any]): Duration = Duration(sc.s(args: _*))
   }
 
-  implicit class MetadataHelper(metadata: Map[String, String]) {
-    private def outputPath = {
-      val path = Environment.BASE_PATH + Environment.PATH_SEPARATOR + "app-output" + Environment.PATH_SEPARATOR
+  implicit class MetadataHelper(metadata: Metadata) {
+
+    private def outputPath: String = {
       //创建文件路径//创建文件路径
-      val dest = new File(path)
+      val file: File = (Environment.BASE_PATH / "app-output").toFile
       //判断文件父目录是否已经存在,不存在则创建
-      if (!dest.exists) dest.mkdirs
-      path
+      if (!file.exists)
+        file.mkdirs
+      file.getAbsolutePath
     }
 
-    def stdoutHandler: InputStreamHandler = LineHandler.fileOutputHandler(new File(outputPath + metadata("appName") + "-stdout.out"))
+    def stdoutHandler: InputStreamHandler = LineHandler.fileOutputHandler {
+      (outputPath / s"${metadata("appName")}-stdout.out") toFile
+    }
 
-    def stderrHandler: InputStreamHandler = LineHandler.fileOutputHandler(new File(outputPath + metadata("appName") + "-stderr.out"))
+    def stderrHandler: InputStreamHandler = LineHandler.fileOutputHandler {
+      (outputPath / s"${metadata("appName")}-stderr.out") toFile
+    }
 
-    def withTask(task: Task): Map[String, String] = {
-      val addition = Map(
+    def withTask(task: Task): Metadata = {
+      Metadata(metadata ++ Metadata(
         "appName" -> task.name,
         "taskType" -> task.prop.taskType
-      )
-      metadata ++ addition
+      ))
     }
+  }
+
+  implicit class PathHelper(str: String) {
+
+    def / (subStr: String): String = {
+      val sep = Environment.PATH_SEPARATOR
+      val path = toPath(str, sep)
+      val subPath = toPath(subStr, sep)
+      if (path.endsWith(sep))
+        if (subPath.startsWith(sep))
+          path + subPath.substring(1, subPath.length)
+        else
+          path + subPath
+      else
+        if (subPath.startsWith(sep))
+          path + subPath
+        else
+          path + sep + subPath
+    }
+
+    def / : String = this / ""
+
+    def toFile : File = new File(str)
+
+    def toPath(separator: String = Environment.PATH_SEPARATOR): String = toPath(str, separator)
+
+    private def toPath(str: String, separator: String): String = str.replaceAll("[/\\\\]", Matcher.quoteReplacement(separator))
+  }
+
+  def main(args: Array[String]): Unit = {
+    println(Properties.javaHome)
+    println(Properties.javaHome.toPath(", "))
+    println("C:" / "/tmp/" / "hello/" / "/test" / "123123" / "aaaa")
   }
 }

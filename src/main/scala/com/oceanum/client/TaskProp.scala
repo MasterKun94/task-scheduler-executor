@@ -9,13 +9,13 @@ import com.oceanum.common.Environment
 
 
 trait TaskProp {
-  def toTask(metadata: Map[String, String]): OperatorTask
+  def toTask(metadata: Metadata): OperatorTask
 
   def taskType: String
 }
 
 abstract class ProcessTaskProp extends TaskProp {
-  override def toTask(metadata: Map[String, String]): ProcessTask
+  override def toTask(metadata: Metadata): ProcessTask
 }
 
 @SerialVersionUID(22222201L)
@@ -23,7 +23,7 @@ case class ShellTaskProp(cmd: Array[String] = Array.empty,
                          env: Map[String, String] = Map.empty,
                          directory: String = Environment.EXEC_WORK_DIR,
                          waitForTimeout: Long = -1) extends ProcessTaskProp {
-  override def toTask(metadata: Map[String, String]): ProcessTask = ShellTask(
+  override def toTask(metadata: Metadata): ProcessTask = ShellTask(
     cmd, env, directory, waitForTimeout, metadata.stdoutHandler, metadata.stderrHandler)
 
   override def taskType: String = "SHELL"
@@ -35,7 +35,7 @@ case class ShellScriptTaskProp(scriptFile: String,
                                env: Map[String, String] = Map.empty,
                                directory: String = Environment.EXEC_WORK_DIR,
                                waitForTimeout: Long = -1) extends ProcessTaskProp {
-  override def toTask(metadata: Map[String, String]): ProcessTask = ShellScriptTask(
+  override def toTask(metadata: Metadata): ProcessTask = ShellScriptTask(
     scriptFile, args, env, directory, waitForTimeout, metadata.stdoutHandler, metadata.stderrHandler)
 
   override def taskType: String = "SHELL_SCRIPT"
@@ -49,7 +49,7 @@ case class JavaTaskProp(jars: Array[String],
                         env: Map[String, String] = Map.empty,
                         directory: String = Environment.EXEC_WORK_DIR,
                         waitForTimeout: Long = -1) extends ProcessTaskProp {
-  override def toTask(metadata: Map[String, String]): ProcessTask = JavaTask(
+  override def toTask(metadata: Metadata): ProcessTask = JavaTask(
     jars, mainClass, args, options, env, directory, waitForTimeout, metadata.stdoutHandler, metadata.stderrHandler)
 
   override def taskType: String = "JAVA"
@@ -63,7 +63,7 @@ case class ScalaTaskProp(jars: Array[String],
                          env: Map[String, String] = Map.empty,
                          directory: String = Environment.EXEC_WORK_DIR,
                          waitForTimeout: Long = -1) extends ProcessTaskProp {
-  override def toTask(metadata: Map[String, String]): ProcessTask = ScalaTask(
+  override def toTask(metadata: Metadata): ProcessTask = ScalaTask(
     jars, mainClass, args, options, env, directory, waitForTimeout, metadata.stdoutHandler, metadata.stderrHandler)
 
   override def taskType: String = "SCALA"
@@ -75,7 +75,7 @@ case class PythonTaskProp(pyFile: String,
                           env: Map[String, String] = Map.empty,
                           directory: String = Environment.EXEC_WORK_DIR,
                           waitForTimeout: Long = -1) extends ProcessTaskProp {
-  override def toTask(metadata: Map[String, String]): ProcessTask = PythonTask(
+  override def toTask(metadata: Metadata): ProcessTask = PythonTask(
     pyFile, args, env, directory, waitForTimeout, metadata.stdoutHandler, metadata.stderrHandler)
 
   override def taskType: String = "PYTHON"
@@ -83,7 +83,7 @@ case class PythonTaskProp(pyFile: String,
 
 @SerialVersionUID(22222206L)
 case class SuUserTaskProp(user: String, prop: ProcessTaskProp) extends TaskProp {
-  override def toTask(metadata: Map[String, String]): ProcessTask = SuUserTask(user, prop.toTask(metadata))
+  override def toTask(metadata: Metadata): ProcessTask = SuUserTask(user, prop.toTask(metadata))
 
   override def taskType: String = "SU_USER" + prop
 }

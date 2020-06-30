@@ -3,7 +3,6 @@ package com.oceanum.file
 import java.io.File
 import java.nio.file._
 
-import akka.actor._
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.Directives._
@@ -13,7 +12,7 @@ import akka.stream.scaladsl._
 import akka.util.ByteString
 import com.oceanum.common.{Environment, Log}
 
-import scala.concurrent.{ExecutionContextExecutor, Future}
+import scala.concurrent.Future
 
 /**
  * @author chenmingkun

@@ -8,6 +8,7 @@ import com.oceanum.client.{SchedulerClient, Task, TaskPropBuilder}
 
 import scala.concurrent.{ExecutionContext, ExecutionContextExecutor}
 import scala.util.{Failure, Success}
+import com.oceanum.client.Implicits._
 
 /**
  * @author chenmingkun
@@ -17,15 +18,14 @@ object Test {
   val ip: String = getSelfAddress
 
   def startCluster(args: Array[String]): Unit = {
-    ClusterStarter.main(Array("--port=3551", "--topics=t1,a1", s"--host=$ip", s"--seed-node=$ip", "--conf=src\\main\\resources\\application.properties,src\\main\\resources\\application-env.properties"))
+    ClusterStarter.main(Array("--port=3551", "--topics=t1,a1", s"--host=$ip", s"--seed-node=$ip", "--conf=src"/"main"/"resources"/"application.properties,src"/"main"/"resources"/"application-env.properties"))
   }
 
 
   def startClient(args: Array[String]): Unit = {
-    import com.oceanum.client.Implicits._
-    val path = "C:\\Users\\chenmingkun\\work\\idea\\work\\task-scheduler-core\\task-scheduler-executor\\src\\main\\resources"
-//    val path = "E:\\chenmingkun\\task-scheduler-executor\\src\\main\\resources"
-//    val path = "/root/test"
+//    val path = "C:"/"Users"/"chenmingkun"/"work"/"idea"/"work"/"task-scheduler-core"/"task-scheduler-executor"/"src"/"main"/"resources"
+    val path = "E:"/"chenmingkun"/"task-scheduler-executor"/"src"/"main"/"resources"
+//    val path = "/root"/"test"
     implicit val executionContext: ExecutionContextExecutor = ExecutionContext.global
     implicit val timeout: Timeout = fd"10 second"
     val client = SchedulerClient(ip, 5551, ip)
@@ -36,7 +36,7 @@ object Test {
         "3s",
         1,
         TaskPropBuilder.python
-          .pyFile(s"$path/test.py")
+          .pyFile(path / "test.py")
           .args("hello", "world")
           .waitForTimeout("100s")
           .build
