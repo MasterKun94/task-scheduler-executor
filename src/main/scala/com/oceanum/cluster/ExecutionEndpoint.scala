@@ -29,8 +29,8 @@ class ExecutionEndpoint(topics: Seq[String]) extends Actor {
 
   override def receive: Receive = {
     case req: ExecuteOperatorRequest =>
-      val proxy = context.system.actorOf(Props(classOf[ExecutionInstance]), "execution-proxy")
-      proxy.tell(req, sender())
+      val instance = context.system.actorOf(Props(classOf[ExecutionInstance]), "execution-instance")
+      instance.tell(req, sender())
 
 
     case _: AvailableExecutorRequest =>

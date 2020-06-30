@@ -4,15 +4,17 @@ import java.io.{File, FileInputStream}
 import java.util.Properties
 
 import akka.actor.ActorSystem
+import com.oceanum.client.Implicits.DurationHelper
 import com.oceanum.cluster.exec.{OperatorTask, OutputManager, TypedRunner}
 import com.oceanum.cluster.executors.ProcessRunner
+import com.oceanum.client.Implicits.PathHelper
 import com.typesafe.config.ConfigFactory
 
 import scala.collection.JavaConversions.seqAsJavaList
 import scala.concurrent.ExecutionContext
-import scala.concurrent.duration.{Duration, FiniteDuration}
+import scala.concurrent.duration.FiniteDuration
 import scala.util.matching.Regex
-import com.oceanum.client.Implicits.DurationHelper
+import scala.util.{Properties => SystemProp}
 
 /**
  * @author chenmingkun
@@ -22,11 +24,11 @@ object Environment {
 
   private val properties = new Properties()
 
-  lazy val AKKA_CONF: String = parsePath(getProperty(Key.AKKA_CONF, s"conf${PATH_SEPARATOR}application.conf"))
-  lazy val BASE_PATH: String = getProperty(Key.BASE_PATH)
+  lazy val AKKA_CONF: String = parsePath(getProperty(Key.AKKA_CONF, "conf" / "application.conf"))
+  lazy val BASE_PATH: String = getProperty(Key.BASE_PATH).toPath()
   lazy val EXEC_PYTHON: String = getProperty(Key.EXEC_PYTHON, "python3")
   lazy val EXEC_PYTHON_ENABLED: Boolean = getProperty(Key.EXEC_PYTHON_ENABLED, "false").toBoolean
-  lazy val EXEC_JAVA: String = getProperty(Key.EXEC_JAVA, "java")
+  lazy val EXEC_JAVA: String = getProperty(Key.EXEC_JAVA, SystemProp.javaHome / "path" / "java")
   lazy val EXEC_JAVA_ENABLED: Boolean = getProperty(Key.EXEC_JAVA_ENABLED, "false").toBoolean
   lazy val EXEC_SCALA: String = getProperty(Key.EXEC_SCALA, "scala")
   lazy val EXEC_SCALA_ENABLED: Boolean = getProperty(Key.EXEC_SCALA_ENABLED, "false").toBoolean
@@ -122,7 +124,7 @@ object Environment {
 
     load(Key.BASE_PATH, arg.getOrElse("--base-path", new File(".").getCanonicalPath))
 
-    val paths = arg.getOrElse("--conf", s"conf${PATH_SEPARATOR}application.properties,conf${PATH_SEPARATOR}application-env.properties")
+    val paths = arg.getOrElse("--conf", "conf" / "application.properties,conf" / "application-env.properties")
       .split(",")
       .map(_.trim)
       .filter(_.nonEmpty)
@@ -165,7 +167,7 @@ object Environment {
     if (file.startsWith("/"))
       file
     else
-      BASE_PATH + PATH_SEPARATOR + file
+      BASE_PATH / file
   }
 
     val pattern: Regex = """(.*)\$\{(.*)}(.*)""".r  //新建一个正则表达式
