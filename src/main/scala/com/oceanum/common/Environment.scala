@@ -55,6 +55,7 @@ object Environment {
   lazy val CLIENT_SYSTEM: ActorSystem = clientSystem()
   lazy val CLUSTER_NODE_METRICS_SAMPLE_INTERVAL: String = getProperty(Key.CLUSTER_NODE_METRICS_SAMPLE_INTERVAL, "5s")
   lazy val CLUSTER_NODE_METRICS_TOPIC: String = "cluster-node-metrics"
+  lazy val CLUSTER_NODE_METRICS_NAME: String = "cluster-node-metrics"
   lazy val CLUSTER_NODE_LOGGER: String = logger
 
   lazy val REGISTRY_NODE_SYSTEM_NAME: String = getProperty(Key.REGISTRY_NODE_SYSTEM_NAME, "registry")

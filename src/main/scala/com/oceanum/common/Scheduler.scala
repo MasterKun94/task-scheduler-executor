@@ -14,7 +14,7 @@ import scala.concurrent.duration.FiniteDuration
 object Scheduler {
   implicit val ec: ExecutionContext = Environment.SCHEDULE_EXECUTION_CONTEXT
 
-  def schedule(initialDelay: FiniteDuration, interval: FiniteDuration)(f: => Unit)(implicit context: ActorContext): Cancellable = {
+  def schedule(initialDelay: FiniteDuration, interval: FiniteDuration)(f: => Unit)(implicit context: ActorRefFactory): Cancellable = {
     val system = context match {
       case sys: ActorSystem => sys
       case ctx: ActorContext => ctx.system

@@ -2,9 +2,11 @@ package com.oceanum.cluster.exec
 
 import java.util.concurrent.atomic.AtomicInteger
 
+import akka.actor.ActorRef
+import akka.cluster.singleton.{ClusterSingletonProxy, ClusterSingletonProxySettings}
 import com.oceanum.client.Implicits.DurationHelper
 import com.oceanum.common.Scheduler.scheduleOnce
-import com.oceanum.common.{Environment, Log}
+import com.oceanum.common.{Environment, Log, NodeTaskInfoResponse, Scheduler}
 
 import scala.collection.concurrent.TrieMap
 
@@ -19,6 +21,34 @@ object RunnerManager extends Log {
   private val priorityMailbox: MailBox[Prop] = MailBox.priority(p => execute(p), num, (p1, p2) => p1.priority - p2.priority)
   private val outputManager: OutputManager = OutputManager.global
   private val tasks: TrieMap[Prop, Unit] = TrieMap()
+  private val successNum: AtomicInteger = new AtomicInteger(0)
+  private val failedNum: AtomicInteger = new AtomicInteger(0)
+  private val killedNum: AtomicInteger = new AtomicInteger(0)
+  private val completedNum: AtomicInteger = new AtomicInteger(0)
+  private val metrics: ActorRef = {
+    val proxySettings = ClusterSingletonProxySettings.create(system)
+    system.actorOf(ClusterSingletonProxy.props(s"/cluster/user/${Environment.CLUSTER_NODE_METRICS_NAME}/singleton", proxySettings))
+  }
+  private val cancellable = Scheduler.schedule(fd"5s", fd"5s") { // TODO
+    println(getTaskInfo)
+      metrics ! getTaskInfo
+    }
+
+  def getTaskInfo: NodeTaskInfoResponse = {
+    NodeTaskInfoResponse(
+      preparing = priorityMailbox.queueSize,
+      running = tasks.size,
+      success = successNum.get(),
+      failed = failedNum.get(),
+      killed = killedNum.get(),
+      complete = completedNum.get()
+    )
+  }
+
+  private def updateTask(action: => Unit): Unit = {
+    action
+    metrics ! getTaskInfo
+  }
 
   def submit(operatorProp: Prop): Hook = {
     operatorProp.eventListener.prepare()
@@ -31,6 +61,7 @@ object RunnerManager extends Log {
   def runningTaskNum: Int = tasks.size
 
   def close(): Unit = {
+    cancellable.cancel()
     priorityMailbox.close()
     outputManager.close()
     log.info("execute manager closed")
@@ -38,7 +69,7 @@ object RunnerManager extends Log {
 
   private def execute(operatorProp: Prop): Unit = {
     operatorProp.eventListener.start()
-    tasks + (operatorProp -> Unit)
+    updateTask(tasks + (operatorProp -> Unit))
     try {
       exec.run(operatorProp) match {
         case ExitCode.ERROR =>
@@ -55,6 +86,7 @@ object RunnerManager extends Log {
               operatorProp.prop.close()
             }
             operatorProp.eventListener.failed()
+            updateTask(failedNum.incrementAndGet())
             log.info("task failed: " + operatorProp.name)
           }
 
@@ -63,6 +95,8 @@ object RunnerManager extends Log {
             operatorProp.prop.close()
           }
           operatorProp.eventListener.success()
+          updateTask(successNum.incrementAndGet())
+          updateTask(completedNum.incrementAndGet())
           log.info("task success: " + operatorProp.name)
 
         case ExitCode.KILL =>
@@ -70,10 +104,14 @@ object RunnerManager extends Log {
             operatorProp.prop.close()
           }
           operatorProp.eventListener.kill()
+          updateTask(killedNum.incrementAndGet())
+          updateTask(completedNum.incrementAndGet())
           log.info("task kill: " + operatorProp.name)
 
         case unSupport: ExitCode.UN_SUPPORT =>
           log.info(s"no executable executor exists for prop ${operatorProp.prop.getClass}")
+          updateTask(failedNum.incrementAndGet())
+          updateTask(completedNum.incrementAndGet())
           operatorProp.eventListener.failed(unSupport)
       }
     } catch {
@@ -82,7 +120,7 @@ object RunnerManager extends Log {
         log.error(e, message)
         operatorProp.eventListener.failed(message)
     } finally {
-      tasks - operatorProp
+      updateTask(tasks - operatorProp)
     }
   }
 }

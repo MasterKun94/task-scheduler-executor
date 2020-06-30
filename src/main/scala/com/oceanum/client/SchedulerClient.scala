@@ -3,7 +3,7 @@ package com.oceanum.client
 import akka.util.Timeout
 import com.oceanum.ShutdownHook
 import com.oceanum.client.impl.SchedulerClientImpl
-import com.oceanum.common.{ClusterInfoResponse, ClusterMetricsResponse, Environment}
+import com.oceanum.common.{ClusterMetricsResponse, ClusterStateResponse, Environment, NodeTaskInfoResponse}
 
 import scala.concurrent.Future
 
@@ -22,7 +22,9 @@ trait SchedulerClient {
 
   def handleClusterMetrics(interval: String)(handler: ClusterMetricsResponse => Unit): ShutdownHook
 
-  def handleClusterInfo(interval: String)(handler: ClusterInfoResponse => Unit): ShutdownHook
+  def handleClusterInfo(interval: String)(handler: ClusterStateResponse => Unit): ShutdownHook
+
+  def handleTaskInfo(interval: String)(handler: NodeTaskInfoResponse => Unit): ShutdownHook
 }
 
 object SchedulerClient {

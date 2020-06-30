@@ -25,7 +25,7 @@ class ExecutorFinder(clusterClient: ActorRef) extends Actor with ActorLogging {
       clusterClient ! Publish(req.topic, req)
       context.become(receiveExecutor(sender()))
 
-    case req: ClusterInfoMessage =>
+    case req: ClusterMessage =>
       clusterClient ! Publish(Environment.CLUSTER_NODE_METRICS_TOPIC, ClusterInfoMessageHolder(req, sender()))
   }
 

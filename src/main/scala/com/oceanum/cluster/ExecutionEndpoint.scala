@@ -4,7 +4,7 @@ import akka.actor.{Actor, ActorRef, Props}
 import akka.cluster.pubsub.DistributedPubSub
 import akka.cluster.pubsub.DistributedPubSubMediator.{Subscribe, Unsubscribe}
 import com.oceanum.cluster.exec.RunnerManager
-import com.oceanum.common.{AvailableExecutor, AvailableExecutorRequest, Environment, ExecuteOperatorRequest}
+import com.oceanum.common.{AvailableExecutor, AvailableExecutorRequest, Environment, ExecuteOperatorRequest, Scheduler}
 
 /**
  * @author chenmingkun

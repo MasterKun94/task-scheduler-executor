@@ -57,16 +57,30 @@ class SchedulerClientImpl(endpoint: ActorRef)(implicit executionContext: Executi
     }
   }
 
-  override def handleClusterInfo(interval: String)(handler: ClusterInfoResponse => Unit): ShutdownHook = {
+  override def handleClusterInfo(interval: String)(handler: ClusterStateResponse => Unit): ShutdownHook = {
     val receive: Actor.Receive = {
-      case res: ClusterInfoResponse => handler(res)
+      case res: ClusterStateResponse => handler(res)
     }
     val handlerActor = Environment.CLIENT_SYSTEM.actorOf(Props(new HandlerActor(_ => receive)))
-    metricsClient.tell(ClusterInfoRequest(interval, interval), handlerActor)
+    metricsClient.tell(ClusterStateRequest(interval, interval), handlerActor)
     new ShutdownHook {
       override def kill(): Future[Boolean] = {
         handlerActor ! PoisonPill
-        metricsClient.ask(ClusterInfoStopRequest(handlerActor)).mapTo
+        metricsClient.ask(ClusterStateStopRequest(handlerActor)).mapTo
+      }
+    }
+  }
+
+  override def handleTaskInfo(interval: String)(handler: NodeTaskInfoResponse => Unit): ShutdownHook = {
+    val receive: Actor.Receive = {
+      case res: NodeTaskInfoResponse => handler(res)
+    }
+    val handlerActor = Environment.CLIENT_SYSTEM.actorOf(Props(new HandlerActor(_ => receive)))
+    metricsClient.tell(NodeTaskInfoRequest(interval, interval), handlerActor)
+    new ShutdownHook {
+      override def kill(): Future[Boolean] = {
+        handlerActor ! PoisonPill
+        metricsClient.ask(NodeTaskInfoStopRequest(handlerActor)).mapTo
       }
     }
   }
