@@ -29,7 +29,7 @@ object Implicits {
     private def toDuration(args: Seq[Any]): Duration = Duration(sc.s(args: _*))
   }
 
-  implicit class MetadataHelper(metadata: Map[String, String]) {
+  implicit class MetadataHelper(metadata: Metadata) {
     private def outputPath = {
       val path = Environment.BASE_PATH + Environment.PATH_SEPARATOR + "app-output" + Environment.PATH_SEPARATOR
       //创建文件路径//创建文件路径
@@ -44,11 +44,10 @@ object Implicits {
     def stderrHandler: InputStreamHandler = LineHandler.fileOutputHandler(new File(outputPath + metadata("appName") + "-stderr.out"))
 
     def withTask(task: Task): Map[String, String] = {
-      val addition = Map(
+      metadata ++ Metadata(
         "appName" -> task.name,
         "taskType" -> task.prop.taskType
       )
-      metadata ++ addition
     }
   }
 }

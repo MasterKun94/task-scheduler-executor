@@ -23,8 +23,8 @@ object Test {
 
   def startClient(args: Array[String]): Unit = {
     import com.oceanum.client.Implicits._
-    val path = "C:\\Users\\chenmingkun\\work\\idea\\work\\task-scheduler-core\\task-scheduler-executor\\src\\main\\resources"
-//    val path = "E:\\chenmingkun\\task-scheduler-executor\\src\\main\\resources"
+//    val path = "C:\\Users\\chenmingkun\\work\\idea\\work\\task-scheduler-core\\task-scheduler-executor\\src\\main\\resources"
+    val path = "E:\\chenmingkun\\task-scheduler-executor\\src\\main\\resources"
 //    val path = "/root/test"
     implicit val executionContext: ExecutionContextExecutor = ExecutionContext.global
     implicit val timeout: Timeout = fd"10 second"

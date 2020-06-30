@@ -9,7 +9,7 @@ case class Task(name: String,
                 retryInterval: String,
                 priority: Int,
                 prop: TaskProp,
-                metadata: Map[String, String] = Map.empty) {
+                metadata: Metadata = Metadata.empty) {
   def toOperator(listener: EventListener): Operator[_ <: OperatorTask] = Operator(
     name,
     retryCount,
