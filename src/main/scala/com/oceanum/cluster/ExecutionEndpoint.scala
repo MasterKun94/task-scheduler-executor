@@ -34,6 +34,6 @@ class ExecutionEndpoint(topics: Seq[String]) extends Actor {
 
 
     case _: AvailableExecutorRequest =>
-      sender() ! AvailableExecutor(self, RunnerManager.queueSize, Environment.CLUSTER_NODE_TOPICS)
+      sender() ! AvailableExecutor(self, RunnerManager.preparingTaskNum, Environment.CLUSTER_NODE_TOPICS)
   }
 }

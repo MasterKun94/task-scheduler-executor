@@ -15,13 +15,14 @@ import com.oceanum.common._
 
 import scala.collection.mutable
 import scala.concurrent.ExecutionContext
+import scala.runtime.Nothing$
 
 class MetricsListener extends Actor with ActorLogging {
   val cluster: Cluster = Cluster(context.system)
   val extension: ClusterMetricsExtension = ClusterMetricsExtension(context.system)
   val mediator: ActorRef = DistributedPubSub(context.system).mediator
-  var clusterMetricsChanged: ClusterMetricsChanged = _
   val scheduleNodes: mutable.Map[ActorRef, (Long, Cancellable)] = mutable.Map()
+  val nodeInfos: mutable.Map[ActorRef, NodeInfo] = mutable.Map()
 
   // Subscribe unto ClusterMetricsEvent events.
   override def preStart(): Unit = {
@@ -37,6 +38,7 @@ class MetricsListener extends Actor with ActorLogging {
         actor ! Ping
       }
     }
+    context.become(receive(ClusterMetricsChanged(Set())))
   }
  
   // Unsubscribe from ClusterMetricsEvent events.
@@ -45,9 +47,9 @@ class MetricsListener extends Actor with ActorLogging {
     mediator ! Unsubscribe(Environment.CLUSTER_NODE_METRICS_TOPIC, self)
   }
  
-  def receive: Receive = {
+  def receive(clusterMetricsChanged: ClusterMetricsChanged): Receive = {
     case m: ClusterMetricsChanged ⇒
-      clusterMetricsChanged = m
+      context.become(receive(m))
 
     case ClusterInfoMessageHolder(message: ClusterInfoMessage, actor: ActorRef) => message match {
 
@@ -92,6 +94,8 @@ class MetricsListener extends Actor with ActorLogging {
         false
     }
   }
+
+  def receive: Receive = throw new UnsupportedOperationException()
 }
 
 object MetricsListener {

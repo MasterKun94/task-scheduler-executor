@@ -67,6 +67,8 @@ case class ClusterInfoStopRequest(handler: ActorRef) extends ClusterInfoMessage
 @SerialVersionUID(1L)
 case class ClusterInfoResponse(clusterState: CurrentClusterState) extends ClusterInfoMessage
 
+case class NodeInfo(runningTaskNum: Int, preparingTaskNum: Int, node: ActorRef) extends Message
+
 @SerialVersionUID(1L)
 case object Ping extends Message
 @SerialVersionUID(1L)
