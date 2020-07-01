@@ -1,9 +1,9 @@
-package com.oceanum.client
+package com.oceanum.common
 
 import java.io.File
 import java.util.regex.Matcher
 
-import com.oceanum.common.Environment
+import com.oceanum.client.{InputStreamHandler, LineHandler, Metadata, Task}
 
 import scala.concurrent.duration.{Duration, FiniteDuration}
 import scala.util.Properties
@@ -80,9 +80,14 @@ object Implicits {
 
     def toFile : File = new File(str)
 
-    def toPath(separator: String = Environment.PATH_SEPARATOR): String = toPath(str, separator)
+    def toPath(separator: String = Environment.PATH_SEPARATOR): String = {
+      val p = if (new File(str).isAbsolute) str else Environment.BASE_PATH / str
+      toPath(p, separator)
+    }
 
-    private def toPath(str: String, separator: String): String = str.replaceAll("[/\\\\]", Matcher.quoteReplacement(separator))
+    private def toPath(str: String, separator: String): String = {
+      str.replaceAll("[/\\\\]", Matcher.quoteReplacement(separator))
+    }
   }
 
   def main(args: Array[String]): Unit = {

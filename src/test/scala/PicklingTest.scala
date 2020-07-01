@@ -25,6 +25,7 @@ object PicklingTest {
 
     import scala.collection.JavaConversions.mapAsScalaMap
     System.getProperties.foreach(println)
+    throw new IllegalArgumentException
   }
 
   def getStream(): BufferedReader = new BufferedReader(new InputStreamReader(new FileInputStream(new File("src/main/resources/application.conf")), StandardCharsets.UTF_8))

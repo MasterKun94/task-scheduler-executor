@@ -4,7 +4,7 @@ import com.oceanum.cluster.exec.OperatorTask
 import com.oceanum.cluster.tasks._
 
 import scala.concurrent.duration.Duration
-import Implicits.MetadataHelper
+import com.oceanum.common.Implicits.MetadataHelper
 import com.oceanum.common.Environment
 
 

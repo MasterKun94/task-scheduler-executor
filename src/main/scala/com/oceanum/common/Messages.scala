@@ -37,7 +37,7 @@ case class AvailableExecutorsRequest(topic: String, maxWait: String) extends Mes
 @SerialVersionUID(1L)
 case class AvailableExecutorResponse(executor: TraversableOnce[AvailableExecutor]) extends Message
 @SerialVersionUID(1L)
-case class AvailableExecutor(actor: ActorRef, queueSize: Int, topics: Seq[String]) extends Message
+case class AvailableExecutor(actor: ActorRef, taskInfo: NodeTaskInfoResponse, topics: Seq[String]) extends Message
 @SerialVersionUID(1L)
 case class ExecuteOperatorRequest(operatorMessage: Task, stateHandler: StateHandler) extends Message
 @SerialVersionUID(1L)
@@ -73,7 +73,7 @@ case class NodeTaskInfoRequest(initialDelay: String, interval: String) extends C
 @SerialVersionUID(1L)
 case class NodeTaskInfoStopRequest(handler: ActorRef) extends ClusterMessage
 @SerialVersionUID(1L)
-case class NodeTaskInfoResponse(preparing: Int, running: Int, success: Int, failed: Int, killed: Int, complete: Int) extends ClusterMessage
+case class NodeTaskInfoResponse(preparing: Int, running: Int, success: Int, failed: Int, retry: Int, killed: Int, complete: Int) extends ClusterMessage
 
 @SerialVersionUID(1L)
 case class NodeInfo(hostname: String, ip: String, topics: Seq[String]) extends ClusterMessage

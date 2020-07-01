@@ -2,7 +2,7 @@ package com.oceanum.client.actors
 
 import akka.actor.{Actor, ActorLogging, ActorRef}
 import akka.cluster.client.ClusterClient.Publish
-import com.oceanum.client.Implicits._
+import com.oceanum.common.Implicits._
 import com.oceanum.common._
 
 import scala.concurrent.ExecutionContext

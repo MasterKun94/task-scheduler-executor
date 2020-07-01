@@ -4,10 +4,10 @@ import java.io.{File, FileInputStream}
 import java.util.Properties
 
 import akka.actor.ActorSystem
-import com.oceanum.client.Implicits.DurationHelper
+import Implicits.DurationHelper
 import com.oceanum.cluster.exec.{OperatorTask, OutputManager, TypedRunner}
 import com.oceanum.cluster.executors.ProcessRunner
-import com.oceanum.client.Implicits.PathHelper
+import Implicits.PathHelper
 import com.typesafe.config.ConfigFactory
 
 import scala.collection.JavaConversions.seqAsJavaList
@@ -24,11 +24,11 @@ object Environment {
 
   private val properties = new Properties()
 
-  lazy val AKKA_CONF: String = parsePath(getProperty(Key.AKKA_CONF, "conf" / "application.conf"))
-  lazy val BASE_PATH: String = getProperty(Key.BASE_PATH, System.getProperty("user.dir")).toPath()
+  lazy val AKKA_CONF: String = parsePath(getProperty(Key.AKKA_CONF, BASE_PATH/"conf"/"application.conf"))
+  lazy val BASE_PATH: String = getBasePath(getProperty(Key.BASE_PATH, SystemProp.userDir))
   lazy val EXEC_PYTHON: String = getProperty(Key.EXEC_PYTHON, "python3")
   lazy val EXEC_PYTHON_ENABLED: Boolean = getProperty(Key.EXEC_PYTHON_ENABLED, "false").toBoolean
-  lazy val EXEC_JAVA: String = getProperty(Key.EXEC_JAVA, SystemProp.javaHome / "path" / "java")
+  lazy val EXEC_JAVA: String = getProperty(Key.EXEC_JAVA, SystemProp.javaHome/"bin"/"java")
   lazy val EXEC_JAVA_ENABLED: Boolean = getProperty(Key.EXEC_JAVA_ENABLED, "false").toBoolean
   lazy val EXEC_SCALA: String = getProperty(Key.EXEC_SCALA, "scala")
   lazy val EXEC_SCALA_ENABLED: Boolean = getProperty(Key.EXEC_SCALA_ENABLED, "false").toBoolean
@@ -48,18 +48,15 @@ object Environment {
   lazy val CLUSTER_NODE_SEEDS: Seq[String] = getProperty(Key.CLUSTER_NODE_SEEDS, "127.0.0.1:3551").split(",").map(node => s"akka.tcp://$CLUSTER_NODE_SYSTEM_NAME@$node").toSeq
   lazy val CLUSTER_NODE_TOPICS: Seq[String] = getProperty(Key.CLUSTER_NODE_TOPICS).split(",").map(_.trim).toSeq
   lazy val CLUSTER_NODE_SYSTEM: ActorSystem = clusterSystem()
+  lazy val CLUSTER_NODE_METRICS_SAMPLE_INTERVAL: String = getProperty(Key.CLUSTER_NODE_METRICS_SAMPLE_INTERVAL, "5s")
+  lazy val CLUSTER_NODE_METRICS_TOPIC: String = getProperty(Key.CLUSTER_NODE_METRICS_TOPIC, "cluster-node-metrics")
+  lazy val CLUSTER_NODE_METRICS_NAME: String = getProperty(Key.CLUSTER_NODE_METRICS_NAME, "cluster-node-metrics")
+  lazy val CLUSTER_NODE_LOGGER: String = getProperty(Key.CLUSTER_NODE_LOGGER, logger)
 
   lazy val CLIENT_NODE_SYSTEM_NAME: String = getProperty(Key.CLIENT_NODE_SYSTEM_NAME, "client")
   lazy val CLIENT_NODE_PORT: Int = getProperty(Key.CLIENT_NODE_PORT, "4551").toInt
-  lazy val CLIENT_NODE_LOGGER: String = logger
+  lazy val CLIENT_NODE_LOGGER: String = getProperty(Key.CLIENT_NODE_LOGGER, logger)
   lazy val CLIENT_SYSTEM: ActorSystem = clientSystem()
-  lazy val CLUSTER_NODE_METRICS_SAMPLE_INTERVAL: String = getProperty(Key.CLUSTER_NODE_METRICS_SAMPLE_INTERVAL, "5s")
-  lazy val CLUSTER_NODE_METRICS_TOPIC: String = "cluster-node-metrics"
-  lazy val CLUSTER_NODE_METRICS_NAME: String = "cluster-node-metrics"
-  lazy val CLUSTER_NODE_LOGGER: String = logger
-
-  lazy val REGISTRY_NODE_SYSTEM_NAME: String = getProperty(Key.REGISTRY_NODE_SYSTEM_NAME, "registry")
-  lazy val REGISTRY_NODE_PORT: Int = getProperty(Key.REGISTRY_NODE_PORT, "4551").toInt
 
   lazy val FILE_SERVER_SYSTEM: ActorSystem = fileServerSystem()
   lazy val FILE_SERVER_CONTEXT_PATH: String = getProperty(Key.FILE_SERVER_CONTEXT_PATH, "file")
@@ -75,10 +72,18 @@ object Environment {
   lazy val FILE_SERVER_HOST_CONNECTION_POOL_MIN_CONNECTIONS: Int = getProperty(Key.FILE_SERVER_HOST_CONNECTION_POOL_MIN_CONNECTIONS, "1").toInt
   lazy val FILE_SERVER_HOST_CONNECTION_POOL_MAX_RETRIES: Int = getProperty(Key.FILE_SERVER_HOST_CONNECTION_POOL_MAX_RETRIES, "5").toInt
   lazy val FILE_SERVER_HOST_CONNECTION_POOL_MAX_OPEN_REQUESTS: Int = getProperty(Key.FILE_SERVER_HOST_CONNECTION_POOL_MAX_OPEN_REQUESTS, "64").toInt
-  lazy val FILE_SERVER_LOGGER: String = logger
+  lazy val FILE_SERVER_LOGGER: String = getProperty(Key.FILE_SERVER_LOGGER, logger)
+  lazy val TASK_INFO_TRIGGER_INTERVAL: String = getProperty(Key.CLUSTER_NODE_TASK_INFO_TRIGGER_INTERVAL, "20s")
 
   lazy val TASK_RUNNERS: Array[TypedRunner[_ <: OperatorTask]] = Array(new ProcessRunner(OutputManager.global))
   lazy val PATH_SEPARATOR: String = File.separator
+  lazy val LOG_FILE: String = LOG_FILE_DIR/LOG_FILE_NAME
+  lazy val LOG_FILE_DIR: String = getProperty(Key.LOG_FILE_DIR, BASE_PATH/"log").toPath()
+  lazy val LOG_FILE_NAME: String = getProperty(Key.LOG_FILE_NAME, "task-executor.%d{yyyy-MM-dd}.log")
+  lazy val LOG_FILE_PATTERN: String = getProperty(Key.LOG_FILE_PATTERN, "[%-5level] %date{ISO8601} [%-46logger] - %msg%n")
+  lazy val LOG_FILE_MAX_HISTORY: String = getProperty(Key.LOG_FILE_MAX_HISTORY, "30")
+  lazy val LOG_FILE_MAX_SIZE: String = getProperty(Key.LOG_FILE_MAX_SIZE, "10MB")
+  lazy val LOG_STDOUT_PATTERN: String = getProperty(Key.LOG_STDOUT_PATTERN, "[%highlight(%-5level)] %date{ISO8601} [%-46logger] - %msg%n")
 
   lazy val DEV_MODE: Boolean = getProperty(Key.DEV_MODE, "false").toBoolean
   lazy val OS: OS = {
@@ -92,16 +97,22 @@ object Environment {
   implicit lazy val SCHEDULE_EXECUTION_CONTEXT: ExecutionContext = ExecutionContext.global
 
   def print(): Unit = {
-    import scala.collection.JavaConversions.mapAsScalaMap
+    import scala.collection.JavaConversions.asScalaSet
     println("config:")
-    properties.foreach(kv => println(s"\t${kv._1} -> ${kv._2}"))
+    properties.keySet().foreach(k => println(s"\t$k -> ${getProperty(k.toString)}"))
   }
 
-  def getProperty(key: String): String = parse(properties.getProperty(key), properties)
+  def getProperty(key: String): String = {
+    parse(properties.getProperty(key), properties)
+  }
 
-  def getProperty(key: String, orElse: String): String = parse(properties.getProperty(key, orElse), properties)
+  def getProperty(key: String, orElse: String): String = {
+    parse(properties.getProperty(key, orElse), properties)
+  }
 
-  def load(files: Array[String]): Unit = {
+  private def getBasePath(path: String): String = new File(path).getAbsolutePath
+
+  private def load(files: Array[String]): Unit = {
     println("load:")
     for (file <- files) {
       val path = parsePath(file)
@@ -112,6 +123,7 @@ object Environment {
 
   def load(key: String, value: String): Unit = {
     properties.put(key, value)
+    System.setProperty("conf." + key, value)
   }
 
   def loadArgs(args: Array[String]): Unit = {
@@ -154,7 +166,16 @@ object Environment {
       .map(_.mkString(":"))
       .toSeq
 
+    import scala.collection.JavaConversions.asScalaSet
     load(Key.CLUSTER_NODE_SEEDS, seedNodes.mkString(","))
+    load(Key.LOG_FILE, LOG_FILE)
+    load(Key.LOG_FILE_MAX_HISTORY, LOG_FILE_MAX_HISTORY)
+    load(Key.LOG_FILE_MAX_SIZE, LOG_FILE_MAX_SIZE)
+    load(Key.LOG_FILE_PATTERN, LOG_FILE_PATTERN)
+    load(Key.LOG_STDOUT_PATTERN, LOG_STDOUT_PATTERN)
+    properties.keySet().map(_.toString).foreach {key =>
+      load(key, getProperty(key))
+    }
     print()
   }
 
@@ -217,10 +238,12 @@ object Environment {
     val CLUSTER_NODE_SEEDS: String = "cluster-node.seeds"
     val CLUSTER_NODE_TOPICS: String = "cluster-node.topics"
     val CLUSTER_NODE_METRICS_SAMPLE_INTERVAL = "cluster-node.metrics.sample-interval"
+    val CLUSTER_NODE_METRICS_TOPIC: String = "cluster-node.metrics.topic"
+    val CLUSTER_NODE_METRICS_NAME: String = "cluster-node.metrics.name"
+    val CLUSTER_NODE_LOGGER: String = "cluster-node.logger"
     val CLIENT_NODE_SYSTEM_NAME: String = "client-node.system-name"
     val CLIENT_NODE_PORT: String = "client-node.port"
-    val REGISTRY_NODE_SYSTEM_NAME = "registry-node.system-name"
-    val REGISTRY_NODE_PORT = "registry-node.port"
+    val CLIENT_NODE_LOGGER: String = "client-node.logger"
     val FILE_SERVER_PORT = "file-server.port"
     val FILE_SERVER_SYSTEM_NAME = "file-server.system-name"
     val FILE_SERVER_CHUNK_SIZE: String = "file-server.chunk-size"
@@ -234,8 +257,16 @@ object Environment {
     val FILE_SERVER_HOST_CONNECTION_POOL_MIN_CONNECTIONS = "file-server.host-connection.pool.min-connections"
     val FILE_SERVER_HOST_CONNECTION_POOL_MAX_RETRIES = "file-server.host-connection.pool.max-retries"
     val FILE_SERVER_HOST_CONNECTION_POOL_MAX_OPEN_REQUESTS = "file-server.host-connection.pool.max-open-requests"
+    val FILE_SERVER_LOGGER = "file-server.logger"
     val DEV_MODE: String = "dev-mode"
-
+    val CLUSTER_NODE_TASK_INFO_TRIGGER_INTERVAL: String = "cluster-node.task-info.trigger.interval"
+    val LOG_FILE_DIR = "log.file.dir"
+    val LOG_FILE_NAME = "log.file.name"
+    val LOG_FILE = "log.file"
+    val LOG_FILE_PATTERN = "log.file.pattern"
+    val LOG_FILE_MAX_HISTORY = "log.file.max-history"
+    val LOG_FILE_MAX_SIZE = "log.file.max-size"
+    val LOG_STDOUT_PATTERN = "log.stdout.pattern"
   }
 
   private def clusterSystem(): ActorSystem = {

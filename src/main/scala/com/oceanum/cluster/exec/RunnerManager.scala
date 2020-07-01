@@ -6,8 +6,8 @@ import akka.actor.ActorRef
 import akka.cluster.client.ClusterClient.Publish
 import akka.cluster.pubsub.DistributedPubSub
 import akka.cluster.singleton.{ClusterSingletonProxy, ClusterSingletonProxySettings}
-import com.oceanum.client.Implicits.DurationHelper
-import com.oceanum.cluster.TaskInfoGetter
+import com.oceanum.common.Implicits.DurationHelper
+import com.oceanum.cluster.TaskInfoTrigger
 import com.oceanum.common.Scheduler.scheduleOnce
 import com.oceanum.common.{Environment, Log, NodeTaskInfoResponse, Scheduler}
 
@@ -23,26 +23,23 @@ object RunnerManager extends Log {
   private val exec = RootRunner
   private val priorityMailbox: MailBox[Prop] = MailBox.priority(p => execute(p), num, (p1, p2) => p1.priority - p2.priority)
   private val outputManager: OutputManager = OutputManager.global
-  private val tasks: TrieMap[Prop, Unit] = TrieMap()
+  private val runningNum: AtomicInteger = new AtomicInteger(0)
   private val successNum: AtomicInteger = new AtomicInteger(0)
   private val failedNum: AtomicInteger = new AtomicInteger(0)
+  private val retryingNum: AtomicInteger = new AtomicInteger(0)
   private val killedNum: AtomicInteger = new AtomicInteger(0)
   private val completedNum: AtomicInteger = new AtomicInteger(0)
 
   def getTaskInfo: NodeTaskInfoResponse = {
     NodeTaskInfoResponse(
       preparing = priorityMailbox.queueSize,
-      running = tasks.size,
+      running = runningNum.get(),
       success = successNum.get(),
       failed = failedNum.get(),
+      retry = retryingNum.get(),
       killed = killedNum.get(),
       complete = completedNum.get()
     )
-  }
-
-  private def updateTask(action: => Unit): Unit = {
-    action
-    TaskInfoGetter.trigger()
   }
 
   def submit(operatorProp: Prop): Hook = {
@@ -51,12 +48,7 @@ object RunnerManager extends Log {
     operatorProp.hook
   }
 
-  def preparingTaskNum: Int = priorityMailbox.queueSize
-
-  def runningTaskNum: Int = tasks.size
-
   def close(): Unit = {
-    TaskInfoGetter.close()
     priorityMailbox.close()
     outputManager.close()
     log.info("execute manager closed")
@@ -64,25 +56,29 @@ object RunnerManager extends Log {
 
   private def execute(operatorProp: Prop): Unit = {
     operatorProp.eventListener.start()
-    updateTask(tasks + (operatorProp -> Unit))
+    incRunning()
+    TaskInfoTrigger.trigger()
     try {
       exec.run(operatorProp) match {
         case ExitCode.ERROR =>
           if (operatorProp.retryCount > 1) {
             val newOperatorProp = operatorProp.retry()
-            val cancellable = scheduleOnce(fd"${newOperatorProp.retryInterval}") {
-              this.submit(newOperatorProp)
-            }
-            newOperatorProp.receive(Hook(cancellable))
             operatorProp.eventListener.retry()
             log.info("task begin retry: " + operatorProp.name)
+            incRetrying()
+            val cancellable = scheduleOnce(fd"${newOperatorProp.retryInterval}") {
+              this.submit(newOperatorProp)
+              decRetrying()
+              TaskInfoTrigger.trigger()
+            }
+            newOperatorProp.receive(Hook(cancellable))
           } else {
             scheduleOnce(fd"10s") {
               operatorProp.prop.close()
             }
             operatorProp.eventListener.failed()
-            updateTask(failedNum.incrementAndGet())
             log.info("task failed: " + operatorProp.name)
+            incFailed()
           }
 
         case ExitCode.OK =>
@@ -90,32 +86,50 @@ object RunnerManager extends Log {
             operatorProp.prop.close()
           }
           operatorProp.eventListener.success()
-          updateTask(successNum.incrementAndGet())
-          updateTask(completedNum.incrementAndGet())
           log.info("task success: " + operatorProp.name)
+          incSuccess()
 
         case ExitCode.KILL =>
           scheduleOnce(fd"10s") {
             operatorProp.prop.close()
           }
           operatorProp.eventListener.kill()
-          updateTask(killedNum.incrementAndGet())
-          updateTask(completedNum.incrementAndGet())
           log.info("task kill: " + operatorProp.name)
+          incKilled()
 
         case unSupport: ExitCode.UN_SUPPORT =>
-          log.info(s"no executable executor exists for prop ${operatorProp.prop.getClass}")
-          updateTask(failedNum.incrementAndGet())
-          updateTask(completedNum.incrementAndGet())
+          log.error(s"no executable executor exists for prop ${operatorProp.prop.getClass}")
           operatorProp.eventListener.failed(unSupport)
+          operatorProp.prop.close()
+          incFailed()
       }
     } catch {
       case e: Throwable =>
         val message = "this should never happen, or here is a bug"
         log.error(e, message)
         operatorProp.eventListener.failed(message)
+        operatorProp.prop.close()
+        incFailed()
     } finally {
-      updateTask(tasks - operatorProp)
+      decRunning()
+      TaskInfoTrigger.trigger()
     }
+  }
+
+  private def incRunning(): Unit = runningNum.incrementAndGet()
+  private def decRunning(): Unit = runningNum.decrementAndGet()
+  private def incRetrying(): Unit = retryingNum.incrementAndGet()
+  private def decRetrying(): Unit = retryingNum.decrementAndGet()
+  private def incFailed(): Unit = {
+    failedNum.incrementAndGet()
+    completedNum.incrementAndGet()
+  }
+  private def incKilled(): Unit = {
+    killedNum.incrementAndGet()
+    completedNum.incrementAndGet()
+  }
+  private def incSuccess(): Unit = {
+    successNum.incrementAndGet()
+    completedNum.incrementAndGet()
   }
 }

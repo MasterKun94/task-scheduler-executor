@@ -3,22 +3,22 @@
 
     <appender name="STDOUT"
               class="ch.qos.logback.core.ConsoleAppender">
-
         <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
-            <pattern>[%-5level] %date{ISO8601} [%X{sourceThread}] %logger{36} - %msg%n</pattern>
+            <pattern>${conf.log.stdout.pattern}</pattern>
         </encoder>
-
     </appender>
-
     <appender name="FILE"
               class="ch.qos.logback.core.rolling.RollingFileAppender">
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <FileNamePattern>log/kumquatt-development.%d{yyyy-MM-dd}.log</FileNamePattern>
+            <FileNamePattern>${conf.log.file}</FileNamePattern>
+            <MaxHistory>${conf.log.file.max-history}</MaxHistory>
         </rollingPolicy>
         <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
-            <pattern>[%-5level] %date{ISO8601} [%X{sourceThread}] %logger{36} - %msg%n</pattern>
+            <pattern>${conf.log.file.pattern}</pattern>
         </encoder>
-
+        <triggeringPolicy class="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
+            <MaxFileSize>${conf.log.file.max-size}</MaxFileSize>
+        </triggeringPolicy>
     </appender>
 
 

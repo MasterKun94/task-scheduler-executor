@@ -1,7 +1,7 @@
 package com.oceanum.client
 
 import com.oceanum.cluster.exec.{EventListener, Operator, OperatorTask}
-import Implicits.MetadataHelper
+import com.oceanum.common.Implicits.MetadataHelper
 
 @SerialVersionUID(22222200L)
 case class Task(name: String,

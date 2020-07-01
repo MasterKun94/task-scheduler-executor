@@ -4,7 +4,7 @@ import com.oceanum.utils.Test
 
 import scala.concurrent.ExecutionContext.Implicits._
 import scala.util.{Failure, Success}
-import com.oceanum.client.Implicits.PathHelper
+import com.oceanum.common.Implicits.PathHelper
 
 object SourceDemo extends App {
   val path = "C:/Users/chenmingkun/work/idea/work/task-scheduler-core/task-scheduler-executor/src/main/resources/"

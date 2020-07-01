@@ -1,7 +1,7 @@
 package com.oceanum.cluster
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Cancellable}
-import com.oceanum.client.Implicits._
+import com.oceanum.common.Implicits._
 import com.oceanum.client.StateHandler
 import com.oceanum.cluster.exec.State._
 import com.oceanum.cluster.exec.{EventListener, Hook, RunnerManager}
@@ -99,6 +99,7 @@ class ExecutionInstance extends Actor with ActorLogging {
   private def start(implicit hook: Hook, cancellable: Cancellable, client: ClientHolder): Receive = {
     caseCheckState(START, start_)
       .orElse(caseKillAction)
+      .orElse(caseFailed)
       .orElse(caseRunning)
       .orElse(caseKill)
   }

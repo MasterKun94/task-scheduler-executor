@@ -8,14 +8,15 @@ import com.oceanum.client.{SchedulerClient, Task, TaskPropBuilder}
 
 import scala.concurrent.{ExecutionContext, ExecutionContextExecutor}
 import scala.util.{Failure, Success}
-import com.oceanum.client.Implicits._
+import com.oceanum.common.Implicits._
 
 /**
  * @author chenmingkun
  * @date 2020/6/18
  */
 object Test {
-  val ip: String = getSelfAddress
+//  val ip: String = getSelfAddress
+  val ip: String = "127.0.0.1"
 
   def startCluster(args: Array[String]): Unit = {
     ClusterStarter.main(Array("--port=3551", "--topics=t1,a1", s"--host=$ip", s"--seed-node=$ip", "--conf=src"/"main"/"resources"/"application.properties,src"/"main"/"resources"/"application-env.properties"))
@@ -23,14 +24,14 @@ object Test {
 
 
   def startClient(args: Array[String]): Unit = {
-    val path = "C:"/"Users"/"chenmingkun"/"work"/"idea"/"work"/"task-scheduler-core"/"task-scheduler-executor"/"src"/"main"/"resources"
-//    val path = "E:"/"chenmingkun"/"task-scheduler-executor"/"src"/"main"/"resources"
+//    val path = "C:"/"Users"/"chenmingkun"/"work"/"idea"/"work"/"task-scheduler-core"/"task-scheduler-executor"/"src"/"main"/"resources"
+    val path = "E:"/"chenmingkun"/"task-scheduler-executor"/"src"/"main"/"resources"
 //    val path = "/root"/"test"
     implicit val executionContext: ExecutionContextExecutor = ExecutionContext.global
     implicit val timeout: Timeout = fd"10 second"
     val client = SchedulerClient(ip, 5551, ip)
     val future = client
-      .executeAll("test", Task(
+      .executeAll("t1", Task(
         "test",
         3,
         "3s",
@@ -55,7 +56,7 @@ object Test {
           exception.printStackTrace()
       }
     Thread.sleep(100000)
-    SchedulerClient.terminate()
+    client.close
   }
 
   def getSelfAddress: String = {
@@ -71,7 +72,7 @@ object Test {
   def main(args: Array[String]): Unit = {
     startCluster(args)
     //    MetricsListener.start()
-    import com.oceanum.client.Implicits._
+    import com.oceanum.common.Implicits._
     implicit val timeout: Timeout = fd"10 second"
 //
     scala.io.StdIn.readLine()
@@ -95,7 +96,7 @@ object Test {
     val hook2 = client.handleTaskInfo(println)
     scala.io.StdIn.readLine()
     println("stop handle task info")
-    hook2.kill()
+//    hook2.kill()
     scala.io.StdIn.readLine()
     startClient(args)
   }

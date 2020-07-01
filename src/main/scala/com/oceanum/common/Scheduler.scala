@@ -3,7 +3,7 @@ package com.oceanum.common
 import akka.actor.{ActorContext, ActorRefFactory, ActorSystem, Cancellable}
 
 import scala.concurrent.ExecutionContext
-import com.oceanum.client.Implicits.DurationHelper
+import Implicits.DurationHelper
 
 import scala.concurrent.duration.FiniteDuration
 
