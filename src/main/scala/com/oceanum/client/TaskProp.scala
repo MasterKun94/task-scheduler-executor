@@ -30,7 +30,7 @@ case class ShellTaskProp(cmd: Array[String] = Array.empty,
 }
 
 @SerialVersionUID(22222202L)
-case class ShellScriptTaskProp(scriptFile: String,
+case class ShellScriptTaskProp(scriptFile: String = "",
                                args: Array[String] = Array.empty,
                                env: Map[String, String] = Map.empty,
                                directory: String = Environment.EXEC_WORK_DIR,
@@ -42,8 +42,8 @@ case class ShellScriptTaskProp(scriptFile: String,
 }
 
 @SerialVersionUID(22222203L)
-case class JavaTaskProp(jars: Array[String],
-                        mainClass: String,
+case class JavaTaskProp(jars: Array[String] = Array.empty,
+                        mainClass: String = "",
                         args: Array[String] = Array.empty,
                         options: Array[String] = Array.empty,
                         env: Map[String, String] = Map.empty,
@@ -56,8 +56,8 @@ case class JavaTaskProp(jars: Array[String],
 }
 
 @SerialVersionUID(22222204L)
-case class ScalaTaskProp(jars: Array[String],
-                         mainClass: String,
+case class ScalaTaskProp(jars: Array[String] = Array.empty,
+                         mainClass: String = "",
                          args: Array[String] = Array.empty,
                          options: Array[String] = Array.empty,
                          env: Map[String, String] = Map.empty,
@@ -70,7 +70,7 @@ case class ScalaTaskProp(jars: Array[String],
 }
 
 @SerialVersionUID(22222205L)
-case class PythonTaskProp(pyFile: String,
+case class PythonTaskProp(pyFile: String = "",
                           args: Array[String] = Array.empty,
                           env: Map[String, String] = Map.empty,
                           directory: String = Environment.EXEC_WORK_DIR,

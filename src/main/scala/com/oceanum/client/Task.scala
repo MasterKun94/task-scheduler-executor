@@ -1,13 +1,16 @@
 package com.oceanum.client
 
+import java.util.UUID
+
 import com.oceanum.cluster.exec.{EventListener, Operator, OperatorTask}
 import com.oceanum.common.Implicits.MetadataHelper
 
 @SerialVersionUID(22222200L)
-case class Task(name: String,
-                retryCount: Int,
-                retryInterval: String,
-                priority: Int,
+case class Task(name: String = "",
+                topic: String = "",
+                retryCount: Int = 1,
+                retryInterval: String = "3 minute",
+                priority: Int = 5,
                 prop: TaskProp,
                 metadata: Metadata = Metadata.empty) {
   def toOperator(listener: EventListener): Operator[_ <: OperatorTask] = Operator(
@@ -19,10 +22,6 @@ case class Task(name: String,
     listener)
 }
 
-object TaskBuilder {
-  def newTask(name: String): TaskBuilder = new TaskBuilder(Task(name = "", retryCount = 1, retryInterval = "1m", priority = 5, prop = null)) // TODO
-}
-
-class TaskBuilder(task: Task) {
-
+object Task {
+  val builder: TaskBuilder.type = TaskBuilder
 }

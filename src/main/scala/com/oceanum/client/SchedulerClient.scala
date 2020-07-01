@@ -16,13 +16,12 @@ import scala.concurrent.{ExecutionContext, Future}
  * @date 2020/5/4
  */
 trait SchedulerClient {
-  def execute(topic: String,
-              task: Task,
+  def execute(task: Task,
               stateHandler: StateHandler = StateHandler.empty()): Future[TaskInstance]
 
-  def executeAll(topic: String,
-                 task: Task,
-                 stateHandler: StateHandler = StateHandler.empty(), timeWait: String = "3s"): Future[TaskInstance]
+  def executeAll(task: Task,
+                 stateHandler: StateHandler = StateHandler.empty(),
+                 timeWait: String = "3s"): Future[TaskInstance]
 
   def handleClusterMetrics(interval: String)(handler: ClusterMetricsResponse => Unit): ShutdownHook
 

@@ -2,9 +2,8 @@ package com.oceanum.cluster.tasks
 
 import java.io.IOException
 
-import com.oceanum.client.InputStreamHandler
 import com.oceanum.common.Environment
-import com.oceanum.cluster.exec.OperatorTask
+import com.oceanum.cluster.exec.{InputStreamHandler, OperatorTask}
 
 class ProcessTask(val propCmd: Array[String] = Array.empty,
                   val propEnv: Map[String, String] = Map.empty,

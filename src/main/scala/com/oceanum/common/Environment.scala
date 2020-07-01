@@ -38,7 +38,7 @@ object Environment {
   lazy val EXEC_SPARK_HOME: String = getProperty(Key.EXEC_SPARK_HOME)
 
   lazy val EXEC_SHELL_ENABLED: Boolean = getProperty(Key.EXEC_SHELL_ENABLED, "true").toBoolean
-  lazy val EXEC_WORK_DIR: String = getProperty(Key.EXEC_WORK_DIR, "")
+  lazy val EXEC_WORK_DIR: String = getProperty(Key.EXEC_WORK_DIR, BASE_PATH/"exec").toAbsolute()
   lazy val EXEC_THREAD_NUM: Int = getProperty(Key.EXEC_THREAD_NUM, "16").toInt
   lazy val EXEC_MAX_TIMEOUT: FiniteDuration = fd"${getProperty(Key.EXEC_MAX_TIMEOUT, "24h")}"
 
@@ -78,7 +78,7 @@ object Environment {
   lazy val TASK_RUNNERS: Array[TypedRunner[_ <: OperatorTask]] = Array(new ProcessRunner(OutputManager.global))
   lazy val PATH_SEPARATOR: String = File.separator
   lazy val LOG_FILE: String = LOG_FILE_DIR/LOG_FILE_NAME
-  lazy val LOG_FILE_DIR: String = getProperty(Key.LOG_FILE_DIR, BASE_PATH/"log").toPath()
+  lazy val LOG_FILE_DIR: String = getProperty(Key.LOG_FILE_DIR, BASE_PATH/"log").toAbsolute()
   lazy val LOG_FILE_NAME: String = getProperty(Key.LOG_FILE_NAME, "task-executor.%d{yyyy-MM-dd}.log")
   lazy val LOG_FILE_PATTERN: String = getProperty(Key.LOG_FILE_PATTERN, "[%-5level] %date{ISO8601} [%-46logger] - %msg%n")
   lazy val LOG_FILE_MAX_HISTORY: String = getProperty(Key.LOG_FILE_MAX_HISTORY, "30")
@@ -187,7 +187,7 @@ object Environment {
 
   private def parsePath(file: String): String = {
       if (file.toFile.isAbsolute)
-        file.toPath()
+        file.toAbsolute()
       else
         BASE_PATH / file
   }

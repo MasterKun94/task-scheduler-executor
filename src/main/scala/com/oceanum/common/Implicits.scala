@@ -3,7 +3,8 @@ package com.oceanum.common
 import java.io.File
 import java.util.regex.Matcher
 
-import com.oceanum.client.{InputStreamHandler, LineHandler, Metadata, Task}
+import com.oceanum.client.{Metadata, Task}
+import com.oceanum.cluster.exec.{InputStreamHandler, LineHandler}
 
 import scala.concurrent.duration.{Duration, FiniteDuration}
 import scala.util.Properties
@@ -43,11 +44,11 @@ object Implicits {
     }
 
     def stdoutHandler: InputStreamHandler = LineHandler.fileOutputHandler {
-      (outputPath / s"${metadata("appName")}-stdout.out") toFile
+      (outputPath / s"${metadata("appName")}-stdout.out").toFile
     }
 
     def stderrHandler: InputStreamHandler = LineHandler.fileOutputHandler {
-      (outputPath / s"${metadata("appName")}-stderr.out") toFile
+      (outputPath / s"${metadata("appName")}-stderr.out").toFile
     }
 
     def withTask(task: Task): Metadata = {
@@ -80,7 +81,7 @@ object Implicits {
 
     def toFile : File = new File(str)
 
-    def toPath(separator: String = Environment.PATH_SEPARATOR): String = {
+    def toAbsolute(separator: String = Environment.PATH_SEPARATOR): String = {
       val p = if (new File(str).isAbsolute) str else Environment.BASE_PATH / str
       toPath(p, separator)
     }
@@ -92,7 +93,7 @@ object Implicits {
 
   def main(args: Array[String]): Unit = {
     println(Properties.javaHome)
-    println(Properties.javaHome.toPath(", "))
+    println(Properties.javaHome.toAbsolute(", "))
     println("C:" / "/tmp/" / "hello/" / "/test" / "123123" / "aaaa")
   }
 }

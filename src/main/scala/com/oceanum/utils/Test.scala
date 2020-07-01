@@ -5,6 +5,7 @@ import java.net.{InetAddress, UnknownHostException}
 import akka.util.Timeout
 import com.oceanum.ClusterStarter
 import com.oceanum.client.{SchedulerClient, Task, TaskPropBuilder}
+import com.oceanum.common.Environment
 
 import scala.concurrent.{ExecutionContext, ExecutionContextExecutor}
 import scala.util.{Failure, Success}
@@ -25,23 +26,22 @@ object Test {
 
   def startClient(args: Array[String]): Unit = {
 //    val path = "C:"/"Users"/"chenmingkun"/"work"/"idea"/"work"/"task-scheduler-core"/"task-scheduler-executor"/"src"/"main"/"resources"
-    val path = "E:"/"chenmingkun"/"task-scheduler-executor"/"src"/"main"/"resources"
 //    val path = "/root"/"test"
+
     implicit val executionContext: ExecutionContextExecutor = ExecutionContext.global
     implicit val timeout: Timeout = fd"10 second"
     val client = SchedulerClient(ip, 5551, ip)
     val future = client
-      .executeAll("t1", Task(
-        "test",
-        3,
-        "3s",
-        1,
-        TaskPropBuilder.python
-          .pyFile(path / "test.py")
+      .executeAll(Task.builder.python()
+          .name("test")
+          .topic("t1")
+          .retryCount(3)
+          .retryInterval("5 second")
+          .priority(5)
+          .pyFile(Environment.BASE_PATH/"src"/"main"/"resources"/"test.py")
           .args("hello", "world")
           .waitForTimeout("100s")
-          .build
-      ))
+          .build)
     future
       .onComplete {
         case Success(value) =>

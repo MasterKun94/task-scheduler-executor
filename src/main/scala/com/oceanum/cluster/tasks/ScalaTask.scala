@@ -1,6 +1,6 @@
 package com.oceanum.cluster.tasks
 
-import com.oceanum.client.InputStreamHandler
+import com.oceanum.cluster.exec.InputStreamHandler
 import com.oceanum.common.Environment
 
 /**
