@@ -2,7 +2,8 @@ package com.oceanum.client.actors
 
 import akka.actor.{Actor, ActorLogging, ActorRef}
 import com.oceanum.client.{StateHandler, TaskInstance}
-import com.oceanum.cluster.exec.State._
+import com.oceanum.cluster.exec.State
+import com.oceanum.cluster.exec.State.{FAILED, KILL, SUCCESS}
 import com.oceanum.common._
 
 class ClientExecutor(executor: ActorRef) extends Actor with ActorLogging {
@@ -54,7 +55,7 @@ class ClientExecutor(executor: ActorRef) extends Actor with ActorLogging {
       val newHandler: State => Unit = state => {
         stateHandler.handle(state)
         state match {
-          case KILL | SUCCESS | FAILED => handler.handle(state)
+          case KILL(_) | SUCCESS(_) | FAILED(_) => handler.handle(state)
           case _ =>
         }
       }

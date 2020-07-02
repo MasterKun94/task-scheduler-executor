@@ -6,6 +6,7 @@ import akka.actor.ActorRef
 import akka.cluster.client.ClusterClient.Publish
 import akka.cluster.pubsub.DistributedPubSub
 import akka.cluster.singleton.{ClusterSingletonProxy, ClusterSingletonProxySettings}
+import com.oceanum.client.Metadata
 import com.oceanum.common.Implicits.DurationHelper
 import com.oceanum.cluster.TaskInfoTrigger
 import com.oceanum.common.Scheduler.scheduleOnce
@@ -60,10 +61,10 @@ object RunnerManager extends Log {
     TaskInfoTrigger.trigger()
     try {
       exec.run(operatorProp) match {
-        case ExitCode.ERROR =>
+        case ExitCode.ERROR(msg) =>
           if (operatorProp.retryCount > 1) {
             val newOperatorProp = operatorProp.retry()
-            operatorProp.eventListener.retry()
+            operatorProp.eventListener.retry(Metadata("message" -> msg))
             log.info("task begin retry: " + operatorProp.name)
             incRetrying()
             val cancellable = scheduleOnce(fd"${newOperatorProp.retryInterval}") {
@@ -76,7 +77,7 @@ object RunnerManager extends Log {
             scheduleOnce(fd"10s") {
               operatorProp.prop.close()
             }
-            operatorProp.eventListener.failed()
+            operatorProp.eventListener.failed(Metadata("message" -> msg))
             log.info("task failed: " + operatorProp.name)
             incFailed()
           }
@@ -99,7 +100,7 @@ object RunnerManager extends Log {
 
         case unSupport: ExitCode.UN_SUPPORT =>
           log.error(s"no executable executor exists for prop ${operatorProp.prop.getClass}")
-          operatorProp.eventListener.failed(unSupport)
+          operatorProp.eventListener.failed(Metadata("message" -> s"task type un support: ${unSupport.operatorClass}"))
           operatorProp.prop.close()
           incFailed()
       }
@@ -107,7 +108,7 @@ object RunnerManager extends Log {
       case e: Throwable =>
         val message = "this should never happen, or here is a bug"
         log.error(e, message)
-        operatorProp.eventListener.failed(message)
+        operatorProp.eventListener.failed(Metadata("message" -> message))
         operatorProp.prop.close()
         incFailed()
     } finally {

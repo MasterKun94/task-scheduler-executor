@@ -4,7 +4,7 @@ import akka.actor.ActorRef
 import akka.pattern.ask
 import akka.util.Timeout
 import com.oceanum.client.{StateHandler, TaskInstance}
-import com.oceanum.cluster.exec.State.State
+import com.oceanum.cluster.exec.State
 import com.oceanum.common.{HandleOnComplete, KillAction, TerminateAction}
 
 import scala.concurrent.{ExecutionContext, Future}

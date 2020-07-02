@@ -17,7 +17,7 @@ import scala.collection.JavaConversions.{mapAsJavaMap, seqAsJavaList}
  */
 class ProcessRunner(outputManager: OutputManager) extends TypedRunner[ProcessTask] {
 
-  override protected def typedExecute(operatorProp: Operator[_ <: ProcessTask]): ExitCode = {
+  override protected def typedRun(operatorProp: Operator[_ <: ProcessTask]): ExitCode = {
 
     val prop = operatorProp.prop
     val cmd = prop.propCmd.toList
@@ -25,17 +25,24 @@ class ProcessRunner(outputManager: OutputManager) extends TypedRunner[ProcessTas
     val builder: ProcessBuilder = new ProcessBuilder(cmd)
     builder.environment().putAll(prop.propEnv)
     val dir: File = {
-      if (prop.propDirectory == null || prop.propDirectory.trim.equals(""))
+      if (prop.propDirectory == null || prop.propDirectory.trim.equals("")) {
         new File("dummy").getAbsoluteFile.getParentFile
-      else
+      } else {
+        val file = new File(prop.propDirectory)
+        if (!file.exists()) {
+          file.mkdirs()
+        }
         new File(prop.propDirectory)
+      }
     }
     if (operatorProp.hook.isKilled) return ExitCode.KILL
     builder.directory(dir)
     val process = try {
       builder.start()
     } catch {
-      case _: IOException => return ExitCode.ERROR
+      case e: IOException =>
+        e.printStackTrace()
+        return ExitCode.ERROR(e.getMessage)
     }
     val input = process.getInputStream
     val error = process.getErrorStream

@@ -3,7 +3,7 @@ package com.oceanum.client
 import akka.actor.ActorRef
 import akka.util.Timeout
 import com.oceanum.client.impl.TaskInstanceImpl
-import com.oceanum.cluster.exec.State.State
+import com.oceanum.cluster.exec.State
 
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
