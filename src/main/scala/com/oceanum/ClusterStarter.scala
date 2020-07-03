@@ -2,10 +2,9 @@ package com.oceanum
 
 import akka.actor.Props
 import akka.cluster.client.ClusterClientReceptionist
-import com.oceanum.cluster.{ClusterNode, ExecutionEndpoint, ReceptionistListener, TaskInfoTrigger}
+import com.oceanum.cluster.{ClusterNode, ExecutionEndpoint, ReceptionistListener}
 import com.oceanum.common.Environment
 import com.oceanum.metrics.MetricsListener
-import org.slf4j.Marker
 /**
  * @author chenmingkun
  * @date 2020/5/28

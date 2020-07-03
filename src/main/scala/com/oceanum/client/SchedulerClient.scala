@@ -5,7 +5,6 @@ import java.util.concurrent.TimeUnit
 import akka.actor.{ActorPaths, ActorSystem, Props}
 import akka.cluster.client.{ClusterClient, ClusterClientSettings}
 import akka.util.Timeout
-import com.oceanum.ShutdownHook
 import com.oceanum.client.actors.ClientListener
 import com.oceanum.client.impl.SchedulerClientImpl
 import com.oceanum.common.{ClusterMetricsResponse, ClusterStateResponse, Environment, NodeTaskInfoResponse}

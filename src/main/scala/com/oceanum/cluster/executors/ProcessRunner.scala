@@ -4,10 +4,9 @@ import java.io.{File, IOException}
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 
-import akka.actor.ActorSystem
-import com.oceanum.common.{Environment, Log}
-import com.oceanum.cluster.tasks.{JavaTask, ProcessTask, PythonTask, ScalaTask, ShellTask, SuUserTask}
 import com.oceanum.cluster.exec.{OperatorTask, _}
+import com.oceanum.cluster.tasks._
+import com.oceanum.common.Environment
 
 import scala.collection.JavaConversions.{mapAsJavaMap, seqAsJavaList}
 

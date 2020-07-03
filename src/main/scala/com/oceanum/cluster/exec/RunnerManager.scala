@@ -2,17 +2,11 @@ package com.oceanum.cluster.exec
 
 import java.util.concurrent.atomic.AtomicInteger
 
-import akka.actor.ActorRef
-import akka.cluster.client.ClusterClient.Publish
-import akka.cluster.pubsub.DistributedPubSub
-import akka.cluster.singleton.{ClusterSingletonProxy, ClusterSingletonProxySettings}
 import com.oceanum.client.Metadata
-import com.oceanum.common.Implicits.DurationHelper
 import com.oceanum.cluster.TaskInfoTrigger
+import com.oceanum.common.Implicits.DurationHelper
 import com.oceanum.common.Scheduler.scheduleOnce
-import com.oceanum.common.{Environment, Log, NodeTaskInfoResponse, Scheduler}
-
-import scala.collection.concurrent.TrieMap
+import com.oceanum.common.{Environment, Log, NodeTaskInfoResponse}
 
 /**
  * @author chenmingkun
