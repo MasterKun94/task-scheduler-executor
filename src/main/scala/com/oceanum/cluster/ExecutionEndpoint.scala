@@ -41,7 +41,7 @@ class ExecutionEndpoint extends Actor {
       instance.tell(req, sender())
 
 
-    case _: AvailableExecutorRequest =>
+    case req: AvailableExecutorRequest =>
       sender() ! AvailableExecutor(self, RunnerManager.getTaskInfo, Environment.CLUSTER_NODE_TOPICS)
   }
 }

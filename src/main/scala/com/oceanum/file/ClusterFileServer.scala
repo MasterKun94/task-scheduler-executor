@@ -2,6 +2,7 @@ package com.oceanum.file
 
 import java.io.File
 import java.nio.file._
+import java.util.regex.Matcher
 
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
@@ -18,7 +19,7 @@ import scala.concurrent.Future
  * @author chenmingkun
  * @date 2020/6/25
  */
-object FileServer extends Log(Environment.FILE_SERVER_SYSTEM) {
+object ClusterFileServer extends Log(Environment.FILE_SERVER_SYSTEM) {
   private val host = Environment.HOST
   private val port = Environment.FILE_SERVER_PORT
   private val chunkSize = Environment.FILE_SERVER_CHUNK_SIZE
@@ -31,9 +32,11 @@ object FileServer extends Log(Environment.FILE_SERVER_SYSTEM) {
       .withAttributes(ActorAttributes.dispatcher("file-io-dispatcher"))
   }
 
+  private def getPath(fp: String): String = (basePath + fp).replaceAll("%5C", Matcher.quoteReplacement(Environment.PATH_SEPARATOR))
+
   private val route: Route = pathPrefix(Environment.FILE_SERVER_CONTEXT_PATH) {
     (get & path(Remaining)) { fp =>
-      val path = basePath + fp
+      val path = getPath(fp)
       val file = new File(path)
       if (file.exists() && file.isDirectory) {
         complete(
@@ -55,7 +58,7 @@ object FileServer extends Log(Environment.FILE_SERVER_SYSTEM) {
       }
     } ~
       (post & path(Remaining)) { fp =>
-        val path = basePath + fp
+        val path = getPath(fp)
         withoutSizeLimit {
           extractDataBytes { bytes =>
             val file = new File(path).getParentFile
@@ -70,7 +73,7 @@ object FileServer extends Log(Environment.FILE_SERVER_SYSTEM) {
         }
       } ~
       (put & path(Remaining)) { fp =>
-        val path = basePath + fp
+        val path = getPath(fp)
         extractDataBytes { bytes =>
           val fut = bytes
             .map(_.utf8String)
@@ -80,7 +83,7 @@ object FileServer extends Log(Environment.FILE_SERVER_SYSTEM) {
               .toMap
             )
             .runWith(Sink.foreachAsync(1) { map =>
-              FileClient.download(map("host"), map("path"), path)
+              ClusterFileServerApi.download(map("host"), map("path"), path)
             })
           onComplete(fut) { _ =>
             complete(path)
@@ -88,7 +91,7 @@ object FileServer extends Log(Environment.FILE_SERVER_SYSTEM) {
         }
       } ~
       (delete & path(Remaining)) { fp =>
-        val path = basePath + fp
+        val path = getPath(fp)
         extractRequestEntity { e =>
           e.discardBytes()
           val file = new File(path)

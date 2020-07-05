@@ -2,105 +2,77 @@ package com.oceanum.client
 
 import com.oceanum.cluster.exec.OperatorTask
 import com.oceanum.cluster.tasks._
-
-import scala.concurrent.duration.Duration
-import com.oceanum.common.Implicits.MetadataHelper
 import com.oceanum.common.Environment
+import com.oceanum.common.Implicits.MetadataHelper
 
-
-trait TaskProp {
+@SerialVersionUID(1L)
+trait TaskProp extends Serializable {
   def toTask(metadata: Metadata): OperatorTask
 
   def taskType: String
 }
 
-abstract class ProcessTaskProp extends TaskProp {
+@SerialVersionUID(1L)
+abstract class ProcessTaskProp(task: String) extends TaskProp with Serializable {
   override def toTask(metadata: Metadata): ProcessTask
+
+  override def taskType: String = task
 }
 
-@SerialVersionUID(22222201L)
+@SerialVersionUID(1L)
 case class ShellTaskProp(cmd: Array[String] = Array.empty,
                          env: Map[String, String] = Map.empty,
                          directory: String = Environment.EXEC_WORK_DIR,
-                         waitForTimeout: Long = -1) extends ProcessTaskProp {
+                         waitForTimeout: Long = -1) extends ProcessTaskProp("SHELL") {
   override def toTask(metadata: Metadata): ProcessTask = ShellTask(
     cmd, env, directory, waitForTimeout, metadata.stdoutHandler, metadata.stderrHandler)
-
-  override def taskType: String = "SHELL"
 }
 
-@SerialVersionUID(22222202L)
+@SerialVersionUID(1L)
 case class ShellScriptTaskProp(scriptFile: String = "",
                                args: Array[String] = Array.empty,
                                env: Map[String, String] = Map.empty,
                                directory: String = Environment.EXEC_WORK_DIR,
-                               waitForTimeout: Long = -1) extends ProcessTaskProp {
+                               waitForTimeout: Long = -1) extends ProcessTaskProp("SHELL_SCRIPT") {
   override def toTask(metadata: Metadata): ProcessTask = ShellScriptTask(
     scriptFile, args, env, directory, waitForTimeout, metadata.stdoutHandler, metadata.stderrHandler)
-
-  override def taskType: String = "SHELL_SCRIPT"
 }
 
-@SerialVersionUID(22222203L)
+@SerialVersionUID(1L)
 case class JavaTaskProp(jars: Array[String] = Array.empty,
                         mainClass: String = "",
                         args: Array[String] = Array.empty,
                         options: Array[String] = Array.empty,
                         env: Map[String, String] = Map.empty,
                         directory: String = Environment.EXEC_WORK_DIR,
-                        waitForTimeout: Long = -1) extends ProcessTaskProp {
+                        waitForTimeout: Long = -1) extends ProcessTaskProp("JAVA") {
   override def toTask(metadata: Metadata): ProcessTask = JavaTask(
     jars, mainClass, args, options, env, directory, waitForTimeout, metadata.stdoutHandler, metadata.stderrHandler)
-
-  override def taskType: String = "JAVA"
 }
 
-@SerialVersionUID(22222204L)
+@SerialVersionUID(1L)
 case class ScalaTaskProp(jars: Array[String] = Array.empty,
                          mainClass: String = "",
                          args: Array[String] = Array.empty,
                          options: Array[String] = Array.empty,
                          env: Map[String, String] = Map.empty,
                          directory: String = Environment.EXEC_WORK_DIR,
-                         waitForTimeout: Long = -1) extends ProcessTaskProp {
+                         waitForTimeout: Long = -1) extends ProcessTaskProp("SCALA") {
   override def toTask(metadata: Metadata): ProcessTask = ScalaTask(
     jars, mainClass, args, options, env, directory, waitForTimeout, metadata.stdoutHandler, metadata.stderrHandler)
-
-  override def taskType: String = "SCALA"
 }
 
-@SerialVersionUID(22222205L)
+@SerialVersionUID(1L)
 case class PythonTaskProp(pyFile: String = "",
                           args: Array[String] = Array.empty,
                           env: Map[String, String] = Map.empty,
                           directory: String = Environment.EXEC_WORK_DIR,
-                          waitForTimeout: Long = -1) extends ProcessTaskProp {
+                          waitForTimeout: Long = -1) extends ProcessTaskProp("PYTHON") {
   override def toTask(metadata: Metadata): ProcessTask = PythonTask(
     pyFile, args, env, directory, waitForTimeout, metadata.stdoutHandler, metadata.stderrHandler)
-
-  override def taskType: String = "PYTHON"
 }
 
-@SerialVersionUID(22222206L)
-case class SuUserTaskProp(user: String, prop: ProcessTaskProp) extends TaskProp {
+@SerialVersionUID(1L)
+case class SuUserTaskProp(user: String, prop: ProcessTaskProp) extends ProcessTaskProp("SU_USER_" + prop.taskType) {
   override def toTask(metadata: Metadata): ProcessTask = SuUserTask(user, prop.toTask(metadata))
-
-  override def taskType: String = "SU_USER" + prop
-}
-
-object TaskPropBuilder {
-  def python: PythonTaskPropBuilder = new PythonTaskPropBuilder(PythonTaskProp(pyFile = ""))
-}
-
-class PythonTaskPropBuilder(pythonTaskProp: PythonTaskProp) {
-
-  def pyFile(path: String): PythonTaskPropBuilder = new PythonTaskPropBuilder(pythonTaskProp.copy(pyFile = path))
-
-  def args(args: String*): PythonTaskPropBuilder = new PythonTaskPropBuilder(pythonTaskProp.copy(args = args.toArray))
-
-  def directory(dir: String): PythonTaskPropBuilder = new PythonTaskPropBuilder(pythonTaskProp.copy(directory = dir))
-
-  def waitForTimeout(timeout: String): PythonTaskPropBuilder = new PythonTaskPropBuilder(pythonTaskProp.copy(waitForTimeout = Duration(timeout).toMillis))
-
-  def build: PythonTaskProp = pythonTaskProp
 }

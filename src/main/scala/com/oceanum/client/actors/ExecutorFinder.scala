@@ -40,6 +40,7 @@ class ExecutorFinder(clusterClient: ActorRef) extends Actor with ActorLogging {
 
   def receiveExecutor(receiver: ActorRef): Receive = {
     case executor: AvailableExecutor =>
+      println(executor)
       receiver ! AvailableExecutorResponse(Some(executor))
       context.stop(self)
   }

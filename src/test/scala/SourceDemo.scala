@@ -1,4 +1,4 @@
-import com.oceanum.file.{FileClient, FileServer}
+import com.oceanum.file.{ClusterFileServerApi, ClusterFileServer}
 import com.oceanum.metrics.MetricsListener
 import com.oceanum.utils.Test
 
@@ -12,17 +12,17 @@ object SourceDemo extends App {
   Test.startCluster(args)
 //  MetricsListener.start()
 
-  FileServer.start().onComplete {
-    case Success(_) =>
-      FileClient.download(Test.ip, path, path/"file"/).onComplete(println)
-      FileClient.upload(Test.ip, path/"test.py", path/ "file"/"test2.py").onComplete(println)
-      Thread.sleep(2000)
-      FileClient.transfer(Test.ip, path/"file", Test.ip, path/"file2").onComplete(println)
-      Thread.sleep(2000)
-      FileClient.delete(Test.ip, path/"file"/"application.properties").onComplete(println)
-
-    case Failure(e) => e.printStackTrace()
-  }
+//  ClusterFileServer.start().onComplete {
+//    case Success(_) =>
+//      ClusterFileServerApi.download(Test.ip, path, path/"file").onComplete(println)
+//      ClusterFileServerApi.upload(Test.ip, path/"test.py", path/ "file"/"test2.py").onComplete(println)
+//      Thread.sleep(2000)
+//      ClusterFileServerApi.transfer(Test.ip, path/"file", Test.ip, path/"file2").onComplete(println)
+//      Thread.sleep(2000)
+//      ClusterFileServerApi.delete(Test.ip, path/"file"/"application.properties").onComplete(println)
+//
+//    case Failure(e) => e.printStackTrace()
+//  }
 
   Thread.sleep(2000)
   Test.startClient(args)

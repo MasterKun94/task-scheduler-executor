@@ -86,6 +86,10 @@ object Implicits {
       toPath(p, separator)
     }
 
+    def toPath(separator: String = Environment.PATH_SEPARATOR): String = {
+      toPath(str, separator)
+    }
+
     private def toPath(str: String, separator: String): String = {
       str.replaceAll("[/\\\\]", Matcher.quoteReplacement(separator))
     }

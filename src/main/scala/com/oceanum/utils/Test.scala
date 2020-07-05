@@ -4,7 +4,7 @@ import java.net.{InetAddress, UnknownHostException}
 
 import akka.util.Timeout
 import com.oceanum.ClusterStarter
-import com.oceanum.client.{SchedulerClient, Task, TaskPropBuilder}
+import com.oceanum.client.{SchedulerClient, Task}
 import com.oceanum.common.Environment
 
 import scala.concurrent.{ExecutionContext, ExecutionContextExecutor}
@@ -16,8 +16,8 @@ import com.oceanum.common.Implicits._
  * @date 2020/6/18
  */
 object Test {
-//  val ip: String = getSelfAddress
-  val ip: String = "127.0.0.1"
+  val ip: String = getSelfAddress
+//  val ip: String = "127.0.0.1"
 
   def startCluster(args: Array[String]): Unit = {
     ClusterStarter.main(Array("--port=3551", "--topics=t1,a1", s"--host=$ip", s"--seed-node=$ip", "--conf=src"/"main"/"resources"/"application.properties,src"/"main"/"resources"/"application-env.properties"))
@@ -32,7 +32,7 @@ object Test {
     implicit val timeout: Timeout = fd"10 second"
     val client = SchedulerClient(ip, 5551, ip)
     val future = client
-      .executeAll(Task.builder.python()
+      .execute(Task.builder.python()
           .name("test")
           .topic("t1")
           .retryCount(3)
