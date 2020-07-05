@@ -33,7 +33,7 @@ object Test {
     val client = SchedulerClient(ip, 5551, ip)
     val future = client
       .execute(Task.builder.python()
-          .name("test")
+          .id("test")
           .topic("t1")
           .retryCount(3)
           .retryInterval("5 second")
@@ -50,7 +50,7 @@ object Test {
             println("result is: " + stat)
             value.close()
           })
-//          Thread.sleep(7000)
+//          Thread.sleep(20000)
 //          value.kill()
         case Failure(exception) =>
           exception.printStackTrace()

@@ -3,6 +3,8 @@ package com.oceanum.client
 import com.oceanum.cluster.exec.{EventListener, Operator, OperatorTask}
 import com.oceanum.common.Implicits.TaskMetadataHelper
 
+import scala.concurrent.{ExecutionContext, Future}
+
 @SerialVersionUID(22222200L)
 case class Task(id: String,
                 topic: String = "default",
@@ -19,6 +21,15 @@ case class Task(id: String,
     priority,
     prop.toTask(metadata),
     listener)
+
+  def init(listener: EventListener)(implicit executor: ExecutionContext): Future[Operator[_ <: OperatorTask]] = prop.init(metadata).map(ot => Operator(
+    id,
+    retryCount,
+    retryInterval,
+    priority,
+    ot,
+    listener
+  ))
 
   def metadata: Metadata = meta.withTask(this)
 }

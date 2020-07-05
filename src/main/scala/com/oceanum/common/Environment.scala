@@ -60,7 +60,7 @@ object Environment {
 
   lazy val FILE_SERVER_SYSTEM: ActorSystem = fileServerSystem()
   lazy val FILE_SERVER_CONTEXT_PATH: String = getProperty(Key.FILE_SERVER_CONTEXT_PATH, "file")
-  lazy val FILE_SERVER_PORT: Int = getProperty(Key.FILE_SERVER_PORT, "8011").toInt
+  lazy val FILE_SERVER_PORT: Int = getProperty(Key.FILE_SERVER_PORT, "7011").toInt
   lazy val FILE_SERVER_SYSTEM_NAME: String = getProperty(Key.FILE_SERVER_SYSTEM_NAME, "file-server")
   lazy val FILE_SERVER_CHUNK_SIZE: Int = getProperty(Key.FILE_SERVER_CHUNK_SIZE, "8192").toInt
   lazy val FILE_SERVER_BASE_PATH: String = getProperty(Key.FILE_SERVER_BASE_PATH, if (OS == WINDOWS) "" else "/")

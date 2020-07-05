@@ -11,8 +11,11 @@ import akka.http.scaladsl.server.Route
 import akka.stream._
 import akka.stream.scaladsl._
 import akka.util.ByteString
+import com.oceanum.ClusterStarter
 import com.oceanum.common.{Environment, Log}
+import com.oceanum.utils.Test
 
+import scala.annotation.tailrec
 import scala.concurrent.Future
 
 /**
@@ -25,6 +28,7 @@ object ClusterFileServer extends Log(Environment.FILE_SERVER_SYSTEM) {
   private val chunkSize = Environment.FILE_SERVER_CHUNK_SIZE
   private val basePath = Environment.FILE_SERVER_BASE_PATH
   private implicit lazy val httpMat: ActorMaterializer = ActorMaterializer()
+  val sep = ",\r\n"
 
   private def fileStream(filePath: String): Source[ByteString, Future[IOResult]] = {
     val file: Path = Paths.get(filePath)
@@ -32,7 +36,14 @@ object ClusterFileServer extends Log(Environment.FILE_SERVER_SYSTEM) {
       .withAttributes(ActorAttributes.dispatcher("file-io-dispatcher"))
   }
 
-  private def getPath(fp: String): String = (basePath + fp).replaceAll("%5C", Matcher.quoteReplacement(Environment.PATH_SEPARATOR))
+  private def getPath(fp: String): String = {
+    (basePath + parser(fp)).replaceAll("%5C", Matcher.quoteReplacement(Environment.PATH_SEPARATOR))
+  }
+
+  @tailrec
+  private def parser(path: String): String = {
+    if (path.startsWith("/")) parser(path.substring(1)) else path
+  }
 
   private val route: Route = pathPrefix(Environment.FILE_SERVER_CONTEXT_PATH) {
     (get & path(Remaining)) { fp =>
@@ -42,7 +53,7 @@ object ClusterFileServer extends Log(Environment.FILE_SERVER_SYSTEM) {
         complete(
           HttpEntity(
             ContentTypes.`text/plain(UTF-8)`,
-            file.list().mkString(",\r\n")
+            file.list().mkString(sep)
           )
         )
       } else if (file.isFile) {
@@ -77,7 +88,7 @@ object ClusterFileServer extends Log(Environment.FILE_SERVER_SYSTEM) {
         extractDataBytes { bytes =>
           val fut = bytes
             .map(_.utf8String)
-            .map(str => str.split(",\r\n")
+            .map(str => str.split(sep)
               .map(_.split("="))
               .map(arr => (arr(0), arr(1)))
               .toMap
@@ -108,4 +119,9 @@ object ClusterFileServer extends Log(Environment.FILE_SERVER_SYSTEM) {
   private lazy val bindingFuture: Future[Http.ServerBinding] = Http().bindAndHandle(route, host, port)
 
   def start(): Future[Http.ServerBinding] = bindingFuture
+
+  def main(args: Array[String]): Unit = {
+    Test.startCluster(args)
+    start()
+  }
 }

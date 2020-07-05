@@ -32,7 +32,7 @@ object ClusterFileServerApi extends Log(Environment.FILE_SERVER_SYSTEM) {
     val request = HttpRequest(HttpMethods.PUT, uri = s"http://$destHost0/${Environment.FILE_SERVER_CONTEXT_PATH}/$destPath")
     val data = HttpEntity(
       ContentTypes.`text/plain(UTF-8)`,
-      s"host=$srcHost,\r\npath=$srcPath"
+      s"host=$srcHost${ClusterFileServer.sep}path=$srcPath"
     )
     http
       .singleRequest(request.copy(entity = data))
@@ -122,7 +122,7 @@ object ClusterFileServerApi extends Log(Environment.FILE_SERVER_SYSTEM) {
               }
           } else if (entity.contentType == ContentTypes.`text/plain(UTF-8)`) {
             entity.dataBytes
-              .map(_.utf8String.split(",\r\n"))
+              .map(_.utf8String.split(ClusterFileServer.sep))
               .runWith(Sink.collection)
               .map(_.flatten)
               .map(seq => seq.map(sub => download(host, srcPath + "/" + sub, destPath + "/" + sub)))

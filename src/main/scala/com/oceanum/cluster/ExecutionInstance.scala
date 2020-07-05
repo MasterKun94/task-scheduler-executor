@@ -2,12 +2,14 @@ package com.oceanum.cluster
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Cancellable}
 import com.oceanum.common.Implicits._
-import com.oceanum.client.{Metadata, StateHandler}
-import com.oceanum.cluster.exec.State
+import com.oceanum.client.{Metadata, StateHandler, Task}
+import com.oceanum.cluster.exec.{EventListener, Hook, Operator, OperatorTask, RunnerManager, State}
 import com.oceanum.cluster.exec.State._
-import com.oceanum.cluster.exec.{EventListener, Hook, RunnerManager}
 import com.oceanum.common.Scheduler.{schedule, scheduleOnce}
 import com.oceanum.common._
+
+import scala.concurrent.ExecutionContext
+import scala.util.{Failure, Success}
 /**
  * @author chenmingkun
  * @date 2020/5/2
@@ -38,16 +40,44 @@ class ExecutionInstance extends Actor with ActorLogging {
   override def receive: Receive = {
     case ExecuteOperatorRequest(operatorMessage, handler) =>
       val metadata = operatorMessage.metadata
-      val operator = operatorMessage.toOperator(listener(metadata))
+      import ExecutionContext.Implicits.global
+      val actor = sender()
+      operatorMessage.init(listener(metadata)).onComplete {
+        case Success(operator) =>
+          self ! (operator, actor, operatorMessage.metadata, handler)
+        case Failure(e) =>
+          implicit val hook: Hook = new Hook {
+            override def kill(): Boolean = true
+            override def isKilled: Boolean = true
+          }
+          implicit val cancellable: Cancellable = new Cancellable {
+            override def cancel(): Boolean = true
+            override def isCancelled: Boolean = true
+          }
+          implicit val clientHolder: ClientHolder = ClientHolder(actor)
+          context.become(failed(metadata + ("message" -> e.getMessage)))
+      }
+    case (operator: Operator[_], actor: ActorRef, metadata: Metadata, handler: StateHandler) =>
       val duration = fd"${handler.checkInterval()}"
       log.info("receive operator: [{}], receive schedule check state request from [{}], start schedule with duration [{}]", operator, sender, duration)
-      implicit val hook: Hook = RunnerManager.submit(operator)
       implicit val cancelable: Cancellable = schedule(duration, duration) {
-        self.tell(CheckState, sender())
+        self.tell(CheckState, actor)
       }
-      implicit val clientHolder: ClientHolder = ClientHolder(sender())
-      context.become(offline(operatorMessage.metadata))
-      sender ! ExecuteOperatorResponse(operatorMessage, handler)
+      implicit val clientHolder: ClientHolder = ClientHolder(actor)
+      implicit val hook: Hook = RunnerManager.submit(operator)
+      context.become(offline(metadata))
+      actor ! ExecuteOperatorResponse(metadata, handler)
+
+//      val operator = operatorMessage.toOperator(listener(metadata))
+//      val duration = fd"${handler.checkInterval()}"
+//      log.info("receive operator: [{}], receive schedule check state request from [{}], start schedule with duration [{}]", operator, sender, duration)
+//      implicit val hook: Hook = RunnerManager.submit(operator)
+//      implicit val cancelable: Cancellable = schedule(duration, duration) {
+//        self.tell(CheckState, sender())
+//      }
+//      implicit val clientHolder: ClientHolder = ClientHolder(sender())
+//      context.become(offline(operatorMessage.metadata))
+//      sender ! ExecuteOperatorResponse(operatorMessage, handler)
     case message => println("unknown message: " + message)
   }
 

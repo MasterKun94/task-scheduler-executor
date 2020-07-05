@@ -1,6 +1,7 @@
 package com.oceanum.common
 
 import java.io.File
+import java.text.SimpleDateFormat
 import java.util.regex.Matcher
 
 import com.oceanum.client.{Metadata, Task}
@@ -34,12 +35,13 @@ object Implicits {
 
   implicit class TaskMetadataHelper(metadata: Metadata) {
 
-    lazy val id: String = metadata("id")
-    lazy val taskType: String = metadata("taskType")
-    lazy val user: String = metadata("user")
-    lazy val createTime: String = metadata("createTime")
-    lazy val stdoutHandler: InputStreamHandler = LineHandler.fileOutputHandler((outputPath/s"$id-stdout.out").toFile)
-    lazy val stderrHandler: InputStreamHandler = LineHandler.fileOutputHandler((outputPath/s"$id-stderr.out").toFile)
+    def id: String = metadata("id")
+    def taskType: String = metadata("taskType")
+    def user: String = metadata("user")
+    def createTime: String = metadata("createTime")
+    def stdoutHandler: InputStreamHandler = LineHandler.fileOutputHandler((outputPath/s"$id-stdout.out").toFile)
+    def stderrHandler: InputStreamHandler = LineHandler.fileOutputHandler((outputPath/s"$id-stderr.out").toFile)
+    def execDir: String = metadata("execDir")
 
     private lazy val  outputPath: String = {
       //创建文件路径//创建文件路径
@@ -51,22 +53,24 @@ object Implicits {
     }
 
     def withTask(task: Task): Metadata = {
+      val dateFormat = new SimpleDateFormat("yyyyMMdd").format(System.currentTimeMillis())
       metadata ++ Metadata(
         "id" -> task.id,
         "taskType" -> task.prop.taskType,
         "user" -> task.user,
-        "createTime" -> System.currentTimeMillis().toString
+        "createTime" -> System.currentTimeMillis().toString,
+        "execDir" -> Environment.EXEC_WORK_DIR/dateFormat/task.user/task.id
       )
     }
   }
 
-  implicit class PathHelper(str: String) {
+  implicit class PathHelper(str: String)(implicit separator: String = Environment.PATH_SEPARATOR) {
 
     def / (subStr: String): String = {
-      val sep = Environment.PATH_SEPARATOR
+      val sep = separator
       val path = toPath(str, sep)
       val subPath = toPath(subStr, sep)
-      if (path.endsWith(sep))
+      if (path.endsWith(sep) && !path.endsWith(":" + sep + sep))
         if (subPath.startsWith(sep))
           path + subPath.substring(1, subPath.length)
         else
@@ -82,13 +86,13 @@ object Implicits {
 
     def toFile : File = new File(str)
 
-    def toAbsolute(separator: String = Environment.PATH_SEPARATOR): String = {
+    def toAbsolute(sep: String = separator): String = {
       val p = if (new File(str).isAbsolute) str else Environment.BASE_PATH / str
-      toPath(p, separator)
+      toPath(p, sep)
     }
 
-    def toPath(separator: String = Environment.PATH_SEPARATOR): String = {
-      toPath(str, separator)
+    def toPath(sep: String = separator): String = {
+      toPath(str, sep)
     }
 
     private def toPath(str: String, separator: String): String = {
@@ -98,7 +102,8 @@ object Implicits {
 
   def main(args: Array[String]): Unit = {
     println(Properties.javaHome)
+    implicit val sep: String = "/"
     println(Properties.javaHome.toAbsolute(", "))
-    println("C:" / "/tmp/" / "hello/" / "/test" / "123123" / "aaaa")
+    println("C:" / "/tmp/" / "hello/" / "/test" / "123123" / "aaaa" / )
   }
 }

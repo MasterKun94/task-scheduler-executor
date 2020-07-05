@@ -41,7 +41,7 @@ case class AvailableExecutor(actor: ActorRef, taskInfo: NodeTaskInfoResponse, to
 @SerialVersionUID(1L)
 case class ExecuteOperatorRequest(operatorMessage: Task, stateHandler: StateHandler) extends Message
 @SerialVersionUID(1L)
-case class ExecuteOperatorResponse(operatorMessage: Task, stateHandler: StateHandler) extends Message
+case class ExecuteOperatorResponse(metadata: Metadata, stateHandler: StateHandler) extends Message
 @SerialVersionUID(1L)
 case class HandleState(handler: StateHandler) extends Message
 @SerialVersionUID(1L)
