@@ -35,11 +35,12 @@ class MetricsListener extends Actor with ActorLogging {
   }
 
   private def checkNodes(nodes: mutable.Map[ActorRef, (Long, Cancellable)]): Unit = {
-    val interval = fd"20s"
+    val interval = Environment.CLUSTER_NODE_METRICS_PING_INTERVAL
+    val timeout = Environment.CLUSTER_NODE_METRICS_PING_TIMEOUT
     schedule(interval, interval) {
       for (actor <- nodes.keys) {
         val (time, cancellable) = nodes(actor)
-        if (System.currentTimeMillis() - time > fd"100s".toMillis) {
+        if (System.currentTimeMillis() - time > timeout.toMillis) {
           nodes.remove(actor)
           cancellable.cancel()
         }

@@ -39,7 +39,7 @@ object Test {
           .retryCount(3)
           .retryInterval("5 second")
           .priority(5)
-          .pyFile("cluster://"/Environment.BASE_PATH/"src"/"main"/"resources"/"test.py")
+          .pyFile(Environment.BASE_PATH/"src"/"main"/"resources"/"test.py")
           .args("hello", "world")
           .waitForTimeout("100s")
           .build)

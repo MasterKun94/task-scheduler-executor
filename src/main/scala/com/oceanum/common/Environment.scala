@@ -52,6 +52,8 @@ object Environment {
   lazy val CLUSTER_NODE_METRICS_SAMPLE_INTERVAL: String = getProperty(Key.CLUSTER_NODE_METRICS_SAMPLE_INTERVAL, "5s")
   lazy val CLUSTER_NODE_METRICS_TOPIC: String = getProperty(Key.CLUSTER_NODE_METRICS_TOPIC, "cluster-node-metrics")
   lazy val CLUSTER_NODE_METRICS_NAME: String = getProperty(Key.CLUSTER_NODE_METRICS_NAME, "cluster-node-metrics")
+  lazy val CLUSTER_NODE_METRICS_PING_INTERVAL: FiniteDuration = fd"${getProperty(Key.CLUSTER_NODE_METRICS_PING_INTERVAL, "20s")}"
+  lazy val CLUSTER_NODE_METRICS_PING_TIMEOUT: FiniteDuration = fd"${getProperty(Key.CLUSTER_NODE_METRICS_PING_TIMEOUT, "100s")}"
   lazy val CLUSTER_NODE_LOGGER: String = getProperty(Key.CLUSTER_NODE_LOGGER, logger)
 
   lazy val CLIENT_NODE_SYSTEM_NAME: String = getProperty(Key.CLIENT_NODE_SYSTEM_NAME, "client")
@@ -59,6 +61,8 @@ object Environment {
   lazy val CLIENT_NODE_LOGGER: String = getProperty(Key.CLIENT_NODE_LOGGER, logger)
   lazy val CLIENT_SYSTEM: ActorSystem = clientSystem()
 
+  lazy val FILE_CLIENT_DEFAULT_SCHEME: String = getProperty(Key.FILE_CLIENT_DEFAULT_SCHEME, "cluster")
+  lazy val FILE_CLIENT_CLASSES: Set[String] = (str2arr(getProperty(Key.FILE_CLIENT_CLASSES, "")) :+ "com.oceanum.file.ClusterFileClient").toSet
   lazy val FILE_SERVER_SYSTEM: ActorSystem = fileServerSystem()
   lazy val FILE_SERVER_CONTEXT_PATH: String = getProperty(Key.FILE_SERVER_CONTEXT_PATH, "file")
   lazy val FILE_SERVER_PORT: Int = getProperty(Key.FILE_SERVER_PORT, "7011").toInt
@@ -241,10 +245,14 @@ object Environment {
     val CLUSTER_NODE_METRICS_SAMPLE_INTERVAL = "cluster-node.metrics.sample-interval"
     val CLUSTER_NODE_METRICS_TOPIC: String = "cluster-node.metrics.topic"
     val CLUSTER_NODE_METRICS_NAME: String = "cluster-node.metrics.name"
+    val CLUSTER_NODE_METRICS_PING_INTERVAL: String = "cluster-node.metrics.ping.interval"
+    val CLUSTER_NODE_METRICS_PING_TIMEOUT: String = "cluster-node.metrics.ping.timeout"
     val CLUSTER_NODE_LOGGER: String = "cluster-node.logger"
     val CLIENT_NODE_SYSTEM_NAME: String = "client-node.system-name"
     val CLIENT_NODE_PORT: String = "client-node.port"
     val CLIENT_NODE_LOGGER: String = "client-node.logger"
+    val FILE_CLIENT_DEFAULT_SCHEME: String = "file-client.default-scheme"
+    val FILE_CLIENT_CLASSES: String = "file-client.classes"
     val FILE_SERVER_PORT = "file-server.port"
     val FILE_SERVER_SYSTEM_NAME = "file-server.system-name"
     val FILE_SERVER_CHUNK_SIZE: String = "file-server.chunk-size"

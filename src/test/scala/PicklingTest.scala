@@ -1,4 +1,5 @@
 import java.io.{BufferedReader, File, FileInputStream, InputStreamReader}
+import java.net.URI
 import java.nio.charset.StandardCharsets
 
 import akka.actor.ActorSystem
@@ -16,7 +17,16 @@ object PicklingTest {
   private implicit lazy val httpSys: ActorSystem = Environment.FILE_SERVER_SYSTEM
   private implicit lazy val httpMat: ActorMaterializer = ActorMaterializer()
   def main(args: Array[String]): Unit = {
-    println(new File("src/main/resources/application.conf").getName)
+    val uri = new URI("cluster:///src/main/resources/application.conf")
+    val file = new File("cluster:///src/main/resources/application.conf").isAbsolute
+    println(uri.getScheme)
+    println(uri.getPath)
+    println(uri.getHost)
+    println(uri.getAuthority)
+    println(uri.getFragment)
+    println(uri.getQuery)
+    println(uri.getUserInfo)
+    println(file)
 
 
 //    val source = Source.unfoldResource(

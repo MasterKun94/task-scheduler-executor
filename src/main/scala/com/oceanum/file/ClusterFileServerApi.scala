@@ -23,7 +23,6 @@ object ClusterFileServerApi extends Log(Environment.FILE_SERVER_SYSTEM) {
 
   private implicit lazy val mat: ActorMaterializer = ActorMaterializer()
   private implicit lazy val ec: ExecutionContextExecutor = system.dispatcher
-  private implicit lazy val reqNumMax: Int = 100
   private lazy val http = Http()
 
   def transfer(srcHost: String, srcPath: String, destHost: String, destPath: String): Future[Unit] = {
@@ -98,8 +97,8 @@ object ClusterFileServerApi extends Log(Environment.FILE_SERVER_SYSTEM) {
   }
 
   def download(host: String, srcPath: String, destPath: String)(implicit reqNum: AtomicInteger = new AtomicInteger(0)): Future[Unit] = {
-    if (reqNum.incrementAndGet() > reqNumMax) {
-      throw new IllegalArgumentException("单次下载文件数量超过限制, 最大为" + reqNumMax)
+    if (reqNum.incrementAndGet() > Environment.FILE_SERVER_RECURSIVE_TRANSFER_MAX) {
+      throw new IllegalArgumentException("单次下载文件数量超过限制, 最大为" + Environment.FILE_SERVER_RECURSIVE_TRANSFER_MAX)
     }
     val host0 = getHost(host)
     val request = HttpRequest(uri = s"http://$host0/${Environment.FILE_SERVER_CONTEXT_PATH}/$srcPath")
