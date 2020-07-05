@@ -1,5 +1,8 @@
 package com.oceanum.client
 
+import java.text.SimpleDateFormat
+import java.util.{Date, UUID}
+
 import scala.concurrent.duration.Duration
 
 /**
@@ -7,9 +10,11 @@ import scala.concurrent.duration.Duration
  * @date 2020/7/1
  */
 abstract class TaskBuilder[T <: TaskBuilder[_]](task: Task) {
-  def name(taskName: String): T = typedBuilder(task.copy(name = taskName))
+  def id(id: String): T = typedBuilder(task.copy(id = id))
 
   def topic(topic: String): T = typedBuilder(task.copy(topic = topic))
+
+  def user(user: String): T = typedBuilder(task.copy(user = user))
 
   def retryCount(int: Int):T = typedBuilder(task.copy(retryCount = int))
 
@@ -126,15 +131,33 @@ class PythonTaskBuilder(task: Task) extends TaskBuilder[PythonTaskBuilder](task)
 }
 
 object TaskBuilder {
-  def shell(): ShellTaskBuilder = new ShellTaskBuilder(Task(prop = ShellTaskProp()))
+  private def dateFormat: String = new SimpleDateFormat("yyyyMMdd").format(new Date())
+  private def getId(prop: TaskProp): String = s"$dateFormat-${prop.taskType}-${UUID.randomUUID().toString}"
 
-  def shellScript(): ShellScriptTaskBuilder = new  ShellScriptTaskBuilder(Task(prop = ShellScriptTaskProp()))
+  def shell(): ShellTaskBuilder = {
+    val prop = ShellTaskProp()
+    new ShellTaskBuilder(Task(prop = prop, id = getId(prop)))
+  }
 
-  def java(): JavaTaskBuilder = new JavaTaskBuilder(Task(prop = JavaTaskProp()))
+  def shellScript(): ShellScriptTaskBuilder = {
+    val prop = ShellScriptTaskProp()
+    new  ShellScriptTaskBuilder(Task(prop = prop, id = getId(prop)))
+  }
 
-  def scala(): ScalaTaskBuilder = new ScalaTaskBuilder(Task(prop = ScalaTaskProp()))
+  def java(): JavaTaskBuilder = {
+    val prop = JavaTaskProp()
+    new JavaTaskBuilder(Task(prop = prop, id = getId(prop)))
+  }
 
-  def python(): PythonTaskBuilder = new PythonTaskBuilder(Task(prop = PythonTaskProp()))
+  def scala(): ScalaTaskBuilder = {
+    val prop = ScalaTaskProp()
+    new ScalaTaskBuilder(Task(prop = prop, id = getId(prop)))
+  }
+
+  def python(): PythonTaskBuilder = {
+    val prop = PythonTaskProp()
+    new PythonTaskBuilder(Task(prop = prop, id = getId(prop)))
+  }
 
   def main(args: Array[String]): Unit = {
 

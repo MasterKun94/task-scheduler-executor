@@ -32,9 +32,16 @@ object Implicits {
     private def toDuration(args: Seq[Any]): Duration = Duration(sc.s(args: _*))
   }
 
-  implicit class MetadataHelper(metadata: Metadata) {
+  implicit class TaskMetadataHelper(metadata: Metadata) {
 
-    private def outputPath: String = {
+    lazy val id: String = metadata("id")
+    lazy val taskType: String = metadata("taskType")
+    lazy val user: String = metadata("user")
+    lazy val createTime: String = metadata("createTime")
+    lazy val stdoutHandler: InputStreamHandler = LineHandler.fileOutputHandler((outputPath/s"$id-stdout.out").toFile)
+    lazy val stderrHandler: InputStreamHandler = LineHandler.fileOutputHandler((outputPath/s"$id-stderr.out").toFile)
+
+    private lazy val  outputPath: String = {
       //创建文件路径//创建文件路径
       val file: File = (Environment.BASE_PATH / "app-output").toFile
       //判断文件父目录是否已经存在,不存在则创建
@@ -43,19 +50,13 @@ object Implicits {
       file.getAbsolutePath
     }
 
-    def stdoutHandler: InputStreamHandler = LineHandler.fileOutputHandler {
-      (outputPath / s"${metadata("appName")}-stdout.out").toFile
-    }
-
-    def stderrHandler: InputStreamHandler = LineHandler.fileOutputHandler {
-      (outputPath / s"${metadata("appName")}-stderr.out").toFile
-    }
-
     def withTask(task: Task): Metadata = {
-      Metadata(metadata ++ Metadata(
-        "appName" -> task.name,
-        "taskType" -> task.prop.taskType
-      ))
+      metadata ++ Metadata(
+        "id" -> task.id,
+        "taskType" -> task.prop.taskType,
+        "user" -> task.user,
+        "createTime" -> System.currentTimeMillis().toString
+      )
     }
   }
 

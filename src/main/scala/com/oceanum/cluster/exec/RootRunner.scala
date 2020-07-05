@@ -1,7 +1,5 @@
 package com.oceanum.cluster.exec
 
-import java.util.concurrent.atomic.AtomicInteger
-
 import com.oceanum.common.Environment
 
 /**

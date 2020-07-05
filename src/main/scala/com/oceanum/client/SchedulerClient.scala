@@ -1,9 +1,10 @@
 package com.oceanum.client
 
+import java.util.concurrent.TimeUnit
+
 import akka.actor.{ActorPaths, ActorSystem, Props}
 import akka.cluster.client.{ClusterClient, ClusterClientSettings}
 import akka.util.Timeout
-import com.oceanum.ShutdownHook
 import com.oceanum.client.actors.ClientListener
 import com.oceanum.client.impl.SchedulerClientImpl
 import com.oceanum.common.{ClusterMetricsResponse, ClusterStateResponse, Environment, NodeTaskInfoResponse}
@@ -35,7 +36,7 @@ trait SchedulerClient {
 object SchedulerClient {
   private val clients: TrieMap[ActorSystem, SchedulerClient] = TrieMap()
 
-  def apply(host: String, port: Int, seedNodes: String)(implicit timeout: Timeout): SchedulerClient = {
+  def apply(host: String, port: Int, seedNodes: String)(implicit timeout: Timeout = Timeout(20, TimeUnit.SECONDS)): SchedulerClient = {
     Environment.load(Environment.Key.HOST, host)
     Environment.load(Environment.Key.CLIENT_NODE_PORT, port.toString)
     val seeds = seedNodes
@@ -47,10 +48,10 @@ object SchedulerClient {
       .map(_.mkString(":"))
     Environment.load(Environment.Key.CLUSTER_NODE_SEEDS, seeds.mkString(","))
     val system = Environment.CLIENT_SYSTEM
-    SchedulerClient(system, Environment.CLUSTER_NODE_SEEDS)
+    SchedulerClient.create(system, Environment.CLUSTER_NODE_SEEDS)
   }
 
-  def apply(system: ActorSystem, seedNodes: Seq[String])(implicit timeout: Timeout): SchedulerClient = {
+  def create(system: ActorSystem, seedNodes: Seq[String])(implicit timeout: Timeout = Timeout(20, TimeUnit.SECONDS)): SchedulerClient = {
     clients.getOrElse(system, {
       val executionContext = ExecutionContext.global
       val endpoint = {

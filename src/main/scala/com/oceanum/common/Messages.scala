@@ -3,25 +3,25 @@ package com.oceanum.common
 import akka.actor.ActorRef
 import akka.cluster.ClusterEvent.CurrentClusterState
 import akka.cluster.metrics.NodeMetrics
-import com.oceanum.client.{StateHandler, Task}
+import com.oceanum.client.{Metadata, StateHandler, Task}
 
 trait Message {}
 @SerialVersionUID(1L)
-case class PrepareMessage(message: Any) extends Message
+case class PrepareMessage(metadata: Metadata) extends Message
 @SerialVersionUID(1L)
-case class RunningMessage(message: Any) extends Message
+case class RunningMessage(metadata: Metadata) extends Message
 @SerialVersionUID(1L)
-case class FailedMessage(message: Any) extends Message
+case class FailedMessage(metadata: Metadata) extends Message
 @SerialVersionUID(1L)
-case class SuccessMessage(message: Any) extends Message
+case class SuccessMessage(metadata: Metadata) extends Message
 @SerialVersionUID(1L)
-case class RetryMessage(message: Any) extends Message
+case class RetryMessage(metadata: Metadata) extends Message
 @SerialVersionUID(1L)
-case class KillMessage(message: Any) extends Message
+case class KillMessage(metadata: Metadata) extends Message
 @SerialVersionUID(1L)
-case class TimeoutMessage(message: Any) extends Message
+case class TimeoutMessage(metadata: Metadata) extends Message
 @SerialVersionUID(1L)
-case class StartMessage(message: Any) extends Message
+case class StartMessage(metadata: Metadata) extends Message
 
 @SerialVersionUID(1L)
 case object KillAction extends Message

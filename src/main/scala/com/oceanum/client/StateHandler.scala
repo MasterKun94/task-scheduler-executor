@@ -1,6 +1,6 @@
 package com.oceanum.client
 
-import com.oceanum.cluster.exec.State.State
+import com.oceanum.cluster.exec.State
 
 /**
  * @author chenmingkun

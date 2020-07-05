@@ -1,23 +1,26 @@
 package com.oceanum.cluster.exec
 
+import com.oceanum.client.Metadata
+
 /**
  * @author chenmingkun
  * @date 2020/4/30
  */
 trait EventListener {
-  def prepare(message: Any = "")
 
-  def start(message: Any = "")
+  def prepare(message: Metadata = Metadata.empty)
 
-  def running(message: Any = "")
+  def start(message: Metadata = Metadata.empty)
 
-  def failed(message: Any = "")
+  def running(message: Metadata = Metadata.empty)
 
-  def success(message: Any = "")
+  def failed(message: Metadata = Metadata.empty)
 
-  def retry(message: Any = "")
+  def success(message: Metadata = Metadata.empty)
 
-  def timeout(message: Any = "")
+  def retry(message: Metadata = Metadata.empty)
 
-  def kill(message: Any = "")
+  def timeout(message: Metadata = Metadata.empty)
+
+  def kill(message: Metadata = Metadata.empty)
 }

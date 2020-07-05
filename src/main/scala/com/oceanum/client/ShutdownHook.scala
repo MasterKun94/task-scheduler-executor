@@ -1,4 +1,4 @@
-package com.oceanum
+package com.oceanum.client
 
 import scala.concurrent.Future
 
