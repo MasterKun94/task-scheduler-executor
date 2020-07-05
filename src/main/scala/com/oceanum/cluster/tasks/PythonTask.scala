@@ -20,5 +20,4 @@ case class PythonTask(pyFile: String,
     directory,
     waitForTimeout,
     stdoutHandler,
-    stderrHandler
-  )
+    stderrHandler)

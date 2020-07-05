@@ -45,7 +45,7 @@ object Implicits {
 
     private lazy val  outputPath: String = {
       //创建文件路径//创建文件路径
-      val file: File = (Environment.BASE_PATH / "app-output").toFile
+      val file: File = (execDir/"out").toFile
       //判断文件父目录是否已经存在,不存在则创建
       if (!file.exists)
         file.mkdirs
