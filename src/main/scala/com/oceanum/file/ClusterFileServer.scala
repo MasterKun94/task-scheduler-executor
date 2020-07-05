@@ -17,6 +17,7 @@ import com.oceanum.utils.Test
 
 import scala.annotation.tailrec
 import scala.concurrent.Future
+import scala.util.Try
 
 /**
  * @author chenmingkun

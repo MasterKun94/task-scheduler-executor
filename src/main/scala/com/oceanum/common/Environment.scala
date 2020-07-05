@@ -43,6 +43,7 @@ object Environment {
   lazy val EXEC_MAX_TIMEOUT: FiniteDuration = fd"${getProperty(Key.EXEC_MAX_TIMEOUT, "24h")}"
 
   lazy val HOST: String = getProperty(Key.HOST, "127.0.0.1")
+  lazy val GLOBAL_EXECUTOR: ExecutionContext = ExecutionContext.global
   lazy val CLUSTER_NODE_SYSTEM_NAME: String = getProperty(Key.CLUSTER_NODE_SYSTEM_NAME, "cluster")
   lazy val CLUSTER_NODE_PORT: Int = getProperty(Key.CLUSTER_NODE_PORT, "3551").toInt
   lazy val CLUSTER_NODE_SEEDS: Seq[String] = getProperty(Key.CLUSTER_NODE_SEEDS, "127.0.0.1:3551").split(",").map(node => s"akka.tcp://$CLUSTER_NODE_SYSTEM_NAME@$node").toSeq

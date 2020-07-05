@@ -10,6 +10,7 @@ import com.oceanum.common.Environment
 import scala.concurrent.{ExecutionContext, ExecutionContextExecutor}
 import scala.util.{Failure, Success}
 import com.oceanum.common.Implicits._
+import com.oceanum.file.ClusterFileServer
 
 /**
  * @author chenmingkun
@@ -38,7 +39,7 @@ object Test {
           .retryCount(3)
           .retryInterval("5 second")
           .priority(5)
-          .pyFile(Environment.BASE_PATH/"src"/"main"/"resources"/"test.py")
+          .pyFile("cluster://"/Environment.BASE_PATH/"src"/"main"/"resources"/"test.py")
           .args("hello", "world")
           .waitForTimeout("100s")
           .build)
@@ -77,6 +78,7 @@ object Test {
 //
     scala.io.StdIn.readLine()
     val client = SchedulerClient(ip, 5555, ip)
+    ClusterFileServer.start().value
 //    scala.io.StdIn.readLine()
 //    println("handle cluster metrics")
 //    val hook = client.handleClusterMetrics("2s") { m =>
@@ -91,13 +93,28 @@ object Test {
 //    scala.io.StdIn.readLine()
 //    println("stop handle cluster info")
 //    hook1.kill()
-    scala.io.StdIn.readLine()
-    println("handle task info")
-    val hook2 = client.handleTaskInfo(println)
-    scala.io.StdIn.readLine()
-    println("stop handle task info")
+//    scala.io.StdIn.readLine()
+//    println("handle task info")
+//    val hook2 = client.handleTaskInfo(println)
+//    scala.io.StdIn.readLine()
+//    println("stop handle task info")
 //    hook2.kill()
     scala.io.StdIn.readLine()
     startClient(args)
+
+//    import ExecutionContext.Implicits.global
+//    val task = Task.builder.python()
+//      .id("test")
+//      .topic("t1")
+//      .retryCount(3)
+//      .retryInterval("5 second")
+//      .priority(5)
+//      .pyFile("cluster://"/Environment.BASE_PATH/"src"/"main"/"resources"/"test.py")
+//      .args("hello", "world")
+//      .waitForTimeout("100s")
+//      .build
+//    println(task)
+//      task
+//      .init(null).onComplete(println)
   }
 }

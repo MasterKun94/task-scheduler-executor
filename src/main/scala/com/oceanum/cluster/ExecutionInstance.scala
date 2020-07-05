@@ -40,7 +40,7 @@ class ExecutionInstance extends Actor with ActorLogging {
   override def receive: Receive = {
     case ExecuteOperatorRequest(operatorMessage, handler) =>
       val metadata = operatorMessage.metadata
-      import ExecutionContext.Implicits.global
+      implicit val executor: ExecutionContext = Environment.GLOBAL_EXECUTOR
       val actor = sender()
       operatorMessage.init(listener(metadata)).onComplete {
         case Success(operator) =>

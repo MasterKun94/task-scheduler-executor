@@ -16,6 +16,7 @@ object PicklingTest {
   private implicit lazy val httpSys: ActorSystem = Environment.FILE_SERVER_SYSTEM
   private implicit lazy val httpMat: ActorMaterializer = ActorMaterializer()
   def main(args: Array[String]): Unit = {
+    println(new File("src/main/resources/application.conf").getName)
 
 
 //    val source = Source.unfoldResource(
@@ -24,10 +25,10 @@ object PicklingTest {
 //      close = closeStream
 //    )
 //    source.runForeach(println)
-
-    import scala.collection.JavaConversions.mapAsScalaMap
-    System.getProperties.foreach(println)
-    throw new IllegalArgumentException
+//
+//    import scala.collection.JavaConversions.mapAsScalaMap
+//    System.getProperties.foreach(println)
+//    throw new IllegalArgumentException
   }
 
   def getStream(): BufferedReader = new BufferedReader(new InputStreamReader(new FileInputStream(new File("src/main/resources/application.conf")), StandardCharsets.UTF_8))

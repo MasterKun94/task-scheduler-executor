@@ -14,14 +14,6 @@ case class Task(id: String,
                 priority: Int = 5,
                 prop: TaskProp,
                 private val meta: Metadata = Metadata.empty) {
-  def toOperator(listener: EventListener): Operator[_ <: OperatorTask] = Operator(
-    id,
-    retryCount,
-    retryInterval,
-    priority,
-    prop.toTask(metadata),
-    listener)
-
   def init(listener: EventListener)(implicit executor: ExecutionContext): Future[Operator[_ <: OperatorTask]] = prop.init(metadata).map(ot => Operator(
     id,
     retryCount,
