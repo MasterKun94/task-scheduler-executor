@@ -39,11 +39,17 @@ object Implicits {
     def taskType: String = metadata("taskType")
     def user: String = metadata("user")
     def createTime: String = metadata("createTime")
-    def stdoutHandler: InputStreamHandler = LineHandler.fileOutputHandler((outputPath/s"$id-stdout.out").toFile)
-    def stderrHandler: InputStreamHandler = LineHandler.fileOutputHandler((outputPath/s"$id-stderr.out").toFile)
+    def stdoutHandler: InputStreamHandler = Class.forName(Environment.CLUSTER_NODE_RUNNER_STDOUT_HANDLER)
+      .getConstructor(metadata.getClass)
+      .newInstance(metadata)
+      .asInstanceOf[InputStreamHandler]
+    def stderrHandler: InputStreamHandler = Class.forName(Environment.CLUSTER_NODE_RUNNER_STDERR_HANDLER)
+      .getConstructor(metadata.getClass)
+      .newInstance(metadata)
+      .asInstanceOf[InputStreamHandler]
     def execDir: String = metadata("execDir")
 
-    private lazy val  outputPath: String = {
+    private lazy val outputPath: String = {
       //创建文件路径//创建文件路径
       val file: File = (execDir/"out").toFile
       //判断文件父目录是否已经存在,不存在则创建
@@ -51,6 +57,8 @@ object Implicits {
         file.mkdirs
       file.getAbsolutePath
     }
+    def stdoutPath: String = outputPath/s"$id-stdout.out"
+    def stderrPath: String = outputPath/s"$id-stderr.out"
 
     def withTask(task: Task): Metadata = {
       val dateFormat = new SimpleDateFormat("yyyyMMdd").format(System.currentTimeMillis())

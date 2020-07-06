@@ -36,7 +36,8 @@ trait SchedulerClient {
 object SchedulerClient {
   private val clients: TrieMap[ActorSystem, SchedulerClient] = TrieMap()
 
-  def apply(host: String, port: Int, seedNodes: String)(implicit timeout: Timeout = Timeout(20, TimeUnit.SECONDS)): SchedulerClient = {
+  def apply(host: String, port: Int, seedNodes: String, configFile: String)(implicit timeout: Timeout = Timeout(20, TimeUnit.SECONDS)): SchedulerClient = {
+    Environment.loadArgs(Array(s"--conf=$configFile"))
     Environment.load(Environment.Key.HOST, host)
     Environment.load(Environment.Key.CLIENT_NODE_PORT, port.toString)
     val seeds = seedNodes

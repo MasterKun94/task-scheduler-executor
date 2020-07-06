@@ -3,6 +3,8 @@ package com.oceanum.cluster.exec
 import java.io._
 import java.nio.charset.StandardCharsets
 
+import com.oceanum.client.Metadata
+
 import scala.util.Properties
 
 /**
@@ -42,61 +44,37 @@ trait LineHandler extends InputStreamHandler {
   def after(): Unit = {}
 }
 
-object LineHandler {
-  def fileOutputHandler(file: File): LineHandler = {
-    new LineHandler {
-      val writer: BufferedWriter = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8))
+class FileOutputHandler(stdoutPath: String) extends LineHandler {
+  val writer: BufferedWriter = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(stdoutPath), StandardCharsets.UTF_8))
 
-      override def handle(line: String): Unit = {
-        val realLine = if (Properties.isWin) {
-          line.replace("\\u", "\\\\u")
-        } else {
-          line
-        }
-        writer.write(realLine)
-        writer.newLine()
-      }
-
-      override def close(): Unit = {
-        writer.flush()
-        writer.close()
-      }
-
-      override def before(): Unit = {
-        writer.newLine()
-        writer.write("+++++++++++++ START +++++++++++++")
-        writer.newLine()
-      }
-
-      override def after(): Unit = {
-        writer.newLine()
-        writer.write("++++++++++++++ END ++++++++++++++")
-        writer.newLine()
-      }
+  override def handle(line: String): Unit = {
+    val realLine = if (Properties.isWin) {
+      line.replace("\\u", "\\\\u")
+    } else {
+      line
     }
+    writer.write(realLine)
+    writer.newLine()
   }
 
-  def printHandler(name: String): LineHandler = {
-    new LineHandler {
-      override def handle(line: String): Unit = println(s"$name OUTPUT: " + line)
-
-      override def close(): Unit = {}
-
-      override def before(): Unit = println(s"+++++++++++++ START $name +++++++++++++")
-
-      override def after(): Unit = println(s"++++++++++++++ END $name ++++++++++++++")
-    }
+  override def close(): Unit = {
+    writer.flush()
+    writer.close()
   }
 
-  def multiHandler(array: LineHandler*): LineHandler = {
-    new LineHandler {
-      override def handle(line: String): Unit = array.foreach(_.handle(line))
+  override def before(): Unit = {
+    writer.newLine()
+    writer.write("+++++++++++++ START +++++++++++++")
+    writer.newLine()
+  }
 
-      override def close(): Unit = array.foreach(_.close())
-
-      override def before(): Unit = array.foreach(_.before())
-
-      override def after(): Unit = array.foreach(_.after())
-    }
+  override def after(): Unit = {
+    writer.newLine()
+    writer.write("++++++++++++++ END ++++++++++++++")
+    writer.newLine()
   }
 }
+
+import com.oceanum.common.Implicits.TaskMetadataHelper
+class StdoutFileOutputHandler(metadata: Metadata) extends FileOutputHandler(metadata.stdoutPath) {}
+class StderrFileOutputHandler(metadata: Metadata) extends FileOutputHandler(metadata.stderrPath) {}

@@ -1,5 +1,5 @@
 package com.oceanum.file
-import java.net.{URI, URL}
+import java.net.URI
 
 import com.oceanum.common.Environment
 

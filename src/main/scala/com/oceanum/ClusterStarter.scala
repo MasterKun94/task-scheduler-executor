@@ -4,6 +4,7 @@ import akka.actor.Props
 import akka.cluster.client.ClusterClientReceptionist
 import com.oceanum.cluster.{ClusterNode, ExecutionEndpoint, ReceptionistListener}
 import com.oceanum.common.Environment
+import com.oceanum.file.ClusterFileServer
 import com.oceanum.metrics.MetricsListener
 /**
  * @author chenmingkun
@@ -12,6 +13,7 @@ import com.oceanum.metrics.MetricsListener
 object ClusterStarter {
   def main(args: Array[String]): Unit = {
     Environment.loadArgs(args)
+    Environment.print()
     start()
   }
 
@@ -24,5 +26,6 @@ object ClusterStarter {
     val receptionist = ClusterClientReceptionist(system).underlying
     system.actorOf(Props(classOf[ReceptionistListener], receptionist),"event-listener")
     MetricsListener.start()
+    ClusterFileServer.start()
   }
 }

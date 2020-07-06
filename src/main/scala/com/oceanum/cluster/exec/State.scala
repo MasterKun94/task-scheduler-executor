@@ -6,15 +6,18 @@ import com.oceanum.client.Metadata
  * @author chenmingkun
  * @date 2020/5/30
  */
-class State {}
+@SerialVersionUID(1L)
+class State(metadata: Metadata) extends Serializable {
+  def getMetadata: Metadata = metadata
+}
 object State {
-  case class OFFLINE(metaData: Metadata) extends State
-  case class PREPARE(metaData: Metadata) extends State
-  case class START(metaData: Metadata) extends State
-  case class RUNNING(metaData: Metadata) extends State
-  case class FAILED(metaData: Metadata) extends State
-  case class SUCCESS(metaData: Metadata) extends State
-  case class RETRY(metaData: Metadata) extends State
-  case class TIMEOUT(metaData: Metadata) extends State
-  case class KILL(metaData: Metadata) extends State
+  case class OFFLINE(metadata: Metadata) extends State(metadata)
+  case class PREPARE(metadata: Metadata) extends State(metadata)
+  case class START(metadata: Metadata) extends State(metadata)
+  case class RUNNING(metadata: Metadata) extends State(metadata)
+  case class FAILED(metadata: Metadata) extends State(metadata)
+  case class SUCCESS(metadata: Metadata) extends State(metadata)
+  case class RETRY(metadata: Metadata) extends State(metadata)
+  case class TIMEOUT(metadata: Metadata) extends State(metadata)
+  case class KILL(metadata: Metadata) extends State(metadata)
 }

@@ -18,7 +18,6 @@ abstract class FileClient(val scheme: String) {
 
 object FileClient extends FileClient("root") {
   lazy val innerClients: Map[String, FileClient] = Environment.FILE_CLIENT_CLASSES
-    .map(Class.forName)
     .map(_.getConstructor().newInstance().asInstanceOf[FileClient])
     .map(c => (c.scheme, c))
     .toMap
@@ -29,5 +28,9 @@ object FileClient extends FileClient("root") {
     val uri = new URI(path)
     val scheme = if (uri.getScheme == null || uri.getScheme.equals("null")) Environment.FILE_CLIENT_DEFAULT_SCHEME else uri.getScheme
     innerClients(scheme).download(path, destPath)
+  }
+
+  def main(args: Array[String]): Unit = {
+    Class.forName("com.oceanum.file.ClusterFileClient")
   }
 }

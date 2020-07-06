@@ -39,6 +39,7 @@ class ExecutionInstance extends Actor with ActorLogging {
 
   override def receive: Receive = {
     case ExecuteOperatorRequest(operatorMessage, handler) =>
+      println("execute: " + operatorMessage + handler)
       val metadata = operatorMessage.metadata
       implicit val executor: ExecutionContext = Environment.GLOBAL_EXECUTOR
       val actor = sender()
@@ -46,6 +47,7 @@ class ExecutionInstance extends Actor with ActorLogging {
         case Success(operator) =>
           self ! (operator, actor, operatorMessage.metadata, handler)
         case Failure(e) =>
+          e.printStackTrace()
           implicit val hook: Hook = new Hook {
             override def kill(): Boolean = true
             override def isKilled: Boolean = true
@@ -57,6 +59,7 @@ class ExecutionInstance extends Actor with ActorLogging {
           implicit val clientHolder: ClientHolder = ClientHolder(actor)
           context.become(failed(metadata + ("message" -> e.getMessage)))
       }
+
     case (operator: Operator[_], actor: ActorRef, metadata: Metadata, handler: StateHandler) =>
       val duration = fd"${handler.checkInterval()}"
       log.info("receive operator: [{}], receive schedule check state request from [{}], start schedule with duration [{}]", operator, sender, duration)
@@ -68,16 +71,6 @@ class ExecutionInstance extends Actor with ActorLogging {
       context.become(offline(metadata))
       actor ! ExecuteOperatorResponse(metadata, handler)
 
-//      val operator = operatorMessage.toOperator(listener(metadata))
-//      val duration = fd"${handler.checkInterval()}"
-//      log.info("receive operator: [{}], receive schedule check state request from [{}], start schedule with duration [{}]", operator, sender, duration)
-//      implicit val hook: Hook = RunnerManager.submit(operator)
-//      implicit val cancelable: Cancellable = schedule(duration, duration) {
-//        self.tell(CheckState, sender())
-//      }
-//      implicit val clientHolder: ClientHolder = ClientHolder(sender())
-//      context.become(offline(operatorMessage.metadata))
-//      sender ! ExecuteOperatorResponse(operatorMessage, handler)
     case message => println("unknown message: " + message)
   }
 

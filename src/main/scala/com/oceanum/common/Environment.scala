@@ -2,13 +2,18 @@ package com.oceanum.common
 
 import java.io.{File, FileInputStream}
 import java.util.Properties
+import java.util.concurrent.atomic.AtomicBoolean
 
 import akka.actor.ActorSystem
 import Implicits.DurationHelper
 import com.oceanum.cluster.exec.{OperatorTask, OutputManager, TypedRunner}
 import com.oceanum.cluster.executors.ProcessRunner
 import Implicits.PathHelper
+import ch.qos.logback.classic.LoggerContext
+import ch.qos.logback.classic.joran.JoranConfigurator
+import com.oceanum.file.FileClient
 import com.typesafe.config.ConfigFactory
+import org.slf4j.LoggerFactory
 
 import scala.collection.JavaConversions.seqAsJavaList
 import scala.concurrent.ExecutionContext
@@ -55,6 +60,8 @@ object Environment {
   lazy val CLUSTER_NODE_METRICS_PING_INTERVAL: FiniteDuration = fd"${getProperty(Key.CLUSTER_NODE_METRICS_PING_INTERVAL, "20s")}"
   lazy val CLUSTER_NODE_METRICS_PING_TIMEOUT: FiniteDuration = fd"${getProperty(Key.CLUSTER_NODE_METRICS_PING_TIMEOUT, "100s")}"
   lazy val CLUSTER_NODE_LOGGER: String = getProperty(Key.CLUSTER_NODE_LOGGER, logger)
+  lazy val CLUSTER_NODE_RUNNER_STDOUT_HANDLER: String = "com.oceanum.cluster.exec.StdoutFileOutputHandler"
+  lazy val CLUSTER_NODE_RUNNER_STDERR_HANDLER: String = "com.oceanum.cluster.exec.StderrFileOutputHandler"
 
   lazy val CLIENT_NODE_SYSTEM_NAME: String = getProperty(Key.CLIENT_NODE_SYSTEM_NAME, "client")
   lazy val CLIENT_NODE_PORT: Int = getProperty(Key.CLIENT_NODE_PORT, "4551").toInt
@@ -62,13 +69,13 @@ object Environment {
   lazy val CLIENT_SYSTEM: ActorSystem = clientSystem()
 
   lazy val FILE_CLIENT_DEFAULT_SCHEME: String = getProperty(Key.FILE_CLIENT_DEFAULT_SCHEME, "cluster")
-  lazy val FILE_CLIENT_CLASSES: Set[String] = (str2arr(getProperty(Key.FILE_CLIENT_CLASSES, "")) :+ "com.oceanum.file.ClusterFileClient").toSet
+  lazy val FILE_CLIENT_CLASSES: Set[Class[_]] = str2arr(getProperty(Key.FILE_CLIENT_CLASSES, "com.oceanum.file.ClusterFileClient")).toSet.map(Class.forName)
   lazy val FILE_SERVER_SYSTEM: ActorSystem = fileServerSystem()
   lazy val FILE_SERVER_CONTEXT_PATH: String = getProperty(Key.FILE_SERVER_CONTEXT_PATH, "file")
   lazy val FILE_SERVER_PORT: Int = getProperty(Key.FILE_SERVER_PORT, "7011").toInt
   lazy val FILE_SERVER_SYSTEM_NAME: String = getProperty(Key.FILE_SERVER_SYSTEM_NAME, "file-server")
   lazy val FILE_SERVER_CHUNK_SIZE: Int = getProperty(Key.FILE_SERVER_CHUNK_SIZE, "8192").toInt
-  lazy val FILE_SERVER_BASE_PATH: String = getProperty(Key.FILE_SERVER_BASE_PATH, if (OS == WINDOWS) "" else "/")
+  lazy val FILE_SERVER_BASE_PATH: String = fileServerBasePath(getProperty(Key.FILE_SERVER_BASE_PATH, if (OS == WINDOWS) "" else "/"))
   lazy val FILE_SERVER_RECURSIVE_TRANSFER_MAX: Int = getProperty(Key.FILE_SERVER_RECURSIVE_TRANSFER_MAX, "100").toInt
   lazy val FILE_SERVER_DISPATCHER_CORE_POOL_SIZE_MIN: Int = getProperty(Key.FILE_SERVER_DISPATCHER_CORE_POOL_SIZE_MIN, "6").toInt
   lazy val FILE_SERVER_DISPATCHER_CORE_POOL_SIZE_FACTOR: Int = getProperty(Key.FILE_SERVER_DISPATCHER_CORE_POOL_SIZE_MIN, "5").toInt
@@ -105,6 +112,7 @@ object Environment {
     import scala.collection.JavaConversions.asScalaSet
     println("config:")
     properties.keySet().foreach(k => println(s"\t$k -> ${getProperty(k.toString)}"))
+    FILE_CLIENT_CLASSES
   }
 
   def getProperty(key: String): String = {
@@ -116,6 +124,7 @@ object Environment {
   }
 
   private def getBasePath(path: String): String = new File(path).getAbsolutePath
+  private def fileServerBasePath(path: String): String = if (path.trim.isEmpty && OS != WINDOWS) "/" else path
 
   private def load(files: Array[String]): Unit = {
     println("load:")
@@ -131,7 +140,11 @@ object Environment {
     System.setProperty("conf." + key, value)
   }
 
+  private val loaded: AtomicBoolean = new AtomicBoolean(false)
   def loadArgs(args: Array[String]): Unit = {
+    if (loaded.get()) {
+      return
+    }
     val arg: Map[String, String] = args
       .map(str => str.split("="))
       .map(arr => (arr(0), arr(1)))
@@ -142,7 +155,8 @@ object Environment {
 
     load(Key.BASE_PATH, arg.getOrElse("--base-path", new File(".").getCanonicalPath))
 
-    val paths = arg.getOrElse("--conf", "conf" / "application.properties,conf" / "application-env.properties")
+    val path = BASE_PATH/"conf/application.properties," + BASE_PATH/"conf/application-env.properties"
+    val paths = arg.getOrElse("--conf", path)
       .split(",")
       .map(_.trim)
       .filter(_.nonEmpty)
@@ -181,7 +195,15 @@ object Environment {
     properties.keySet().map(_.toString).foreach {key =>
       load(key, getProperty(key))
     }
-    print()
+    val logback = new File(BASE_PATH/"conf"/"logback.xml")
+    if (logback.exists()) {
+      val configurator = new JoranConfigurator()
+      val lc = LoggerFactory.getILoggerFactory.asInstanceOf[LoggerContext]
+      configurator.setContext(lc)
+      lc.reset()
+      configurator.doConfigure(logback)
+    }
+    loaded.set(true)
   }
 
   private def str2arr(string: String): Array[String] = {

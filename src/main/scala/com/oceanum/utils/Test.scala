@@ -17,11 +17,13 @@ import com.oceanum.file.ClusterFileServer
  * @date 2020/6/18
  */
 object Test {
-  val ip: String = getSelfAddress
+//  val ip: String = getSelfAddress
 //  val ip: String = "127.0.0.1"
+  val ip2 = "192.168.10.131"
+  val ip1 = "192.168.10.55"
 
   def startCluster(args: Array[String]): Unit = {
-    ClusterStarter.main(Array("--port=3551", "--topics=t1,a1", s"--host=$ip", s"--seed-node=$ip", "--conf=src"/"main"/"resources"/"application.properties,src"/"main"/"resources"/"application-env.properties"))
+    ClusterStarter.main(Array("--port=3551", "--topics=t1,a1", s"--host=$ip1", s"--seed-node=$ip2", "--conf=src"/"main"/"resources"/"application.properties,src"/"main"/"resources"/"application-env.properties"))
   }
 
 
@@ -31,15 +33,16 @@ object Test {
 
     implicit val executionContext: ExecutionContextExecutor = ExecutionContext.global
     implicit val timeout: Timeout = fd"10 second"
-    val client = SchedulerClient(ip, 5551, ip)
+    val client = SchedulerClient(ip1, 5551, ip2, "src/main/resources/application.properties")
     val future = client
       .execute(Task.builder.python()
           .id("test")
-          .topic("t1")
+          .topic("node1")
           .retryCount(3)
           .retryInterval("5 second")
           .priority(5)
-          .pyFile(Environment.BASE_PATH/"src"/"main"/"resources"/"test.py")
+//          .pyFile(Environment.BASE_PATH/"src"/"main"/"resources"/"test.py")
+          .pyFile("/root/test/test.py")
           .args("hello", "world")
           .waitForTimeout("100s")
           .build)
@@ -71,14 +74,15 @@ object Test {
   }
 
   def main(args: Array[String]): Unit = {
-    startCluster(args)
-    //    MetricsListener.start()
-    import com.oceanum.common.Implicits._
-    implicit val timeout: Timeout = fd"10 second"
-//
-    scala.io.StdIn.readLine()
-    val client = SchedulerClient(ip, 5555, ip)
-    ClusterFileServer.start().value
+//    startCluster(args)
+//    //    MetricsListener.start()
+//    import com.oceanum.common.Implicits._
+//    implicit val timeout: Timeout = fd"10 second"
+////
+//    scala.io.StdIn.readLine()
+//    val client = SchedulerClient(ip1, 5555, ip2)
+//    ClusterFileServer.start().value
+
 //    scala.io.StdIn.readLine()
 //    println("handle cluster metrics")
 //    val hook = client.handleClusterMetrics("2s") { m =>
