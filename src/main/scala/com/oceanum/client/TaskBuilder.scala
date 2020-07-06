@@ -22,6 +22,8 @@ abstract class TaskBuilder[T <: TaskBuilder[_]](task: Task) {
 
   def priority(priority: Int): T = typedBuilder(task.copy(priority = priority))
 
+  def build(suUser: String): Task = task.copy(prop = SuUserTaskProp(suUser, task.prop.asInstanceOf[ProcessTaskProp]))
+
   def build: Task = task
 
   protected def typedBuilder(task: Task): T

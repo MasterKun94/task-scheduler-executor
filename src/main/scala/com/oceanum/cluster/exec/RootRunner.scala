@@ -6,7 +6,7 @@ import com.oceanum.common.Environment
  * @author chenmingkun
  * @date 2020/5/9
  */
-object RootRunner extends  TaskRunner {
+object RootRunner extends TaskRunner {
 
   override def run(operatorProp: Operator[_ <: OperatorTask]): ExitCode = {
     Environment.TASK_RUNNERS.find(_.executable(operatorProp.prop)) match {

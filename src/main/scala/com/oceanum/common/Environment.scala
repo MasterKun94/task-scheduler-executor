@@ -127,10 +127,9 @@ object Environment {
   private def fileServerBasePath(path: String): String = if (path.trim.isEmpty && OS != WINDOWS) "/" else path
 
   private def load(files: Array[String]): Unit = {
-    println("load:")
     for (file <- files) {
       val path = parsePath(file)
-      println("\t" + path)
+      println("load: " + path)
       properties.load(new FileInputStream(new File(path)))
     }
   }
@@ -149,9 +148,6 @@ object Environment {
       .map(str => str.split("="))
       .map(arr => (arr(0), arr(1)))
       .toMap
-
-    println("args: ")
-    arg.foreach(kv => println("\t" + kv))
 
     load(Key.BASE_PATH, arg.getOrElse("--base-path", new File(".").getCanonicalPath))
 
@@ -388,17 +384,5 @@ object Environment {
          |""".stripMargin
     ConfigFactory.parseString(configString)
     ActorSystem(FILE_SERVER_SYSTEM_NAME, ConfigFactory.parseString(configString))
-  }
-
-  def main(args: Array[String]): Unit = {
-//    println(properties)
-//    import scala.collection.JavaConversions.asScalaSet
-//    properties.keySet().foreach(key => println(s"$key = ${properties.get(key)}"))
-//    val uri: File = new File(getProperty("HADOOP_CONF_DIR"))
-//    println(uri.getPath)
-    println(BASE_PATH)
-    println(parsePath("C:/hello/test"))
-    println(parsePath("hello/test"))
-    println(parsePath("/home/hello"))
   }
 }

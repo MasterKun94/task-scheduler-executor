@@ -11,3 +11,11 @@ trait InputStreamHandler {
 
   def close()
 }
+
+object InputStreamHandler {
+  def empty: InputStreamHandler = new InputStreamHandler {
+    override def handle(input: InputStream): Unit = {}
+
+    override def close(): Unit = {}
+  }
+}

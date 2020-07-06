@@ -20,7 +20,7 @@ object Test {
 //  val ip: String = getSelfAddress
 //  val ip: String = "127.0.0.1"
   val ip2 = "192.168.10.131"
-  val ip1 = "192.168.10.55"
+  val ip1 = getSelfAddress
 
   def startCluster(args: Array[String]): Unit = {
     ClusterStarter.main(Array("--port=3551", "--topics=t1,a1", s"--host=$ip1", s"--seed-node=$ip2", "--conf=src"/"main"/"resources"/"application.properties,src"/"main"/"resources"/"application-env.properties"))
@@ -45,7 +45,7 @@ object Test {
           .pyFile("/root/test/test.py")
           .args("hello", "world")
           .waitForTimeout("100s")
-          .build)
+          .build("test1"))
     future
       .onComplete {
         case Success(value) =>
