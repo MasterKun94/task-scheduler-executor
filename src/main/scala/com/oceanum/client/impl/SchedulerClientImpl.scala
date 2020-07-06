@@ -4,14 +4,14 @@ import akka.actor.{Actor, ActorPaths, ActorRef, ActorSystem, PoisonPill, Props}
 import akka.cluster.client.{ClusterClient, ClusterClientSettings}
 import akka.pattern.ask
 import akka.util.Timeout
-import com.oceanum.client.actors.{ClientExecutor, ClientListener, ExecutorFinder, HandlerActor}
+import com.oceanum.client.actors.{ClientInstance, ClientListener, ClientEndpoint, HandlerActor}
 import com.oceanum.client.{SchedulerClient, ShutdownHook, StateHandler, Task, TaskInstance}
 import com.oceanum.common._
 
 import scala.concurrent.{ExecutionContext, Future}
 
 class SchedulerClientImpl(endpoint: ActorRef, system: ActorSystem)(implicit executionContext: ExecutionContext, timeout: Timeout) extends SchedulerClient {
-  private lazy val metricsClient = system.actorOf(Props(classOf[ExecutorFinder], endpoint), "metrics-client")
+  private lazy val metricsClient = system.actorOf(Props(classOf[ClientEndpoint], endpoint), "metrics-client")
 
   override def execute(task: Task, stateHandler: StateHandler = StateHandler.empty()): Future[TaskInstance] = {
     doExecute(AvailableExecutorRequest(task.topic), task, stateHandler)
@@ -22,7 +22,7 @@ class SchedulerClientImpl(endpoint: ActorRef, system: ActorSystem)(implicit exec
   }
 
   private def getClient(implicit executionContext: ExecutionContext): ActorRef = {
-    system.actorOf(Props(classOf[ExecutorFinder], endpoint), "client-actor")
+    system.actorOf(Props(classOf[ClientEndpoint], endpoint), "client-actor")
   }
 
   private def doExecute(requestMsg: Message, task: Task, stateHandler: StateHandler = StateHandler.empty()): Future[TaskInstance] = {
@@ -32,7 +32,7 @@ class SchedulerClientImpl(endpoint: ActorRef, system: ActorSystem)(implicit exec
       .mapTo[AvailableExecutorResponse]
       .flatMap(response => {
         val res = response.executor
-          .map(executor => system.actorOf(Props(classOf[ClientExecutor], executor.actor)))
+          .map(executor => system.actorOf(Props(classOf[ClientInstance], executor.actor)))
           .map(client => client
             .ask(ExecuteOperatorRequest(task, stateHandler))
             .map(_ => client)

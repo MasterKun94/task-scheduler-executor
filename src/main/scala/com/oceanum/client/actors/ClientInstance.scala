@@ -6,7 +6,7 @@ import com.oceanum.cluster.exec.State
 import com.oceanum.cluster.exec.State.{FAILED, KILL, SUCCESS}
 import com.oceanum.common._
 
-class ClientExecutor(executor: ActorRef) extends Actor with ActorLogging {
+class ClientInstance(executor: ActorRef) extends Actor with ActorLogging {
 
   override def receive: Receive = {
     case req: ExecuteOperatorRequest =>

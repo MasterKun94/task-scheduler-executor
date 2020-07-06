@@ -11,7 +11,7 @@ import scala.concurrent.ExecutionContext
  * @author chenmingkun
  * @date 2020/5/3
  */
-class ExecutorFinder(clusterClient: ActorRef) extends Actor with ActorLogging {
+class ClientEndpoint(clusterClient: ActorRef) extends Actor with ActorLogging {
 
   override def receive: Receive = {
     case req: AvailableExecutorsRequest =>
