@@ -4,7 +4,7 @@ import akka.actor.{Actor, ActorLogging, ActorRef, Cancellable, PoisonPill, Props
 import akka.cluster.ClusterEvent.{MemberEvent, UnreachableMember}
 import akka.cluster.metrics.{ClusterMetricsChanged, ClusterMetricsExtension}
 import akka.cluster.pubsub.DistributedPubSub
-import akka.cluster.pubsub.DistributedPubSubMediator.{Subscribe, Unsubscribe}
+import akka.cluster.pubsub.DistributedPubSubMediator.{Subscribe, SubscribeAck, Unsubscribe}
 import akka.cluster.singleton.{ClusterSingletonManager, ClusterSingletonManagerSettings}
 import akka.cluster.{Cluster, ClusterEvent}
 import com.oceanum.common.Implicits.DurationHelper
@@ -112,6 +112,8 @@ class MetricsListener extends Actor with ActorLogging {
       updateIfExist(stateListeners)
       updateIfExist(taskInfoListeners)
 
+    case SubscribeAck(sub) => log.info("subscribe ack: " + sub)
+
     case unknown =>
       println("unknown: " + unknown)
   }
@@ -139,6 +141,7 @@ class MetricsListener extends Actor with ActorLogging {
 }
 
 object MetricsListener {
+
   def start(): Unit = {
     val system = Environment.CLUSTER_NODE_SYSTEM
     system.actorOf(ClusterSingletonManager.props(

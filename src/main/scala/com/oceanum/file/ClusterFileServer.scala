@@ -15,9 +15,10 @@ import com.oceanum.ClusterStarter
 import com.oceanum.common.{Environment, Log}
 import com.oceanum.utils.Test
 
+import scala.None
 import scala.annotation.tailrec
 import scala.concurrent.Future
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
 
 /**
  * @author chenmingkun
@@ -117,12 +118,11 @@ object ClusterFileServer extends Log(Environment.FILE_SERVER_SYSTEM) {
       }
   }
 
-  private lazy val bindingFuture: Future[Http.ServerBinding] = Http().bindAndHandle(route, host, port)
-
-  def start(): Future[Http.ServerBinding] = bindingFuture
+  def start(): Future[Http.ServerBinding] = Http().bindAndHandle(route, host, port)
 
   def main(args: Array[String]): Unit = {
-    Test.startCluster(args)
+    Environment.loadArgs(args)
+    Environment.print()
     start()
   }
 }

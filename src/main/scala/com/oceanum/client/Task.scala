@@ -1,27 +1,35 @@
 package com.oceanum.client
 
 import com.oceanum.cluster.exec.{EventListener, Operator, OperatorTask}
+import com.oceanum.common.Environment
 import com.oceanum.common.Implicits.TaskMetadataHelper
 
 import scala.concurrent.{ExecutionContext, Future}
 
-@SerialVersionUID(22222200L)
+@SerialVersionUID(1L)
 case class Task(id: String,
-                topic: String = "default",
-                user: String = "default",
-                retryCount: Int = 1,
-                retryInterval: String = "3 minute",
-                priority: Int = 5,
+                topic: String = Environment.EXEC_DEFAULT_TOPIC,
+                user: String = Environment.EXEC_DEFAULT_USER,
+                retryCount: Int = Environment.EXEC_DEFAULT_RETRY_MAX,
+                retryInterval: String = Environment.EXEC_DEFAULT_RETRY_INTERVAL,
+                priority: Int = Environment.EXEC_DEFAULT_PRIORITY,
                 prop: TaskProp,
                 private val meta: Metadata = Metadata.empty) {
-  def init(listener: EventListener)(implicit executor: ExecutionContext): Future[Operator[_ <: OperatorTask]] = prop.init(metadata).map(ot => Operator(
-    id,
-    retryCount,
-    retryInterval,
-    priority,
-    ot,
-    listener
-  ))
+  def init(listener: EventListener)(implicit executor: ExecutionContext): Future[Operator[_ <: OperatorTask]] = {
+    val task = metadata.lazyInit(this)
+    println(task)
+    task
+      .prop
+      .init(metadata)
+      .map(ot => Operator(
+        name = id,
+        retryCount = retryCount,
+        retryInterval = retryInterval,
+        priority = priority,
+        prop = ot,
+        eventListener = listener
+      ))
+  }
 
   def metadata: Metadata = meta.withTask(this)
 }

@@ -26,10 +26,13 @@ abstract class ProcessTaskProp(task: String) extends TaskProp with Serializable 
   def toTask(metadata: Metadata, fileMap: Map[String, String]): ProcessTask
 
   override def init(metadata: Metadata)(implicit executor: ExecutionContext): Future[ProcessTask] = {
-    val fileMap: Map[String, String] = files.map(src => (src, metadata.execDir/new File(src).getName)).toMap
+    val fileMap: Map[String, String] = files
+      .map(src => (src, metadata.execDir/new File(src).getName))
+      .toMap
     fileMap.map(kv => FileClient.download(kv._1, kv._2))
       .reduce((f1, f2) => f1.flatMap(_ => f2))
       .map(_ => toTask(metadata, fileMap))
+      .map(task => SuUserTask(metadata.user, task))
   }
 
   override def taskType: String = task
@@ -96,11 +99,4 @@ case class PythonTaskProp(pyFile: String = "",
 
   override def toTask(metadata: Metadata, fileMap: Map[String, String]): ProcessTask = PythonTask(
     fileMap(pyFile), args, env, directory, waitForTimeout, metadata.stdoutHandler, metadata.stderrHandler)
-}
-
-@SerialVersionUID(1L)
-case class SuUserTaskProp(user: String, prop: ProcessTaskProp) extends ProcessTaskProp("SU_USER_" + prop.taskType) {
-  override def files: Seq[String] = prop.files
-
-  override def toTask(metadata: Metadata, fileMap: Map[String, String]): ProcessTask = SuUserTask(user, prop.toTask(metadata, fileMap))
 }

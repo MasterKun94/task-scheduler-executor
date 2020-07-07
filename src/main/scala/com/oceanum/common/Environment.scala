@@ -37,12 +37,16 @@ object Environment {
   lazy val EXEC_JAVA_ENABLED: Boolean = getProperty(Key.EXEC_JAVA_ENABLED, "false").toBoolean
   lazy val EXEC_SCALA: String = getProperty(Key.EXEC_SCALA, "scala")
   lazy val EXEC_SCALA_ENABLED: Boolean = getProperty(Key.EXEC_SCALA_ENABLED, "false").toBoolean
-  lazy val EXEC_SHELL: String = getProperty(Key.EXEC_SHELL, "bash")
+  lazy val EXEC_SHELL: String = getProperty(Key.EXEC_SHELL, "sh")
+  lazy val EXEC_SHELL_ENABLED: Boolean = getProperty(Key.EXEC_SHELL_ENABLED, "true").toBoolean
   lazy val EXEC_SPARK: String = getProperty(Key.EXEC_SPARK, "spark-submit")
   lazy val EXEC_SPARK_ENABLED: String = getProperty(Key.EXEC_SPARK_ENABLED, "false")
   lazy val EXEC_SPARK_HOME: String = getProperty(Key.EXEC_SPARK_HOME)
-
-  lazy val EXEC_SHELL_ENABLED: Boolean = getProperty(Key.EXEC_SHELL_ENABLED, "true").toBoolean
+  lazy val EXEC_DEFAULT_USER: String = "root"
+  lazy val EXEC_DEFAULT_RETRY_INTERVAL: String = "5 minute"
+  lazy val EXEC_DEFAULT_RETRY_MAX: Int = 1
+  lazy val EXEC_DEFAULT_PRIORITY: Int = 5
+  lazy val EXEC_DEFAULT_TOPIC: String = "all"
   lazy val EXEC_WORK_DIR: String = getProperty(Key.EXEC_WORK_DIR, BASE_PATH/"exec").toAbsolute()
   lazy val EXEC_THREAD_NUM: Int = getProperty(Key.EXEC_THREAD_NUM, "16").toInt
   lazy val EXEC_MAX_TIMEOUT: FiniteDuration = fd"${getProperty(Key.EXEC_MAX_TIMEOUT, "24h")}"
@@ -52,7 +56,7 @@ object Environment {
   lazy val CLUSTER_NODE_SYSTEM_NAME: String = getProperty(Key.CLUSTER_NODE_SYSTEM_NAME, "cluster")
   lazy val CLUSTER_NODE_PORT: Int = getProperty(Key.CLUSTER_NODE_PORT, "3551").toInt
   lazy val CLUSTER_NODE_SEEDS: Seq[String] = getProperty(Key.CLUSTER_NODE_SEEDS, "127.0.0.1:3551").split(",").map(node => s"akka.tcp://$CLUSTER_NODE_SYSTEM_NAME@$node").toSeq
-  lazy val CLUSTER_NODE_TOPICS: Seq[String] = getProperty(Key.CLUSTER_NODE_TOPICS).split(",").map(_.trim).toSeq
+  lazy val CLUSTER_NODE_TOPICS: Seq[String] = getProperty(Key.CLUSTER_NODE_TOPICS, "default").split(",").map(_.trim).toSeq
   lazy val CLUSTER_NODE_SYSTEM: ActorSystem = clusterSystem()
   lazy val CLUSTER_NODE_METRICS_SAMPLE_INTERVAL: String = getProperty(Key.CLUSTER_NODE_METRICS_SAMPLE_INTERVAL, "5s")
   lazy val CLUSTER_NODE_METRICS_TOPIC: String = getProperty(Key.CLUSTER_NODE_METRICS_TOPIC, "cluster-node-metrics")
@@ -89,6 +93,7 @@ object Environment {
 
   lazy val TASK_RUNNERS: Array[TypedRunner[_ <: OperatorTask]] = Array(new ProcessRunner(OutputManager.global))
   lazy val PATH_SEPARATOR: String = File.separator
+  lazy val LOG_LOGBACK: String = getProperty(Key.LOG_LOGBACK, BASE_PATH/"conf"/"logback.xml").toAbsolute()
   lazy val LOG_FILE: String = LOG_FILE_DIR/LOG_FILE_NAME
   lazy val LOG_FILE_DIR: String = getProperty(Key.LOG_FILE_DIR, BASE_PATH/"log").toAbsolute()
   lazy val LOG_FILE_NAME: String = getProperty(Key.LOG_FILE_NAME, "task-executor.%d{yyyy-MM-dd}.log")
@@ -191,7 +196,7 @@ object Environment {
     properties.keySet().map(_.toString).foreach {key =>
       load(key, getProperty(key))
     }
-    val logback = new File(BASE_PATH/"conf"/"logback.xml")
+    val logback = new File(LOG_LOGBACK)
     if (logback.exists()) {
       val configurator = new JoranConfigurator()
       val lc = LoggerFactory.getILoggerFactory.asInstanceOf[LoggerContext]
@@ -287,6 +292,7 @@ object Environment {
     val FILE_SERVER_LOGGER = "file-server.logger"
     val DEV_MODE: String = "dev-mode"
     val CLUSTER_NODE_TASK_INFO_TRIGGER_INTERVAL: String = "cluster-node.task-info.trigger.interval"
+    val LOG_LOGBACK = "log.logback"
     val LOG_FILE_DIR = "log.file.dir"
     val LOG_FILE_NAME = "log.file.name"
     val LOG_FILE = "log.file"

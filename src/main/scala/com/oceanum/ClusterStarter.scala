@@ -18,7 +18,6 @@ object ClusterStarter {
   }
 
   def start(): Unit = {
-
     val system = Environment.CLUSTER_NODE_SYSTEM
     system.actorOf(Props(classOf[ClusterNode]), "cluster-node")
     val service = system.actorOf(Props(classOf[ExecutionEndpoint]), "execution-endpoint")

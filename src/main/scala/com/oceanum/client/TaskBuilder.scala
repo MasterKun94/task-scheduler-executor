@@ -4,12 +4,15 @@ import java.text.SimpleDateFormat
 import java.util.{Date, UUID}
 
 import scala.concurrent.duration.Duration
+import com.oceanum.common.Implicits.TaskMetadataHelper
 
 /**
  * @author chenmingkun
  * @date 2020/7/1
  */
-abstract class TaskBuilder[T <: TaskBuilder[_]](task: Task) {
+abstract class TaskBuilder[T <: TaskBuilder[_, _], P <: TaskProp](task: Task) {
+  protected val prop: P = task.prop.asInstanceOf[P]
+
   def id(id: String): T = typedBuilder(task.copy(id = id))
 
   def topic(topic: String): T = typedBuilder(task.copy(topic = topic))
@@ -22,8 +25,11 @@ abstract class TaskBuilder[T <: TaskBuilder[_]](task: Task) {
 
   def priority(priority: Int): T = typedBuilder(task.copy(priority = priority))
 
-  def build(suUser: String): Task = task.copy(prop = SuUserTaskProp(suUser, task.prop.asInstanceOf[ProcessTaskProp]))
-
+  def lazyInit(func: T => T): T = {
+    val builderClazz = this.getClass
+    val f: Task => Task = task => func(builderClazz.getConstructor(classOf[Task]).newInstance(task).asInstanceOf[T]).build
+    typedBuilder(task.copy(meta = task.metadata.setLazyInit(f)))
+  }
   def build: Task = task
 
   protected def typedBuilder(task: Task): T
@@ -31,8 +37,7 @@ abstract class TaskBuilder[T <: TaskBuilder[_]](task: Task) {
   protected def typedBuilder(prop: TaskProp): T = typedBuilder(task.copy(prop = prop))
 }
 
-class ShellTaskBuilder(task: Task) extends TaskBuilder[ShellTaskBuilder](task) {
-  private val prop = task.prop.asInstanceOf[ShellTaskProp]
+class ShellTaskBuilder(task: Task) extends TaskBuilder[ShellTaskBuilder, ShellTaskProp](task) {
   override protected def typedBuilder(task: Task): ShellTaskBuilder = new ShellTaskBuilder(task)
 
   def command(cmd: Array[String]): ShellTaskBuilder = typedBuilder(prop.copy(cmd = cmd))
@@ -46,10 +51,10 @@ class ShellTaskBuilder(task: Task) extends TaskBuilder[ShellTaskBuilder](task) {
   def directory(dir: String): ShellTaskBuilder = typedBuilder(prop.copy(directory = dir))
 
   def waitForTimeout(timeout: String): ShellTaskBuilder = typedBuilder(prop.copy(waitForTimeout = Duration(timeout).toMillis))
+
 }
 
-class ShellScriptTaskBuilder(task: Task) extends TaskBuilder[ShellScriptTaskBuilder](task) {
-  private val prop = task.prop.asInstanceOf[ShellScriptTaskProp]
+class ShellScriptTaskBuilder(task: Task) extends TaskBuilder[ShellScriptTaskBuilder, ShellScriptTaskProp](task) {
   override protected def typedBuilder(task: Task): ShellScriptTaskBuilder = new ShellScriptTaskBuilder(task)
 
   def scriptFile(file: String): ShellScriptTaskBuilder = typedBuilder(prop.copy(scriptFile = file))
@@ -65,8 +70,7 @@ class ShellScriptTaskBuilder(task: Task) extends TaskBuilder[ShellScriptTaskBuil
   def waitForTimeout(timeout: String): ShellScriptTaskBuilder = typedBuilder(prop.copy(waitForTimeout = Duration(timeout).toMillis))
 }
 
-class JavaTaskBuilder(task: Task) extends TaskBuilder[JavaTaskBuilder](task) {
-  private val prop = task.prop.asInstanceOf[JavaTaskProp]
+class JavaTaskBuilder(task: Task) extends TaskBuilder[JavaTaskBuilder, JavaTaskProp](task) {
   override protected def typedBuilder(task: Task): JavaTaskBuilder = new JavaTaskBuilder(task)
 
   def jars(jarPaths: String*): JavaTaskBuilder = typedBuilder(prop.copy(jars = prop.jars ++ jarPaths))
@@ -90,8 +94,7 @@ class JavaTaskBuilder(task: Task) extends TaskBuilder[JavaTaskBuilder](task) {
   def waitForTimeout(timeout: String): JavaTaskBuilder = typedBuilder(prop.copy(waitForTimeout = Duration(timeout).toMillis))
 }
 
-class ScalaTaskBuilder(task: Task) extends TaskBuilder[ScalaTaskBuilder](task) {
-  private val prop = task.prop.asInstanceOf[ScalaTaskProp]
+class ScalaTaskBuilder(task: Task) extends TaskBuilder[ScalaTaskBuilder, ScalaTaskProp](task) {
   override protected def typedBuilder(task: Task): ScalaTaskBuilder = new ScalaTaskBuilder(task)
 
   def jars(jarPaths: String*): ScalaTaskBuilder = typedBuilder(prop.copy(jars = prop.jars ++ jarPaths))
@@ -115,8 +118,7 @@ class ScalaTaskBuilder(task: Task) extends TaskBuilder[ScalaTaskBuilder](task) {
   def waitForTimeout(timeout: String): ScalaTaskBuilder = typedBuilder(prop.copy(waitForTimeout = Duration(timeout).toMillis))
 }
 
-class PythonTaskBuilder(task: Task) extends TaskBuilder[PythonTaskBuilder](task) {
-  private val prop = task.prop.asInstanceOf[PythonTaskProp]
+class PythonTaskBuilder(task: Task) extends TaskBuilder[PythonTaskBuilder, PythonTaskProp](task) {
   override protected def typedBuilder(task: Task): PythonTaskBuilder = new PythonTaskBuilder(task)
 
   def pyFile(file: String): PythonTaskBuilder = typedBuilder(prop.copy(pyFile = file))

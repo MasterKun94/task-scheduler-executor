@@ -5,7 +5,7 @@ import java.text.SimpleDateFormat
 import java.util.regex.Matcher
 
 import com.oceanum.client.{Metadata, Task}
-import com.oceanum.cluster.exec.{InputStreamHandler, LineHandler}
+import com.oceanum.cluster.exec.InputStreamHandler
 
 import scala.concurrent.duration.{Duration, FiniteDuration}
 import scala.util.Properties
@@ -48,6 +48,14 @@ object Implicits {
       .newInstance(metadata)
       .asInstanceOf[InputStreamHandler]
     def execDir: String = metadata("execDir")
+
+    type BuilderFunc = Task => Task
+    def setLazyInit(func: BuilderFunc): Metadata = metadata + ("lazyInit" -> func)
+
+    def lazyInit(task: Task): Task = metadata.get("lazyInit") match {
+      case Some(f) => f.asInstanceOf[BuilderFunc](task)
+      case None => task
+    }
 
     private lazy val outputPath: String = {
       //创建文件路径//创建文件路径
