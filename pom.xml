@@ -51,6 +51,8 @@ under the License.
 		<scala.binary.version>2.11</scala.binary.version>
 		<scala.version>2.11.12</scala.version>
 		<akka.version>2.5.31</akka.version>
+		<akka.http.version>10.1.12</akka.http.version>
+		<hadoop.version>2.6.0</hadoop.version>
 		<output.dir>executor</output.dir>
 	</properties>
 
@@ -79,13 +81,13 @@ under the License.
 		<dependency>
 			<groupId>com.typesafe.akka</groupId>
 			<artifactId>akka-http_2.11</artifactId>
-			<version>10.1.12</version>
+			<version>${akka.http.version}</version>
 		</dependency>
 
 		<dependency>
 			<groupId>org.apache.hadoop</groupId>
 			<artifactId>hadoop-client</artifactId>
-			<version>2.6.0</version>
+			<version>${hadoop.version}</version>
 			<exclusions>
 				<exclusion>
 					<groupId>org.slf4j</groupId>

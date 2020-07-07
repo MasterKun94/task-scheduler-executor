@@ -29,8 +29,4 @@ object FileClient extends FileClient("root") {
     val scheme = if (uri.getScheme == null || uri.getScheme.equals("null")) Environment.FILE_CLIENT_DEFAULT_SCHEME else uri.getScheme
     innerClients(scheme).download(path, destPath)
   }
-
-  def main(args: Array[String]): Unit = {
-    Class.forName("com.oceanum.file.ClusterFileClient")
-  }
 }

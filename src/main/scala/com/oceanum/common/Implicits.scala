@@ -114,11 +114,4 @@ object Implicits {
       str.replaceAll("[/\\\\]", Matcher.quoteReplacement(separator))
     }
   }
-
-  def main(args: Array[String]): Unit = {
-    println(Properties.javaHome)
-    implicit val sep: String = "/"
-    println(Properties.javaHome.toAbsolute(", "))
-    println("C:" / "/tmp/" / "hello/" / "/test" / "123123" / "aaaa" / )
-  }
 }

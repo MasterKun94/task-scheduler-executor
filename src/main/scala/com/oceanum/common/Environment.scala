@@ -40,11 +40,11 @@ object Environment {
   lazy val EXEC_SPARK: String = getProperty(Key.EXEC_SPARK, "spark-submit")
   lazy val EXEC_SPARK_ENABLED: String = getProperty(Key.EXEC_SPARK_ENABLED, "false")
   lazy val EXEC_SPARK_HOME: String = getProperty(Key.EXEC_SPARK_HOME)
-  lazy val EXEC_DEFAULT_USER: String = "root"
-  lazy val EXEC_DEFAULT_RETRY_INTERVAL: String = "5 minute"
-  lazy val EXEC_DEFAULT_RETRY_MAX: Int = 1
-  lazy val EXEC_DEFAULT_PRIORITY: Int = 5
-  lazy val EXEC_DEFAULT_TOPIC: String = "all"
+  lazy val EXEC_DEFAULT_USER: String = getProperty(Key.EXEC_DEFAULT_USER, "root")
+  lazy val EXEC_DEFAULT_RETRY_INTERVAL: String = getProperty(Key.EXEC_DEFAULT_RETRY_INTERVAL)
+  lazy val EXEC_DEFAULT_RETRY_MAX: Int = getProperty(Key.EXEC_DEFAULT_RETRY_MAX).toInt
+  lazy val EXEC_DEFAULT_PRIORITY: Int = getProperty(Key.EXEC_DEFAULT_PRIORITY, "5").toInt
+  lazy val EXEC_DEFAULT_TOPIC: String = getProperty(Key.EXEC_DEFAULT_TOPIC, "default")
   lazy val EXEC_WORK_DIR: String = getProperty(Key.EXEC_WORK_DIR, BASE_PATH/"exec").toAbsolute()
   lazy val EXEC_THREAD_NUM: Int = getProperty(Key.EXEC_THREAD_NUM, "16").toInt
   lazy val EXEC_MAX_TIMEOUT: FiniteDuration = fd"${getProperty(Key.EXEC_MAX_TIMEOUT, "24h")}"
@@ -100,6 +100,10 @@ object Environment {
   lazy val LOG_FILE_MAX_SIZE: String = getProperty(Key.LOG_FILE_MAX_SIZE, "10MB")
   lazy val LOG_STDOUT_PATTERN: String = getProperty(Key.LOG_STDOUT_PATTERN, "[%highlight(%-5level)] %date{ISO8601} [%-46logger] - %msg%n")
 
+  lazy val HADOOP_HOME: String = getProperty(Key.HADOOP_HOME, System.getenv("HADOOP_HOME")).toPath()
+  lazy val HADOOP_FS_URL: String = getProperty(Key.HADOOP_FS_URL, "hdfs://localhost:9000")
+  lazy val HADOOP_USER: String = getProperty(Key.HADOOP_USER, "root")
+  lazy val HADOOP_BUFFER_SIZE: Int = getProperty(Key.HADOOP_BUFFER_SIZE, "8192").toInt
   lazy val DEV_MODE: Boolean = getProperty(Key.DEV_MODE, "false").toBoolean
   lazy val OS: OS = {
     val sys = scala.util.Properties
@@ -253,7 +257,11 @@ object Environment {
     val EXEC_SPARK: String = "exec.spark.cmd"
     val EXEC_SPARK_ENABLED: String = "exec.spark.enabled"
     val EXEC_SPARK_HOME: String = "exec.spark.home"
-
+    val EXEC_DEFAULT_USER: String = "exec.default.user"
+    val EXEC_DEFAULT_RETRY_INTERVAL: String = "exec.default.retry.interval"
+    val EXEC_DEFAULT_RETRY_MAX: String = "exec.default.retry.max"
+    val EXEC_DEFAULT_PRIORITY: String = "exec.default.priority"
+    val EXEC_DEFAULT_TOPIC: String = "exec.default.topic"
     val EXEC_WORK_DIR: String = "exec.work-dir"
     val EXEC_THREAD_NUM: String = "exec.thread-num"
     val EXEC_MAX_TIMEOUT: String = "exec.max-timeout"
@@ -270,6 +278,7 @@ object Environment {
     val CLUSTER_NODE_METRICS_PING_TIMEOUT: String = "cluster-node.metrics.ping.timeout"
     val CLUSTER_NODE_RUNNER_STDOUT_HANDLER: String = "cluster-node.runner.stdout.handler"
     val CLUSTER_NODE_RUNNER_STDERR_HANDLER: String = "cluster-node.runner.stderr.handler"
+    val CLUSTER_NODE_TASK_INFO_TRIGGER_INTERVAL: String = "cluster-node.task-info.trigger.interval"
     val CLUSTER_NODE_LOGGER: String = "cluster-node.logger"
     val CLIENT_NODE_SYSTEM_NAME: String = "client-node.system-name"
     val CLIENT_NODE_PORT: String = "client-node.port"
@@ -291,7 +300,6 @@ object Environment {
     val FILE_SERVER_HOST_CONNECTION_POOL_MAX_OPEN_REQUESTS = "file-server.host-connection.pool.max-open-requests"
     val FILE_SERVER_LOGGER = "file-server.logger"
     val DEV_MODE: String = "dev-mode"
-    val CLUSTER_NODE_TASK_INFO_TRIGGER_INTERVAL: String = "cluster-node.task-info.trigger.interval"
     val LOG_LOGBACK = "log.logback"
     val LOG_FILE_DIR = "log.file.dir"
     val LOG_FILE_NAME = "log.file.name"
@@ -300,6 +308,10 @@ object Environment {
     val LOG_FILE_MAX_HISTORY = "log.file.max-history"
     val LOG_FILE_MAX_SIZE = "log.file.max-size"
     val LOG_STDOUT_PATTERN = "log.stdout.pattern"
+    val HADOOP_HOME = "hadoop.home"
+    val HADOOP_FS_URL = "hadoop.fs.url"
+    val HADOOP_USER = "hadoop.user"
+    val HADOOP_BUFFER_SIZE = "hadoop.buffer.size"
   }
 
   private def clusterSystem(): ActorSystem = {
