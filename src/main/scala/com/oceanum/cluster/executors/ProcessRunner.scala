@@ -1,6 +1,6 @@
 package com.oceanum.cluster.executors
 
-import java.io.{File, IOException}
+import java.io.{File, IOException, InputStream}
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -14,10 +14,12 @@ import scala.collection.JavaConversions.{mapAsJavaMap, seqAsJavaList}
  * @author chenmingkun
  * @date 2020/4/28
  */
-class ProcessRunner(outputManager: OutputManager) extends TypedRunner[ProcessTask] {
+class ProcessRunner extends TypedRunner[ProcessTask] {
+  private val streamOutput = MailBox[(InputStream, InputStreamHandler)](Environment.EXEC_THREAD_NUM * 2) { r =>
+    r._2.handle(r._1)
+  }
 
   override protected def typedRun(operatorProp: Operator[_ <: ProcessTask]): ExitCode = {
-
     val prop = operatorProp.prop
     val cmd = prop.propCmd.toList
     log.info("exec cmd: [ {} ]", cmd.mkString(" "))
@@ -45,8 +47,8 @@ class ProcessRunner(outputManager: OutputManager) extends TypedRunner[ProcessTas
     }
     val input = process.getInputStream
     val error = process.getErrorStream
-    outputManager.submit(input, prop.propStdoutHandler)
-    outputManager.submit(error, prop.propStderrHandler)
+    streamOutput.send((input, prop.propStdoutHandler))
+    streamOutput.send((error, prop.propStderrHandler))
     val hook = new ShellHook(process)
     operatorProp.receive(hook)
     operatorProp.eventListener.running()
@@ -98,5 +100,9 @@ class ProcessRunner(outputManager: OutputManager) extends TypedRunner[ProcessTas
       case _: PythonTask => Environment.EXEC_PYTHON_ENABLED
       case SuUserTask(_, prop) => check(prop)
     }
+  }
+
+  override def close: Unit = {
+    streamOutput.close
   }
 }

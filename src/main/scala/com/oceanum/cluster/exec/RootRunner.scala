@@ -20,4 +20,6 @@ object RootRunner extends TaskRunner {
         ExitCode.UN_SUPPORT(operatorProp.prop.getClass)
     }
   }
+
+  override def close: Unit = Environment.TASK_RUNNERS.foreach(_.close)
 }

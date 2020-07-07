@@ -3,6 +3,7 @@ package com.oceanum.client
 import java.io.File
 
 import com.oceanum.cluster.exec.OperatorTask
+import com.oceanum.cluster.tasks.SysTasks.UserAddTask
 import com.oceanum.cluster.tasks._
 import com.oceanum.common.Implicits.TaskMetadataHelper
 import com.oceanum.file.FileClient
@@ -21,7 +22,7 @@ trait TaskProp extends Serializable {
 @SerialVersionUID(1L)
 abstract class ProcessTaskProp(task: String) extends TaskProp with Serializable {
 
-  def files: Seq[String]
+  def files: Seq[String] = Seq.empty
 
   def toTask(metadata: Metadata, fileMap: Map[String, String]): ProcessTask
 
@@ -43,8 +44,6 @@ case class ShellTaskProp(cmd: Array[String] = Array.empty,
                          env: Map[String, String] = Map.empty,
                          directory: String = "",
                          waitForTimeout: Long = -1) extends ProcessTaskProp("SHELL") {
-  override def files: Seq[String] = Seq.empty
-
   override def toTask(metadata: Metadata, fileMap: Map[String, String]): ProcessTask = ShellTask(
     cmd, env, directory, waitForTimeout, metadata.stdoutHandler, metadata.stderrHandler)
 }
@@ -99,4 +98,9 @@ case class PythonTaskProp(pyFile: String = "",
 
   override def toTask(metadata: Metadata, fileMap: Map[String, String]): ProcessTask = PythonTask(
     fileMap(pyFile), args, env, directory, waitForTimeout, metadata.stdoutHandler, metadata.stderrHandler)
+}
+
+@SerialVersionUID(1L)
+case class UserAdd(user: String) extends ProcessTaskProp("USER_ADD") {
+  override def toTask(metadata: Metadata, fileMap: Map[String, String]): ProcessTask = UserAddTask(user)
 }

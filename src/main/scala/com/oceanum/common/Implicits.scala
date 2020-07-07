@@ -34,7 +34,6 @@ object Implicits {
   }
 
   implicit class TaskMetadataHelper(metadata: Metadata) {
-
     def id: String = metadata("id")
     def taskType: String = metadata("taskType")
     def user: String = metadata("user")
@@ -49,11 +48,11 @@ object Implicits {
       .asInstanceOf[InputStreamHandler]
     def execDir: String = metadata("execDir")
 
-    type BuilderFunc = Task => Task
-    def setLazyInit(func: BuilderFunc): Metadata = metadata + ("lazyInit" -> func)
+    type TaskFunc = Task => Task
+    def setLazyInit(func: TaskFunc): Metadata = metadata + ("lazyInit" -> func)
 
-    def lazyInit(task: Task): Task = metadata.get("lazyInit") match {
-      case Some(f) => f.asInstanceOf[BuilderFunc](task)
+    def lazyInit(task: Task): Task = metadata.get[TaskFunc]("lazyInit") match {
+      case Some(f) => f(task).copy(meta = task.metadata - "lazyInit")
       case None => task
     }
 

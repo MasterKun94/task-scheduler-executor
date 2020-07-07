@@ -40,12 +40,16 @@ object Test {
           .user("test1")
           .topic("node1")
           .retryCount(3)
-          .retryInterval("5 second")
-          .priority(5)
-          .pyFile("/root/test/test.py")
-          .args("hello", "world")
-          .waitForTimeout("100s")
-          .build)
+        .retryInterval("5 second")
+        .priority(5)
+        .pyFile("/root/test/test.py")
+        .args("hello", "world")
+        .waitForTimeout("100s")
+        .lazyInit(_
+          .user("root")
+        )
+        .build
+      )
     future
       .onComplete {
         case Success(value) =>

@@ -4,7 +4,7 @@ package com.oceanum.client
 case class Metadata(map: Map[String, Any]) {
   def +(kv: (String, Any)): Metadata = Metadata(map + (kv._1 -> kv._2))
 
-  def get(key: String): Option[Any] = map.get(key)
+  def get[T](key: String): Option[T] = map.get(key).map(_.asInstanceOf[T])
 
   def iterator: Iterator[(String, Any)] = map.iterator
 

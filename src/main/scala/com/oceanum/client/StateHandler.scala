@@ -6,6 +6,7 @@ import com.oceanum.cluster.exec.State
  * @author chenmingkun
  * @date 2020/5/8
  */
+@SerialVersionUID(1L)
 trait StateHandler extends Serializable {
 
   def handle(state: State): Unit

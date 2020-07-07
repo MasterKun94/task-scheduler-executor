@@ -16,8 +16,7 @@ object RunnerManager extends Log {
   type Prop = Operator[_ <: OperatorTask]
   private val num = Environment.EXEC_THREAD_NUM
   private val exec = RootRunner
-  private val priorityMailbox: MailBox[Prop] = MailBox.priority(p => execute(p), num, (p1, p2) => p1.priority - p2.priority)
-  private val outputManager: OutputManager = OutputManager.global
+  private val priorityMailbox = MailBox.priority[Prop](_.priority, num)(execute)
   private val runningNum: AtomicInteger = new AtomicInteger(0)
   private val successNum: AtomicInteger = new AtomicInteger(0)
   private val failedNum: AtomicInteger = new AtomicInteger(0)
@@ -44,8 +43,8 @@ object RunnerManager extends Log {
   }
 
   def close(): Unit = {
-    priorityMailbox.close()
-    outputManager.close()
+    priorityMailbox.close
+    RootRunner.close
     log.info("execute manager closed")
   }
 

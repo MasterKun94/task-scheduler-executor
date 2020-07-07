@@ -9,4 +9,6 @@ import com.oceanum.common.Log
 trait TaskRunner extends Log {
 
   def run(operatorProp: Operator[_ <: OperatorTask]): ExitCode
+
+  def close: Unit
 }

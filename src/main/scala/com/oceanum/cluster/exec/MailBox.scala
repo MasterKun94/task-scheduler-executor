@@ -31,21 +31,21 @@ class MailBox[T](queue: BlockingQueue[T], listener: T => Unit, listenerNum: Int)
 
   def queueSize: Int = queue.size()
 
-  def close(): Unit = running.set(false)
+  def close: Unit = running.set(false)
 }
 
 object MailBox {
-  def apply[T](listener: T => Unit, listenerNum: Int): MailBox[T] = {
+  def apply[T](listenerNum: Int)(listener: T => Unit): MailBox[T] = {
     new MailBox[T](new LinkedBlockingQueue[T](), listener, listenerNum)
   }
 
-  def priority[T](listener: T => Unit, listenerNum: Int, sortBy: (T, T) => Int): MailBox[T] = {
+  def priority[T](comparator: T => Int, listenerNum: Int)(listener: T => Unit): MailBox[T] = {
     new MailBox[T](new PriorityBlockingQueue[T](32, new Comparator[T] {
-      override def compare(o1: T, o2: T): Int = sortBy(o1, o2)
+      override def compare(o1: T, o2: T): Int = comparator(o1) - comparator(o2)
     }), listener, listenerNum)
   }
 
-  def delay[T <: Delayed](listener: T => Unit, listenerNum: Int): MailBox[T] = {
+  def delay[T <: Delayed](listenerNum: Int)(listener: T => Unit): MailBox[T] = {
     new MailBox[T](new DelayQueue[T](), listener, listenerNum)
   }
 }

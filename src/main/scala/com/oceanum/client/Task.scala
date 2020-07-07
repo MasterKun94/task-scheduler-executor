@@ -15,19 +15,20 @@ case class Task(id: String,
                 priority: Int = Environment.EXEC_DEFAULT_PRIORITY,
                 prop: TaskProp,
                 private val meta: Metadata = Metadata.empty) {
-  def init(listener: EventListener)(implicit executor: ExecutionContext): Future[Operator[_ <: OperatorTask]] = {
+  def init(listener: Metadata => EventListener)(implicit executor: ExecutionContext): Future[Operator[_ <: OperatorTask]] = {
     val task = metadata.lazyInit(this)
     println(task)
     task
       .prop
-      .init(metadata)
+      .init(task.metadata)
       .map(ot => Operator(
         name = id,
         retryCount = retryCount,
         retryInterval = retryInterval,
         priority = priority,
         prop = ot,
-        eventListener = listener
+        eventListener = listener(task.metadata),
+        metadata = task.metadata
       ))
   }
 

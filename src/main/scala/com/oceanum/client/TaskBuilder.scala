@@ -10,7 +10,8 @@ import com.oceanum.common.Implicits.TaskMetadataHelper
  * @author chenmingkun
  * @date 2020/7/1
  */
-abstract class TaskBuilder[T <: TaskBuilder[_, _], P <: TaskProp](task: Task) {
+@SerialVersionUID(1L)
+abstract class TaskBuilder[T <: TaskBuilder[_, _], P <: TaskProp](task: Task) extends Serializable {
   protected val prop: P = task.prop.asInstanceOf[P]
 
   def id(id: String): T = typedBuilder(task.copy(id = id))
@@ -25,20 +26,17 @@ abstract class TaskBuilder[T <: TaskBuilder[_, _], P <: TaskProp](task: Task) {
 
   def priority(priority: Int): T = typedBuilder(task.copy(priority = priority))
 
-  def lazyInit(func: T => T): T = {
-    val builderClazz = this.getClass
-    val f: Task => Task = task => func(builderClazz.getConstructor(classOf[Task]).newInstance(task).asInstanceOf[T]).build
-    typedBuilder(task.copy(meta = task.metadata.setLazyInit(f)))
-  }
+  def lazyInit(func: T => T): T = typedBuilder(task.copy(meta = task.metadata.setLazyInit(task => func(typedBuilder(task)).build)))
+
   def build: Task = task
 
-  protected def typedBuilder(task: Task): T
+  protected def typedBuilder(task: Task): T = this.getClass.getConstructor(task.getClass).newInstance(task).asInstanceOf[T]
 
   protected def typedBuilder(prop: TaskProp): T = typedBuilder(task.copy(prop = prop))
 }
 
+@SerialVersionUID(1L)
 class ShellTaskBuilder(task: Task) extends TaskBuilder[ShellTaskBuilder, ShellTaskProp](task) {
-  override protected def typedBuilder(task: Task): ShellTaskBuilder = new ShellTaskBuilder(task)
 
   def command(cmd: Array[String]): ShellTaskBuilder = typedBuilder(prop.copy(cmd = cmd))
 
@@ -54,8 +52,8 @@ class ShellTaskBuilder(task: Task) extends TaskBuilder[ShellTaskBuilder, ShellTa
 
 }
 
+@SerialVersionUID(1L)
 class ShellScriptTaskBuilder(task: Task) extends TaskBuilder[ShellScriptTaskBuilder, ShellScriptTaskProp](task) {
-  override protected def typedBuilder(task: Task): ShellScriptTaskBuilder = new ShellScriptTaskBuilder(task)
 
   def scriptFile(file: String): ShellScriptTaskBuilder = typedBuilder(prop.copy(scriptFile = file))
 
@@ -70,8 +68,8 @@ class ShellScriptTaskBuilder(task: Task) extends TaskBuilder[ShellScriptTaskBuil
   def waitForTimeout(timeout: String): ShellScriptTaskBuilder = typedBuilder(prop.copy(waitForTimeout = Duration(timeout).toMillis))
 }
 
+@SerialVersionUID(1L)
 class JavaTaskBuilder(task: Task) extends TaskBuilder[JavaTaskBuilder, JavaTaskProp](task) {
-  override protected def typedBuilder(task: Task): JavaTaskBuilder = new JavaTaskBuilder(task)
 
   def jars(jarPaths: String*): JavaTaskBuilder = typedBuilder(prop.copy(jars = prop.jars ++ jarPaths))
 
@@ -94,9 +92,8 @@ class JavaTaskBuilder(task: Task) extends TaskBuilder[JavaTaskBuilder, JavaTaskP
   def waitForTimeout(timeout: String): JavaTaskBuilder = typedBuilder(prop.copy(waitForTimeout = Duration(timeout).toMillis))
 }
 
+@SerialVersionUID(1L)
 class ScalaTaskBuilder(task: Task) extends TaskBuilder[ScalaTaskBuilder, ScalaTaskProp](task) {
-  override protected def typedBuilder(task: Task): ScalaTaskBuilder = new ScalaTaskBuilder(task)
-
   def jars(jarPaths: String*): ScalaTaskBuilder = typedBuilder(prop.copy(jars = prop.jars ++ jarPaths))
 
   def jar(jarPath: String): ScalaTaskBuilder = typedBuilder(prop.copy(jars = prop.jars :+ jarPath))
@@ -118,9 +115,8 @@ class ScalaTaskBuilder(task: Task) extends TaskBuilder[ScalaTaskBuilder, ScalaTa
   def waitForTimeout(timeout: String): ScalaTaskBuilder = typedBuilder(prop.copy(waitForTimeout = Duration(timeout).toMillis))
 }
 
+@SerialVersionUID(1L)
 class PythonTaskBuilder(task: Task) extends TaskBuilder[PythonTaskBuilder, PythonTaskProp](task) {
-  override protected def typedBuilder(task: Task): PythonTaskBuilder = new PythonTaskBuilder(task)
-
   def pyFile(file: String): PythonTaskBuilder = typedBuilder(prop.copy(pyFile = file))
 
   def args(args: String*): PythonTaskBuilder = typedBuilder(prop.copy(args = args.toArray))
@@ -134,9 +130,15 @@ class PythonTaskBuilder(task: Task) extends TaskBuilder[PythonTaskBuilder, Pytho
   def waitForTimeout(timeout: String): PythonTaskBuilder = typedBuilder(prop.copy(waitForTimeout = Duration(timeout).toMillis))
 }
 
+@SerialVersionUID(1L)
+class UserAddTaskBuilder(task: Task) extends TaskBuilder[UserAddTaskBuilder, UserAdd](task) {
+  override protected def typedBuilder(task: Task): UserAddTaskBuilder = new UserAddTaskBuilder(task)
+}
+
 object TaskBuilder {
   private def dateFormat: String = new SimpleDateFormat("yyyyMMdd").format(new Date())
   private def getId(prop: TaskProp): String = s"$dateFormat-${prop.taskType}-${UUID.randomUUID().toString}"
+  val sys: SystemTaskBuilder.type = SystemTaskBuilder
 
   def shell(): ShellTaskBuilder = {
     val prop = ShellTaskProp()
@@ -163,7 +165,10 @@ object TaskBuilder {
     new PythonTaskBuilder(Task(prop = prop, id = getId(prop)))
   }
 
-  def main(args: Array[String]): Unit = {
-
+  object SystemTaskBuilder {
+    def userAdd(): UserAddTaskBuilder = {
+      val prop = UserAdd("")
+      new UserAddTaskBuilder(Task(prop = prop, id = getId(prop)))
+    }
   }
 }

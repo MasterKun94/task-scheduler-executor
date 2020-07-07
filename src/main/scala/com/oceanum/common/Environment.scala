@@ -5,13 +5,11 @@ import java.util.Properties
 import java.util.concurrent.atomic.AtomicBoolean
 
 import akka.actor.ActorSystem
-import Implicits.DurationHelper
-import com.oceanum.cluster.exec.{OperatorTask, OutputManager, TypedRunner}
-import com.oceanum.cluster.executors.ProcessRunner
-import Implicits.PathHelper
 import ch.qos.logback.classic.LoggerContext
 import ch.qos.logback.classic.joran.JoranConfigurator
-import com.oceanum.file.FileClient
+import com.oceanum.cluster.exec.{OperatorTask, TypedRunner}
+import com.oceanum.cluster.executors.ProcessRunner
+import com.oceanum.common.Implicits.{DurationHelper, PathHelper}
 import com.typesafe.config.ConfigFactory
 import org.slf4j.LoggerFactory
 
@@ -64,8 +62,8 @@ object Environment {
   lazy val CLUSTER_NODE_METRICS_PING_INTERVAL: FiniteDuration = fd"${getProperty(Key.CLUSTER_NODE_METRICS_PING_INTERVAL, "20s")}"
   lazy val CLUSTER_NODE_METRICS_PING_TIMEOUT: FiniteDuration = fd"${getProperty(Key.CLUSTER_NODE_METRICS_PING_TIMEOUT, "100s")}"
   lazy val CLUSTER_NODE_LOGGER: String = getProperty(Key.CLUSTER_NODE_LOGGER, logger)
-  lazy val CLUSTER_NODE_RUNNER_STDOUT_HANDLER: String = "com.oceanum.cluster.exec.StdoutFileOutputHandler"
-  lazy val CLUSTER_NODE_RUNNER_STDERR_HANDLER: String = "com.oceanum.cluster.exec.StderrFileOutputHandler"
+  lazy val CLUSTER_NODE_RUNNER_STDOUT_HANDLER: String = getProperty(Key.CLUSTER_NODE_RUNNER_STDOUT_HANDLER, "com.oceanum.cluster.exec.StdoutFileOutputHandler")
+  lazy val CLUSTER_NODE_RUNNER_STDERR_HANDLER: String = getProperty(Key.CLUSTER_NODE_RUNNER_STDERR_HANDLER, "com.oceanum.cluster.exec.StderrFileOutputHandler")
 
   lazy val CLIENT_NODE_SYSTEM_NAME: String = getProperty(Key.CLIENT_NODE_SYSTEM_NAME, "client")
   lazy val CLIENT_NODE_PORT: Int = getProperty(Key.CLIENT_NODE_PORT, "4551").toInt
@@ -91,7 +89,7 @@ object Environment {
   lazy val FILE_SERVER_LOGGER: String = getProperty(Key.FILE_SERVER_LOGGER, logger)
   lazy val TASK_INFO_TRIGGER_INTERVAL: String = getProperty(Key.CLUSTER_NODE_TASK_INFO_TRIGGER_INTERVAL, "20s")
 
-  lazy val TASK_RUNNERS: Array[TypedRunner[_ <: OperatorTask]] = Array(new ProcessRunner(OutputManager.global))
+  lazy val TASK_RUNNERS: Array[TypedRunner[_ <: OperatorTask]] = Array(new ProcessRunner())
   lazy val PATH_SEPARATOR: String = File.separator
   lazy val LOG_LOGBACK: String = getProperty(Key.LOG_LOGBACK, BASE_PATH/"conf"/"logback.xml").toAbsolute()
   lazy val LOG_FILE: String = LOG_FILE_DIR/LOG_FILE_NAME
@@ -156,7 +154,7 @@ object Environment {
 
     load(Key.BASE_PATH, arg.getOrElse("--base-path", new File(".").getCanonicalPath))
 
-    val path = BASE_PATH/"conf/application.properties," + BASE_PATH/"conf/application-env.properties"
+    val path = BASE_PATH/"conf"/"application.properties," + BASE_PATH/"conf"/"application-env.properties"
     val paths = arg.getOrElse("--conf", path)
       .split(",")
       .map(_.trim)
@@ -270,6 +268,8 @@ object Environment {
     val CLUSTER_NODE_METRICS_NAME: String = "cluster-node.metrics.name"
     val CLUSTER_NODE_METRICS_PING_INTERVAL: String = "cluster-node.metrics.ping.interval"
     val CLUSTER_NODE_METRICS_PING_TIMEOUT: String = "cluster-node.metrics.ping.timeout"
+    val CLUSTER_NODE_RUNNER_STDOUT_HANDLER: String = "cluster-node.runner.stdout.handler"
+    val CLUSTER_NODE_RUNNER_STDERR_HANDLER: String = "cluster-node.runner.stderr.handler"
     val CLUSTER_NODE_LOGGER: String = "cluster-node.logger"
     val CLIENT_NODE_SYSTEM_NAME: String = "client-node.system-name"
     val CLIENT_NODE_PORT: String = "client-node.port"

@@ -2,6 +2,8 @@ package com.oceanum.cluster.exec
 
 import java.util.concurrent.atomic.{AtomicBoolean, AtomicReference}
 
+import com.oceanum.client.Metadata
+
 /**
  * @author chenmingkun
  * @date 2020/4/29
@@ -13,7 +15,8 @@ case class Operator[T <: OperatorTask](name: String,
                                        prop: T,
                                        eventListener: EventListener,
                                        private val hookRef: AtomicReference[Hook] = new AtomicReference(),
-                                       private val ref: AtomicBoolean = new AtomicBoolean(false)
+                                       private val ref: AtomicBoolean = new AtomicBoolean(false),
+                                       metadata: Metadata
                                        ) {
   val hook: Hook = new Hook {
     override def kill(): Boolean = {
