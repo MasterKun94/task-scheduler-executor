@@ -12,3 +12,4 @@ src/main/resources/file
 src/main/resources/file2
 app-output/*
 log/*
+exec/*
