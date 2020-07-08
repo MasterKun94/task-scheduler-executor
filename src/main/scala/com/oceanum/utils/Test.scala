@@ -107,7 +107,7 @@ object Test {
 //    scala.io.StdIn.readLine()
 //    println("stop handle task info")
 //    hook2.kill()
-    scala.io.StdIn.readLine()
+//    scala.io.StdIn.readLine()
     startClient(args)
 
 //    import ExecutionContext.Implicits.global

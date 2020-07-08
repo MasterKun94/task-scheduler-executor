@@ -10,5 +10,7 @@ trait TaskRunner extends Log {
 
   def run(operatorProp: Operator[_ <: OperatorTask]): ExitCode
 
-  def close: Unit
+  def close(): Unit
+
+  def executable(operator: Operator[_ <: OperatorTask]): Boolean
 }

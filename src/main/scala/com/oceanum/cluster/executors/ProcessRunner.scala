@@ -4,9 +4,10 @@ import java.io.{File, IOException, InputStream}
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 
-import com.oceanum.cluster.exec.{OperatorTask, _}
+import com.oceanum.cluster.exec._
 import com.oceanum.cluster.tasks._
 import com.oceanum.common.Environment
+import com.oceanum.common.Implicits.TaskMetadataHelper
 
 import scala.collection.JavaConversions.{mapAsJavaMap, seqAsJavaList}
 
@@ -14,7 +15,7 @@ import scala.collection.JavaConversions.{mapAsJavaMap, seqAsJavaList}
  * @author chenmingkun
  * @date 2020/4/28
  */
-class ProcessRunner extends TypedRunner[ProcessTask] {
+class ProcessRunner extends TypedRunner[ProcessTask]("SHELL", "SHELL_SCRIPT", "JAVA", "SCALA", "PYTHON", "USER_ADD") {
   private val streamOutput = MailBox[(InputStream, InputStreamHandler)](Environment.EXEC_THREAD_NUM * 2) { r =>
     r._2.handle(r._1)
   }
@@ -27,13 +28,13 @@ class ProcessRunner extends TypedRunner[ProcessTask] {
     builder.environment().putAll(prop.propEnv)
     val dir: File = {
       if (prop.propDirectory == null || prop.propDirectory.trim.equals("")) {
-        new File("dummy").getAbsoluteFile.getParentFile
+        new File(operatorProp.metadata.execDir)
       } else {
         val file = new File(prop.propDirectory)
         if (!file.exists()) {
           file.mkdirs()
         }
-        new File(prop.propDirectory)
+        file
       }
     }
     if (operatorProp.hook.isKilled) return ExitCode.KILL
@@ -85,21 +86,6 @@ class ProcessRunner extends TypedRunner[ProcessTask] {
     }
 
     override def isKilled: Boolean = ref.get()
-  }
-
-  override def executable(p: OperatorTask): Boolean = {
-    check(p)
-  }
-
-  @scala.annotation.tailrec
-  private def check(operatorProp: OperatorTask): Boolean = {
-    operatorProp match {
-      case _: ShellTask => Environment.EXEC_SHELL_ENABLED
-      case _: ScalaTask => Environment.EXEC_SCALA_ENABLED
-      case _: JavaTask => Environment.EXEC_JAVA_ENABLED
-      case _: PythonTask => Environment.EXEC_PYTHON_ENABLED
-      case SuUserTask(_, prop) => check(prop)
-    }
   }
 
   override def close: Unit = {

@@ -12,15 +12,13 @@ import scala.concurrent.{ExecutionContext, Future}
 import com.oceanum.common.Implicits.PathHelper
 
 @SerialVersionUID(1L)
-trait TaskProp extends Serializable {
+abstract class TaskProp(val taskType: String) extends Serializable {
 
   def init(metadata: Metadata)(implicit executor: ExecutionContext): Future[OperatorTask]
-
-  def taskType: String
 }
 
 @SerialVersionUID(1L)
-abstract class ProcessTaskProp(task: String) extends TaskProp with Serializable {
+abstract class ProcessTaskProp(taskType: String) extends TaskProp(taskType) with Serializable {
 
   def files: Seq[String] = Seq.empty
 
@@ -35,8 +33,6 @@ abstract class ProcessTaskProp(task: String) extends TaskProp with Serializable 
       .map(_ => toTask(metadata, fileMap))
       .map(task => SuUserTask(metadata.user, task))
   }
-
-  override def taskType: String = task
 }
 
 @SerialVersionUID(1L)

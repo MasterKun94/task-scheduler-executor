@@ -16,5 +16,5 @@ object ExitCode {
   case object OK extends ExitCode
   case object KILL extends ExitCode
   case class ERROR(message: String) extends ExitCode
-  case class UN_SUPPORT(operatorClass: Class[_ <: OperatorTask]) extends ExitCode
+  case class UN_SUPPORT(taskType: String) extends ExitCode
 }

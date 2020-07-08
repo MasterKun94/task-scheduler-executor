@@ -7,6 +7,7 @@ import com.oceanum.cluster.TaskInfoTrigger
 import com.oceanum.common.Implicits.DurationHelper
 import com.oceanum.common.Scheduler.scheduleOnce
 import com.oceanum.common.{Environment, Log, NodeTaskInfoResponse}
+import com.oceanum.common.Implicits.TaskMetadataHelper
 
 /**
  * @author chenmingkun
@@ -15,7 +16,6 @@ import com.oceanum.common.{Environment, Log, NodeTaskInfoResponse}
 object RunnerManager extends Log {
   type Prop = Operator[_ <: OperatorTask]
   private val num = Environment.EXEC_THREAD_NUM
-  private val exec = RootRunner
   private val priorityMailbox = MailBox.priority[Prop](_.priority, num)(execute)
   private val runningNum: AtomicInteger = new AtomicInteger(0)
   private val successNum: AtomicInteger = new AtomicInteger(0)
@@ -23,6 +23,8 @@ object RunnerManager extends Log {
   private val retryingNum: AtomicInteger = new AtomicInteger(0)
   private val killedNum: AtomicInteger = new AtomicInteger(0)
   private val completedNum: AtomicInteger = new AtomicInteger(0)
+  private val runners = Environment.CLUSTER_NODE_RUNNERS_CLASSES
+    .map(_.getConstructor().newInstance().asInstanceOf[TaskRunner])
 
   def getTaskInfo: NodeTaskInfoResponse = {
     NodeTaskInfoResponse(
@@ -44,7 +46,7 @@ object RunnerManager extends Log {
 
   def close(): Unit = {
     priorityMailbox.close
-    RootRunner.close
+    runners.foreach(_.close())
     log.info("execute manager closed")
   }
 
@@ -53,7 +55,7 @@ object RunnerManager extends Log {
     incRunning()
     TaskInfoTrigger.trigger()
     try {
-      exec.run(operatorProp) match {
+      run(operatorProp) match {
         case ExitCode.ERROR(msg) =>
           if (operatorProp.retryCount > 1) {
             val newOperatorProp = operatorProp.retry()
@@ -93,7 +95,7 @@ object RunnerManager extends Log {
 
         case unSupport: ExitCode.UN_SUPPORT =>
           log.error(s"no executable executor exists for prop ${operatorProp.prop.getClass}")
-          operatorProp.eventListener.failed(Metadata("message" -> s"task type un support: ${unSupport.operatorClass}"))
+          operatorProp.eventListener.failed(Metadata("message" -> s"task type not support: ${unSupport.taskType}"))
           operatorProp.prop.close()
           incFailed()
       }
@@ -107,6 +109,19 @@ object RunnerManager extends Log {
     } finally {
       decRunning()
       TaskInfoTrigger.trigger()
+    }
+  }
+
+  private def run(operatorProp: Operator[_ <: OperatorTask]): ExitCode = {
+    runners.find(_.executable(operatorProp)) match {
+      case Some(executor) =>
+        if (operatorProp.hook.isKilled) {
+          ExitCode.KILL
+        } else {
+          executor.run(operatorProp)
+        }
+      case None =>
+        ExitCode.UN_SUPPORT(operatorProp.metadata.taskType)
     }
   }
 

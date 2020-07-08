@@ -14,9 +14,9 @@ case class Operator[T <: OperatorTask](name: String,
                                        priority: Int,
                                        prop: T,
                                        eventListener: EventListener,
+                                       metadata: Metadata,
                                        private val hookRef: AtomicReference[Hook] = new AtomicReference(),
-                                       private val ref: AtomicBoolean = new AtomicBoolean(false),
-                                       metadata: Metadata
+                                       private val ref: AtomicBoolean = new AtomicBoolean(false)
                                        ) {
   val hook: Hook = new Hook {
     override def kill(): Boolean = {

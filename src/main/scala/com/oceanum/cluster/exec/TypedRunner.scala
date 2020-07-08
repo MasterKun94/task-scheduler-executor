@@ -1,22 +1,23 @@
 package com.oceanum.cluster.exec
 
+import com.oceanum.common.Implicits.TaskMetadataHelper
 /**
  * @author chenmingkun
  * @date 2020/5/30
  */
-trait TypedRunner[T <: OperatorTask] extends TaskRunner {
+abstract class TypedRunner[T <: OperatorTask](types: String*) extends TaskRunner {
+  private val typeSet = types.toSet
 
     def run(operatorProp: Operator[_ <: OperatorTask]): ExitCode = {
-      if (executable(operatorProp.prop)) {
+      if (executable(operatorProp)) {
         operatorProp.eventListener.start()
         typedRun(operatorProp.asInstanceOf[Operator[T]])
       } else {
-        ExitCode.UN_SUPPORT(operatorProp.prop.getClass)
+        ExitCode.UN_SUPPORT(operatorProp.metadata.taskType)
       }
     }
 
     protected def typedRun(operatorProp: Operator[_ <: T]): ExitCode
 
-    def executable(p: OperatorTask): Boolean
-
+  override def executable(operator: Operator[_ <: OperatorTask]): Boolean = typeSet.contains(operator.metadata.taskType)
 }

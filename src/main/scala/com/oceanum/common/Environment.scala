@@ -62,8 +62,9 @@ object Environment {
   lazy val CLUSTER_NODE_METRICS_PING_INTERVAL: FiniteDuration = fd"${getProperty(Key.CLUSTER_NODE_METRICS_PING_INTERVAL, "20s")}"
   lazy val CLUSTER_NODE_METRICS_PING_TIMEOUT: FiniteDuration = fd"${getProperty(Key.CLUSTER_NODE_METRICS_PING_TIMEOUT, "100s")}"
   lazy val CLUSTER_NODE_LOGGER: String = getProperty(Key.CLUSTER_NODE_LOGGER, logger)
-  lazy val CLUSTER_NODE_RUNNER_STDOUT_HANDLER: String = getProperty(Key.CLUSTER_NODE_RUNNER_STDOUT_HANDLER, "com.oceanum.cluster.exec.StdoutFileOutputHandler")
-  lazy val CLUSTER_NODE_RUNNER_STDERR_HANDLER: String = getProperty(Key.CLUSTER_NODE_RUNNER_STDERR_HANDLER, "com.oceanum.cluster.exec.StderrFileOutputHandler")
+  lazy val CLUSTER_NODE_RUNNER_STDOUT_HANDLER_CLASS: Class[_] = Class.forName(getProperty(Key.CLUSTER_NODE_RUNNER_STDOUT_HANDLER_CLASS, "com.oceanum.cluster.exec.StdoutFileOutputHandler"))
+  lazy val CLUSTER_NODE_RUNNER_STDERR_HANDLER_CLASS: Class[_] = Class.forName(getProperty(Key.CLUSTER_NODE_RUNNER_STDERR_HANDLER_CLASS, "com.oceanum.cluster.exec.StderrFileOutputHandler"))
+  lazy val CLUSTER_NODE_RUNNERS_CLASSES: Set[Class[_]] = str2arr(getProperty(Key.CLUSTER_NODE_RUNNER_CLASSES, "com.oceanum.cluster.executors.ProcessRunner")).map(Class.forName).toSet
 
   lazy val CLIENT_NODE_SYSTEM_NAME: String = getProperty(Key.CLIENT_NODE_SYSTEM_NAME, "client")
   lazy val CLIENT_NODE_PORT: Int = getProperty(Key.CLIENT_NODE_PORT, "4551").toInt
@@ -158,7 +159,7 @@ object Environment {
 
     load(Key.BASE_PATH, arg.getOrElse("--base-path", new File(".").getCanonicalPath))
 
-    val path = BASE_PATH/"conf"/"application.properties," + BASE_PATH/"conf"/"application-env.properties"
+    val path = BASE_PATH/"conf"/"application.properties"
     val paths = arg.getOrElse("--conf", path)
       .split(",")
       .map(_.trim)
@@ -190,16 +191,16 @@ object Environment {
 
     import scala.collection.JavaConversions.asScalaSet
     load(Key.CLUSTER_NODE_SEEDS, seedNodes.mkString(","))
-    load(Key.LOG_FILE, LOG_FILE)
-    load(Key.LOG_FILE_MAX_HISTORY, LOG_FILE_MAX_HISTORY)
-    load(Key.LOG_FILE_MAX_SIZE, LOG_FILE_MAX_SIZE)
-    load(Key.LOG_FILE_PATTERN, LOG_FILE_PATTERN)
-    load(Key.LOG_STDOUT_PATTERN, LOG_STDOUT_PATTERN)
     properties.keySet().map(_.toString).foreach {key =>
       load(key, getProperty(key))
     }
     val logback = new File(LOG_LOGBACK)
     if (logback.exists()) {
+      load(Key.LOG_FILE, LOG_FILE)
+      load(Key.LOG_FILE_MAX_HISTORY, LOG_FILE_MAX_HISTORY)
+      load(Key.LOG_FILE_MAX_SIZE, LOG_FILE_MAX_SIZE)
+      load(Key.LOG_FILE_PATTERN, LOG_FILE_PATTERN)
+      load(Key.LOG_STDOUT_PATTERN, LOG_STDOUT_PATTERN)
       val configurator = new JoranConfigurator()
       val lc = LoggerFactory.getILoggerFactory.asInstanceOf[LoggerContext]
       configurator.setContext(lc)
@@ -276,10 +277,11 @@ object Environment {
     val CLUSTER_NODE_METRICS_NAME: String = "cluster-node.metrics.name"
     val CLUSTER_NODE_METRICS_PING_INTERVAL: String = "cluster-node.metrics.ping.interval"
     val CLUSTER_NODE_METRICS_PING_TIMEOUT: String = "cluster-node.metrics.ping.timeout"
-    val CLUSTER_NODE_RUNNER_STDOUT_HANDLER: String = "cluster-node.runner.stdout.handler"
-    val CLUSTER_NODE_RUNNER_STDERR_HANDLER: String = "cluster-node.runner.stderr.handler"
+    val CLUSTER_NODE_RUNNER_STDOUT_HANDLER_CLASS: String = "cluster-node.runner.stdout-handler.class"
+    val CLUSTER_NODE_RUNNER_STDERR_HANDLER_CLASS: String = "cluster-node.runner.stderr-handler.class"
     val CLUSTER_NODE_TASK_INFO_TRIGGER_INTERVAL: String = "cluster-node.task-info.trigger.interval"
     val CLUSTER_NODE_LOGGER: String = "cluster-node.logger"
+    val CLUSTER_NODE_RUNNER_CLASSES: String = "cluster-node.runner.classes"
     val CLIENT_NODE_SYSTEM_NAME: String = "client-node.system-name"
     val CLIENT_NODE_PORT: String = "client-node.port"
     val CLIENT_NODE_LOGGER: String = "client-node.logger"

@@ -38,11 +38,11 @@ object Implicits {
     def taskType: String = metadata("taskType")
     def user: String = metadata("user")
     def createTime: String = metadata("createTime")
-    def stdoutHandler: InputStreamHandler = Class.forName(Environment.CLUSTER_NODE_RUNNER_STDOUT_HANDLER)
+    def stdoutHandler: InputStreamHandler = Environment.CLUSTER_NODE_RUNNER_STDOUT_HANDLER_CLASS
       .getConstructor(metadata.getClass)
       .newInstance(metadata)
       .asInstanceOf[InputStreamHandler]
-    def stderrHandler: InputStreamHandler = Class.forName(Environment.CLUSTER_NODE_RUNNER_STDERR_HANDLER)
+    def stderrHandler: InputStreamHandler = Environment.CLUSTER_NODE_RUNNER_STDERR_HANDLER_CLASS
       .getConstructor(metadata.getClass)
       .newInstance(metadata)
       .asInstanceOf[InputStreamHandler]
@@ -107,6 +107,9 @@ object Implicits {
     }
 
     def toPath(sep: String = separator): String = {
+      if (str.trim.equals("")) {
+        throw new IllegalArgumentException("路径为空")
+      }
       toPath(str, sep)
     }
 
