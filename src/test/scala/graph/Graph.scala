@@ -22,7 +22,7 @@ object Graph extends App {
 //    val bcast = builder.add(Broadcast[String](2))
     val merge = builder.add(Merge[String](3))
     val partition = builder.add(Partition[String](3, s => s.toInt % 3))
-    val f1 = Flow[String].map(_ + "f0")
+    val f1: Flow[String, String, NotUsed] = Flow[String].map(_ + "f0")
     val f2 = Flow[String].map(_ + "f1")
     val f3 = Flow[String].map(_ + "f2")
 
