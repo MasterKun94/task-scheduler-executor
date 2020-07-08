@@ -53,7 +53,7 @@ object Test {
     future
       .onComplete {
         case Success(value) =>
-          value.handleState("2s", state => println("state is: " + state))
+          value.handleState("2s")(state => println("state is: " + state))
           value.onComplete(stat => {
             println("result is: " + stat)
             value.close()

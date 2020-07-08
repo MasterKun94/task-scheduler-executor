@@ -1,6 +1,6 @@
 package com.oceanum.client.actors
 
-import akka.actor.{Actor, ActorLogging, ActorRef}
+import akka.actor.{Actor, ActorLogging, ActorRef, PoisonPill}
 import com.oceanum.client.{StateHandler, TaskInstance}
 import com.oceanum.cluster.exec.State
 import com.oceanum.cluster.exec.State.{FAILED, KILL, SUCCESS}
@@ -44,7 +44,7 @@ class ClientInstance(executor: ActorRef) extends Actor with ActorLogging {
     case TerminateAction =>
       log.info("terminating [{}]", executor)
       executor ! TerminateAction
-      context.stop(self)
+      self ! PoisonPill
       sender() ! "OK"
 
     case HandleState(handler) =>

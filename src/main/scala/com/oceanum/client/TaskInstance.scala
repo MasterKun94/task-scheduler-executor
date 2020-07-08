@@ -15,13 +15,11 @@ import scala.concurrent.{ExecutionContext, Future}
 trait TaskInstance {
   def kill(): Future[Unit]
 
-  def handleState(handler: StateHandler): Future[Unit]
-
-  def handleState(interval: String, handler: State => Unit): Future[Unit]
+  def handleState(interval: String)(handler: State => Unit): Future[Unit]
 
   def close(): Future[Unit]
 
-  def onComplete(handler: StateHandler): Future[Unit]
+//  def onComplete(handler: StateHandler): Future[Unit]
 
   def onComplete(handler: State => Unit): Future[Unit]
 

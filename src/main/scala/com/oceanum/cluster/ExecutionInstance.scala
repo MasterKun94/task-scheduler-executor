@@ -15,6 +15,7 @@ import scala.util.{Failure, Success}
  * @date 2020/5/2
  */
 class ExecutionInstance extends Actor with ActorLogging {
+  case class Execute(operator: Operator[_ <: OperatorTask], client: ActorRef, handler: StateHandler)
 
   private def listener(initMeta: Metadata): EventListener = new EventListener {
     override def prepare(message: Metadata): Unit = self ! PrepareMessage(initMeta ++ message)
@@ -43,8 +44,7 @@ class ExecutionInstance extends Actor with ActorLogging {
       val actor = sender()
       task.init(listener).onComplete {
         case Success(operator) =>
-          println(operator)
-          self ! (operator, actor, handler)
+          self ! Execute(operator, actor, handler)
         case Failure(e) =>
           e.printStackTrace()
           implicit val hook: Hook = new Hook {
@@ -59,16 +59,16 @@ class ExecutionInstance extends Actor with ActorLogging {
           context.become(failed(task.metadata + ("message" -> e.getMessage)))
       }
 
-    case (operator: Operator[_], actor: ActorRef, handler: StateHandler) =>
+    case Execute(operator, client, handler) =>
       val duration = fd"${handler.checkInterval()}"
       log.info("receive operator: [{}], receive schedule check state request from [{}], start schedule with duration [{}]", operator, sender, duration)
       implicit val cancelable: Cancellable = schedule(duration, duration) {
-        self.tell(CheckState, actor)
+        self.tell(CheckState, client)
       }
-      implicit val clientHolder: ClientHolder = ClientHolder(actor)
+      implicit val clientHolder: ClientHolder = ClientHolder(client)
       implicit val hook: Hook = RunnerManager.submit(operator)
       context.become(offline(operator.metadata))
-      actor ! ExecuteOperatorResponse(operator.metadata, handler)
+      client ! ExecuteOperatorResponse(operator.metadata, handler)
 
     case message => println("unknown message: " + message)
   }

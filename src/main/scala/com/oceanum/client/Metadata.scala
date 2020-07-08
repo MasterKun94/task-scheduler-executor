@@ -29,5 +29,5 @@ object Metadata {
 
   def empty: Metadata = new Metadata(Map.empty)
 
-  def apply(kv: (String, String)*): Metadata = new Metadata(Map(kv: _*))
+  def apply(kv: (String, Any)*): Metadata = new Metadata(Map(kv: _*))
 }

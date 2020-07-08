@@ -22,4 +22,6 @@ object StateHandler {
   def empty(): StateHandler = new StateHandler {
     override def handle(state: State): Unit = Unit
   }
+
+  def default(): StateHandler = empty()
 }

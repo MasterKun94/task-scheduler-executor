@@ -13,11 +13,11 @@ import scala.concurrent.{ExecutionContext, Future}
 class SchedulerClientImpl(endpoint: ActorRef, system: ActorSystem)(implicit executionContext: ExecutionContext, timeout: Timeout) extends SchedulerClient {
   private lazy val metricsClient = system.actorOf(Props(classOf[ClientEndpoint], endpoint), "metrics-client")
 
-  override def execute(task: Task, stateHandler: StateHandler = StateHandler.empty()): Future[TaskInstance] = {
+  override def execute(task: Task, stateHandler: StateHandler): Future[TaskInstance] = {
     doExecute(AvailableExecutorRequest(task.topic), task, stateHandler)
   }
 
-  override def executeAll(task: Task, stateHandler: StateHandler = StateHandler.empty(), timeWait: String): Future[TaskInstance] = {
+  override def executeAll(task: Task, stateHandler: StateHandler, timeWait: String): Future[TaskInstance] = {
     doExecute(AvailableExecutorsRequest(task.topic, timeWait), task, stateHandler)
   }
 
@@ -25,7 +25,7 @@ class SchedulerClientImpl(endpoint: ActorRef, system: ActorSystem)(implicit exec
     system.actorOf(Props(classOf[ClientEndpoint], endpoint), "client-actor")
   }
 
-  private def doExecute(requestMsg: Message, task: Task, stateHandler: StateHandler = StateHandler.empty()): Future[TaskInstance] = {
+  private def doExecute(requestMsg: Message, task: Task, stateHandler: StateHandler): Future[TaskInstance] = {
     val client = getClient
     client
       .ask(requestMsg)

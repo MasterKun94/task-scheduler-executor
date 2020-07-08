@@ -21,32 +21,26 @@ extends TaskInstance {
     Future.sequence(executor.map(client => client ? KillAction)) map (_ => Unit) mapTo
   }
 
-  override def handleState(handler: StateHandler): Future[Unit] = {
-    Future.sequence(executor.map(client => client ? handler)) map (_ => Unit) mapTo
-  }
-
-  override def handleState(interval: String, handler: State => Unit): Future[Unit] = {
+  override def handleState(interval: String)(handler: State => Unit): Future[Unit] = {
     val stateHandler = new StateHandler {
       override def handle(state: State): Unit = handler(state)
 
       override def checkInterval(): String = interval
     }
-    handleState(stateHandler)
+    Future.sequence(executor.map(client => client ? stateHandler)) map (_ => Unit) mapTo
   }
 
   override def close(): Future[Unit] = {
     Future.sequence(executor.map(client => client ? TerminateAction)) map (_ => Unit) mapTo
   }
 
-  override def onComplete(handler: StateHandler): Future[Unit] = {
-    Future.sequence(executor.map(client => client ? HandleOnComplete(handler))) map (_ => Unit) mapTo
-  }
-
   override def onComplete(handler: State => Unit): Future[Unit] = {
-    onComplete(StateHandler(handler))
+    Future.sequence(executor.map(client => client ? HandleOnComplete(StateHandler(handler)))) map (_ => Unit) mapTo
   }
 
   override def size: Int = executor.size
 
   override def isEmpty: Boolean = executor.isEmpty
+
+
 }
