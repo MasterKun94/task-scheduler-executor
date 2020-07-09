@@ -14,33 +14,33 @@ import scala.language.postfixOps
  * @author chenmingkun
  * @date 2020/5/4
  */
-class TaskInstanceImpl(executor: TraversableOnce[ActorRef])(implicit timeout: Timeout, executionContext: ExecutionContext)
-extends TaskInstance {
-
-  override def kill(): Future[Unit] = {
-    Future.sequence(executor.map(client => client ? KillAction)) map (_ => Unit) mapTo
-  }
-
-  override def handleState(interval: String)(handler: State => Unit): Future[Unit] = {
-    val stateHandler = new StateHandler {
-      override def handle(state: State): Unit = handler(state)
-
-      override def checkInterval(): String = interval
-    }
-    Future.sequence(executor.map(client => client ? stateHandler)) map (_ => Unit) mapTo
-  }
-
-  override def close(): Future[Unit] = {
-    Future.sequence(executor.map(client => client ? TerminateAction)) map (_ => Unit) mapTo
-  }
-
-  override def onComplete(handler: State => Unit): Future[Unit] = {
-    Future.sequence(executor.map(client => client ? HandleOnComplete(StateHandler(handler)))) map (_ => Unit) mapTo
-  }
-
-  override def size: Int = executor.size
-
-  override def isEmpty: Boolean = executor.isEmpty
-
-
-}
+//class TaskInstanceImpl(executor: TraversableOnce[ActorRef])(implicit timeout: Timeout, executionContext: ExecutionContext)
+//extends TaskInstance {
+//
+//  override def kill(): Future[Unit] = {
+//    Future.sequence(executor.map(client => client ? KillAction)) map (_ => Unit) mapTo
+//  }
+//
+//  override def handleState(interval: String)(handler: State => Unit): Future[Unit] = {
+//    val stateHandler = new StateHandler {
+//      override def handle(state: State): Unit = handler(state)
+//
+//      override def checkInterval(): String = interval
+//    }
+//    Future.sequence(executor.map(client => client ? stateHandler)) map (_ => Unit) mapTo
+//  }
+//
+//  override def close(): Future[Unit] = {
+//    Future.sequence(executor.map(client => client ? TerminateAction)) map (_ => Unit) mapTo
+//  }
+//
+//  override def onComplete(handler: State => Unit): Future[Unit] = {
+//    Future.sequence(executor.map(client => client ? HandleOnComplete(StateHandler(handler)))) map (_ => Unit) mapTo
+//  }
+//
+//  override def size: Int = executor.size
+//
+//  override def isEmpty: Boolean = executor.isEmpty
+//
+//
+//}

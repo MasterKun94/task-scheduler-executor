@@ -1,40 +1,37 @@
 package com.oceanum.client.actors
 
 import akka.actor.{Actor, ActorLogging, ActorRef, PoisonPill}
-import com.oceanum.client.{StateHandler, TaskInstance}
+import com.oceanum.client.{StateHandler, Task}
 import com.oceanum.cluster.exec.State
 import com.oceanum.cluster.exec.State.{FAILED, KILL, SUCCESS}
 import com.oceanum.common._
 
-class ClientInstance(executor: ActorRef) extends Actor with ActorLogging {
+import scala.concurrent.Promise
+
+class ClientInstance(executor: ActorRef, task: Task, handler: StateHandler, promise: Promise[State]) extends Actor with ActorLogging {
+
+  override def preStart(): Unit = {
+    executor ! ExecuteOperatorRequest(task, handler.checkInterval())
+  }
 
   override def receive: Receive = {
-    case req: ExecuteOperatorRequest =>
-      executor ! req
-      context.become(prepareRunning(sender()))
-  }
-
-  def prepareRunning(actor: ActorRef = null): Receive = {
-    case req: ExecuteOperatorRequest =>
-      executor ! req
-      context.become(prepareRunning(sender()))
-
     case res: ExecuteOperatorResponse =>
       log.info("receive operator response from " + sender())
-      actor ! TaskInstance(Seq(self))
-      context.become(onRunning(sender(), res.stateHandler))
+      context.become(onRunning(sender(), handler))
   }
 
-  def onRunning(executor: ActorRef, stateHandler: StateHandler): Receive = {
-    case CheckState =>
-      log.info("send check stat to [{}]", executor)
-      executor ! CheckState
+//  def prepareRunning(actor: ActorRef = null): Receive = {
+//    case req: ExecuteOperatorRequest =>
+//      executor ! req
+//      context.become(prepareRunning(sender()))
+//
+//    case res: ExecuteOperatorResponse =>
+//      log.info("receive operator response from " + sender())
+//      actor ! TaskInstance(Seq(self))
+//      context.become(onRunning(sender(), res.stateHandler))
+//  }
 
-    case handler: StateHandler =>
-      log.info("send schedule check stat to [{}]", executor)
-      executor ! handler
-      context.become(onRunning(executor, handler))
-      sender() ! "OK"
+  def onRunning(executor: ActorRef, stateHandler: StateHandler): Receive = {
 
     case KillAction =>
       log.info("send kill action to [{}]", executor)
@@ -47,22 +44,14 @@ class ClientInstance(executor: ActorRef) extends Actor with ActorLogging {
       self ! PoisonPill
       sender() ! "OK"
 
-    case HandleState(handler) =>
-      context.become(onRunning(executor, handler))
-      sender() ! "OK"
-
-    case HandleOnComplete(handler) =>
-      val newHandler: State => Unit = state => {
-        stateHandler.handle(state)
-        state match {
-          case KILL(_) | SUCCESS(_) | FAILED(_) => handler.handle(state)
-          case _ =>
-        }
-      }
-      context.become(onRunning(executor, StateHandler(newHandler)))
-
     case stat: State =>
       log.info("receive stat from [{}], state: {}", sender(), stat)
       stateHandler.handle(stat)
+      stat match {
+        case KILL(_) | SUCCESS(_) | FAILED(_) =>
+          promise.success(stat)
+          self ! TerminateAction
+        case _ =>
+      }
   }
 }

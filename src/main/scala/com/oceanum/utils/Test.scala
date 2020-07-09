@@ -4,7 +4,8 @@ import java.net.{InetAddress, UnknownHostException}
 
 import akka.util.Timeout
 import com.oceanum.ClusterStarter
-import com.oceanum.client.{SchedulerClient, Task}
+import com.oceanum.client.{SchedulerClient, StateHandler, Task}
+import com.oceanum.cluster.exec.State
 import com.oceanum.common.Implicits._
 
 import scala.concurrent.{ExecutionContext, ExecutionContextExecutor}
@@ -18,7 +19,7 @@ object Test {
 //  val ip: String = getSelfAddress
 //  val ip: String = "127.0.0.1"
   val ip2 = "192.168.10.131"
-  val ip1 = "192.168.10.55"
+  val ip1 = getSelfAddress
 
   def startCluster(args: Array[String]): Unit = {
     ClusterStarter.main(Array("--port=3551", "--topics=t1,a1", s"--host=$ip1", s"--seed-node=$ip2", "--conf=src"/"main"/"resources"/"application.properties,src"/"main"/"resources"/"application-env.properties"))
@@ -33,7 +34,8 @@ object Test {
     implicit val timeout: Timeout = fd"10 second"
     val client = SchedulerClient(ip1, 5551, ip2, "src/main/resources/application.properties")
     val future = client
-      .execute(Task.builder.python()
+      .execute(
+        task = Task.builder.python()
         .id("test")
         .user("test1")
         .topic("default")
@@ -46,21 +48,12 @@ object Test {
         .lazyInit(_
           .user("root")
         )
-        .build
+        .build,
+        stateHandler = StateHandler("3s") { state =>
+          println("state: " + state)
+        }
       )
-    future
-      .onComplete {
-        case Success(value) =>
-          value.handleState("2s")(state => println("state is: " + state))
-          value.onComplete(stat => {
-            println("result is: " + stat)
-            value.close()
-          })
-        //          Thread.sleep(20000)
-        //          value.kill()
-        case Failure(exception) =>
-          exception.printStackTrace()
-      }
+    future.flatMap(_.completeFuture).onComplete("complete: " + _.get)
     Thread.sleep(100000)
     client.close
   }

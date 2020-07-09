@@ -13,22 +13,21 @@ import scala.util.{Failure, Success}
 class FlowFactory {
   implicit val sc: ExecutionContext = Environment.GLOBAL_EXECUTOR
   def create(task: Task)(implicit schedulerClient: SchedulerClient): Flow[TaskMeta, TaskMeta, NotUsed] = {
-    Flow[TaskMeta].mapAsync(1) { metadata =>
-      val promise = Promise[TaskMeta]()
-      val instanceFuture = schedulerClient.execute(task)
-      instanceFuture.onComplete {
-        case Success(taskInstance) =>
-          taskInstance.onComplete { // TODO
-            case SUCCESS(meta) => promise.success(metadata ++ meta)
-            case FAILED(meta) => promise.success(metadata ++ meta)
-            case KILL(meta) => promise.success(metadata ++ meta)
-          }
-        case Failure(e) =>
-          e.printStackTrace()
-          promise.success(metadata ++ TaskMeta("error" -> e))
-      }
-      promise.future
-    }
+//    Flow[TaskMeta].mapAsync(1) { metadata =>
+//      val promise = Promise[TaskMeta]()
+//      val instanceFuture = schedulerClient.execute(task)
+//      instanceFuture.flatMap(_.completeFuture.onComplete { // TODO
+//            case Success(state) => state match {
+//              case SUCCESS(meta) => promise.success(metadata ++ meta)
+//              case FAILED(meta) => promise.success(metadata ++ meta)
+//              case KILL(meta) => promise.success(metadata ++ meta)
+//            }
+//            case Failure(e) =>
+//              e.printStackTrace()
+//          })
+      null
+
+//    }
   }
 
   def broadcast(parallel: Int)(implicit builder: GraphDSL.Builder[NotUsed]): UniformFanOutShape[TaskMeta, TaskMeta] = {

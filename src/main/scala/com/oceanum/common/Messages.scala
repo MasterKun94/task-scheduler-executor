@@ -35,13 +35,13 @@ case class AvailableExecutorRequest(topic: String) extends Message
 @SerialVersionUID(1L)
 case class AvailableExecutorsRequest(topic: String, maxWait: String) extends Message
 @SerialVersionUID(1L)
-case class AvailableExecutorResponse(executor: TraversableOnce[AvailableExecutor]) extends Message
+case class AvailableExecutorResponse(executor: Seq[AvailableExecutor]) extends Message
 @SerialVersionUID(1L)
 case class AvailableExecutor(actor: ActorRef, taskInfo: NodeTaskInfoResponse, topics: Seq[String]) extends Message
 @SerialVersionUID(1L)
-case class ExecuteOperatorRequest(task: Task, stateHandler: StateHandler) extends Message
+case class ExecuteOperatorRequest(task: Task, stateCheckInterval: String) extends Message
 @SerialVersionUID(1L)
-case class ExecuteOperatorResponse(metadata: TaskMeta, stateHandler: StateHandler) extends Message
+case class ExecuteOperatorResponse(metadata: TaskMeta) extends Message
 @SerialVersionUID(1L)
 case class HandleState(handler: StateHandler) extends Message
 @SerialVersionUID(1L)

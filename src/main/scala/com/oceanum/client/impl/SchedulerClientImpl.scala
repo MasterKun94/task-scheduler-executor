@@ -5,18 +5,19 @@ import akka.pattern.ask
 import akka.util.Timeout
 import com.oceanum.client.actors.{ClientEndpoint, ClientInstance, HandlerActor}
 import com.oceanum.client._
+import com.oceanum.cluster.exec.State
 import com.oceanum.common._
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{ExecutionContext, Future, Promise}
 
 class SchedulerClientImpl(endpoint: ActorRef, system: ActorSystem)(implicit executionContext: ExecutionContext, timeout: Timeout) extends SchedulerClient {
   private lazy val metricsClient = system.actorOf(Props(classOf[ClientEndpoint], endpoint), "metrics-client")
 
   override def execute(task: Task, stateHandler: StateHandler): Future[TaskInstance] = {
-    doExecute(AvailableExecutorRequest(task.topic), task, stateHandler)
+    doExecute(AvailableExecutorRequest(task.topic), task, stateHandler).map(_.head)
   }
 
-  override def executeAll(task: Task, stateHandler: StateHandler, timeWait: String): Future[TaskInstance] = {
+  override def executeAll(task: Task, stateHandler: StateHandler, timeWait: String): Future[Seq[TaskInstance]] = {
     doExecute(AvailableExecutorsRequest(task.topic, timeWait), task, stateHandler)
   }
 
@@ -24,20 +25,17 @@ class SchedulerClientImpl(endpoint: ActorRef, system: ActorSystem)(implicit exec
     system.actorOf(Props(classOf[ClientEndpoint], endpoint))
   }
 
-  private def doExecute(requestMsg: Message, task: Task, stateHandler: StateHandler): Future[TaskInstance] = {
+  private def doExecute(requestMsg: Message, task: Task, stateHandler: StateHandler): Future[Seq[TaskInstance]] = {
     val client = getClient
+    val promise = Promise[State]()
     client
       .ask(requestMsg)
       .mapTo[AvailableExecutorResponse]
-      .flatMap(response => {
-        val res = response.executor
-          .map(executor => system.actorOf(Props(classOf[ClientInstance], executor.actor)))
-          .map(client => client
-            .ask(ExecuteOperatorRequest(task, stateHandler))
-            .map(_ => client)
-          )
-          .toSeq
-        Future.sequence(res).map(TaskInstance(_))
+      .map(response => {
+        val res: Seq[ActorRef] = response
+          .executor
+          .map(executor => system.actorOf(Props(classOf[ClientInstance], executor.actor, task, stateHandler, promise)))
+        res.map(TaskInstance(_, promise.future))
       })
   }
 

@@ -16,8 +16,8 @@ import scala.util.{Failure, Success}
  * @author chenmingkun
  * @date 2020/5/2
  */
-class ExecutionInstance(task: Task, stateHandler: StateHandler, actor: ActorRef) extends Actor with ActorLogging {
-  case class Start(operator: Operator[_ <: OperatorTask], client: ActorRef, handler: StateHandler)
+class ExecutionInstance(task: Task, interval: String, actor: ActorRef) extends Actor with ActorLogging {
+  case class Start(operator: Operator[_ <: OperatorTask], client: ActorRef, interval: String)
 
   implicit private val listenerGenerator: TaskMeta => EventListener = meta => new EventListener {
     override def prepare(message: TaskMeta): Unit = self ! PrepareMessage(meta ++ message)
@@ -36,7 +36,7 @@ class ExecutionInstance(task: Task, stateHandler: StateHandler, actor: ActorRef)
     implicit val executor: ExecutionContext = Environment.GLOBAL_EXECUTOR
     task.init.onComplete {
       case Success(operator) =>
-        self ! Start(operator, actor, stateHandler)
+        self ! Start(operator, actor, interval)
       case Failure(e) =>
         e.printStackTrace()
         val cancellable: Cancellable = Cancellable.alreadyCancelled
@@ -51,16 +51,15 @@ class ExecutionInstance(task: Task, stateHandler: StateHandler, actor: ActorRef)
   override def postStop(): Unit = execTimeoutMax.cancel()
 
   override def receive: Receive = {
-    case Start(operator, client, handler) =>
-      val duration = handler.checkInterval()
-      log.info("receive operator: [{}], receive schedule check state request from [{}], start schedule with duration [{}]", operator, sender, duration)
-      val cancelable: Cancellable = schedule(duration, duration) {
+    case Start(operator, client, interval) =>
+      log.info("receive operator: [{}], receive schedule check state request from [{}], start schedule with duration [{}]", operator, sender, interval)
+      val cancelable: Cancellable = schedule(interval, interval) {
         self.tell(CheckState, client)
       }
       val hook: Hook = RunnerManager.submit(operator)
       val metadata: TaskMeta = operator.metadata
       context.become(offline(metadata)(Holder(hook, cancelable, client)))
-      client ! ExecuteOperatorResponse(operator.metadata, handler)
+      client ! ExecuteOperatorResponse(operator.metadata)
   }
 
   private def offline(meta: TaskMeta)(implicit holder: Holder): Receive = {

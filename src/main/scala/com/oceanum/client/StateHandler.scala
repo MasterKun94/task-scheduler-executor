@@ -15,8 +15,9 @@ trait StateHandler extends Serializable {
 }
 
 object StateHandler {
-  def apply(handler: State => Unit): StateHandler = new StateHandler() {
+  def apply(interval: String)(handler: State => Unit): StateHandler = new StateHandler() {
     override def handle(state: State): Unit = handler(state)
+    override def checkInterval(): String = interval
   }
 
   def empty(): StateHandler = new StateHandler {

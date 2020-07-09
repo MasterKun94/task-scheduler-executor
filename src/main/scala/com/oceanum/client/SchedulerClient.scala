@@ -22,7 +22,7 @@ trait SchedulerClient {
 
   def executeAll(task: Task,
                  stateHandler: StateHandler = StateHandler.default(),
-                 timeWait: String = "3s"): Future[TaskInstance]
+                 timeWait: String = "3s"): Future[Seq[TaskInstance]]
 
   def handleClusterMetrics(interval: String)(handler: ClusterMetricsResponse => Unit): ShutdownHook
 

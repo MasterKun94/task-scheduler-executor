@@ -35,6 +35,10 @@ class TaskMeta(map: Map[String, Any]) extends Meta[TaskMeta](map) {
 
   def message: String = this("message")
 
+  def error_=(e: Throwable): TaskMeta = this + ("error" -> e)
+
+  def error: Throwable = this("error")
+
   def lazyInit_=(func: Task => Task): TaskMeta = this + ("lazyInit" -> func)
 
   def lazyInit: Task => Task = this.get[Task => Task ]("lazyInit")
@@ -48,6 +52,8 @@ class TaskMeta(map: Map[String, Any]) extends Meta[TaskMeta](map) {
   def stdoutPath: String = outputPath/s"$id-stdout.out"
 
   def stderrPath: String = outputPath/s"$id-stderr.out"
+
+  def withFunc(func: TaskMeta => TaskMeta): TaskMeta = func(this)
 
   private lazy val outputPath: String = {
     //创建文件路径//创建文件路径
