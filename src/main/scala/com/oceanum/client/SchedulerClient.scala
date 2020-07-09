@@ -20,9 +20,9 @@ trait SchedulerClient {
   def execute(task: Task,
               stateHandler: StateHandler = StateHandler.default()): Future[TaskInstance]
 
-  def executeAll(task: Task,
-                 stateHandler: StateHandler = StateHandler.default(),
-                 timeWait: String = "3s"): Future[Seq[TaskInstance]]
+  def broadcastExecute(task: Task,
+                       stateHandler: StateHandler = StateHandler.default(),
+                       timeWait: String = "3s"): Future[Seq[TaskInstance]]
 
   def handleClusterMetrics(interval: String)(handler: ClusterMetricsResponse => Unit): ShutdownHook
 
@@ -37,17 +37,8 @@ object SchedulerClient {
   private val clients: TrieMap[ActorSystem, SchedulerClient] = TrieMap()
 
   def apply(host: String, port: Int, seedNodes: String, configFile: String)(implicit timeout: Timeout = Timeout(20, TimeUnit.SECONDS)): SchedulerClient = {
-    Environment.loadArgs(Array(s"--conf=$configFile", s"--seed-node=$seedNodes"))
-    Environment.load(Environment.Key.HOST, host)
-    Environment.load(Environment.Key.CLIENT_NODE_PORT, port.toString)
-    val seeds = seedNodes
-      .split(",")
-      .map(_.trim)
-      .filter(_.nonEmpty)
-      .map(_.split(":"))
-      .map(arr => if (arr.length == 1) arr :+ "3551" else arr)
-      .map(_.mkString(":"))
-    Environment.load(Environment.Key.CLUSTER_NODE_SEEDS, seeds.mkString(","))
+    import Environment.Arg
+    Environment.loadArgs(Array(s"${Arg.CONF}=$configFile", s"${Arg.SEED_NODE}=$seedNodes", s"${Arg.HOST}=$host", s"${Arg.CLIENT_PORT}=$port"))
     val system = Environment.CLIENT_SYSTEM
     SchedulerClient.create(system, Environment.CLUSTER_NODE_SEEDS)
   }

@@ -181,8 +181,11 @@ object Environment {
     val host = arg.getOrElse(Arg.HOST, HOST)
     load(Key.HOST, host)
 
-    val port = arg.getOrElse(Arg.PORT, CLUSTER_NODE_PORT.toString).toInt
-    load(Key.CLUSTER_NODE_PORT, port.toString)
+    val port = arg.getOrElse(Arg.PORT, CLUSTER_NODE_PORT.toString)
+    load(Key.CLUSTER_NODE_PORT, port)
+
+    val clientPort = arg.getOrElse(Arg.CLIENT_PORT, CLIENT_NODE_PORT.toString)
+    load(Key.CLIENT_NODE_PORT, clientPort)
 
     val seedNodes: Seq[String] = arg
       .get(Arg.SEED_NODE)
@@ -254,6 +257,7 @@ object Environment {
     val PORT = "--port"
     val SEED_NODE = "--seed-node"
     val CONF = "--conf"
+    val CLIENT_PORT = "--client-port"
   }
 
   object Key {

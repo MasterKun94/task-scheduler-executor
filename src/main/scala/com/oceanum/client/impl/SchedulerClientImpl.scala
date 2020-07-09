@@ -17,7 +17,7 @@ class SchedulerClientImpl(endpoint: ActorRef, system: ActorSystem)(implicit exec
     doExecute(AvailableExecutorRequest(task.topic), task, stateHandler).map(_.head)
   }
 
-  override def executeAll(task: Task, stateHandler: StateHandler, timeWait: String): Future[Seq[TaskInstance]] = {
+  override def broadcastExecute(task: Task, stateHandler: StateHandler, timeWait: String): Future[Seq[TaskInstance]] = {
     doExecute(AvailableExecutorsRequest(task.topic, timeWait), task, stateHandler)
   }
 
