@@ -17,7 +17,7 @@ class ClientEndpoint(clusterClient: ActorRef) extends Actor with ActorLogging {
     case req: AvailableExecutorsRequest =>
       clusterClient ! Publish(req.topic, AvailableExecutorRequest(req.topic))
       context.become(receiveExecutors(sender(), Array.empty))
-      Scheduler.scheduleOnce(fd"${req.maxWait}") {
+      Scheduler.scheduleOnce(req.maxWait) {
         self ! req
       }
 

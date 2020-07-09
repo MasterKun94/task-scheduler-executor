@@ -3,7 +3,6 @@ package com.oceanum.cluster
 import java.util.Date
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Cancellable, PoisonPill}
-import com.oceanum.common.Implicits._
 import com.oceanum.client.{StateHandler, Task, TaskMeta}
 import com.oceanum.cluster.exec.{EventListener, Hook, Operator, OperatorTask, RunnerManager, State}
 import com.oceanum.cluster.exec.State._
@@ -41,9 +40,7 @@ class ExecutionInstance(task: Task, stateHandler: StateHandler, actor: ActorRef)
         e.printStackTrace()
         val cancellable: Cancellable = Cancellable.alreadyCancelled
         val hook: Hook = Hook(cancellable)
-        val clientHolder: ClientHolder = ClientHolder(actor)
-        implicit val holder: Holder = Holder(hook, cancellable, clientHolder)
-        context.become(failed(task.metadata.message = e.getMessage))
+        context.become(failed(task.metadata.message = e.getMessage)(Holder(hook, cancellable, actor)))
     }
     execTimeoutMax = scheduleOnce(Environment.EXEC_MAX_TIMEOUT) {
       context.stop(self)
@@ -54,31 +51,16 @@ class ExecutionInstance(task: Task, stateHandler: StateHandler, actor: ActorRef)
 
   override def receive: Receive = {
     case Start(operator, client, handler) =>
-      val duration = fd"${handler.checkInterval()}"
+      val duration = handler.checkInterval()
       log.info("receive operator: [{}], receive schedule check state request from [{}], start schedule with duration [{}]", operator, sender, duration)
       val cancelable: Cancellable = schedule(duration, duration) {
         self.tell(CheckState, client)
       }
-      val clientHolder: ClientHolder = ClientHolder(client)
       val hook: Hook = RunnerManager.submit(operator)
       val metadata: TaskMeta = operator.metadata
-      context.become(offline(metadata)(Holder(hook, cancelable, clientHolder)))
+      context.become(offline(metadata)(Holder(hook, cancelable, client)))
       client ! ExecuteOperatorResponse(operator.metadata, handler)
   }
-
-  case class Holder(hook: Hook, cancellable: Cancellable, client: ClientHolder)
-  case class StateReceive(state: State, receive: Holder => Receive)
-  type Params = (State, Holder => Receive)
-  private def offline_(implicit metadata: TaskMeta) : StateReceive = StateReceive(OFFLINE(metadata), offline(metadata)(_))
-  private def prepare_(implicit metadata: TaskMeta) : StateReceive  = StateReceive(PREPARE(metadata), prepare(metadata)(_))
-  private def start_(implicit metadata: TaskMeta) : StateReceive  = StateReceive(START(metadata), start(metadata)(_))
-  private def running_(implicit metadata: TaskMeta) : StateReceive  = StateReceive(RUNNING(metadata), running(metadata)(_))
-  private def retry_(implicit metadata: TaskMeta) : StateReceive  = StateReceive(RETRY(metadata), retry(metadata)(_))
-  private def timeout_(implicit metadata: TaskMeta) : StateReceive  = StateReceive(TIMEOUT(metadata), timeout(metadata)(_))
-  private def success_(implicit metadata: TaskMeta) : StateReceive  = StateReceive(SUCCESS(metadata), success(metadata)(_))
-  private def failed_(implicit metadata: TaskMeta) : StateReceive  = StateReceive(FAILED(metadata), failed(metadata)(_))
-  private def kill_(implicit metadata: TaskMeta) : StateReceive  = StateReceive(KILL(metadata), kill(metadata)(_))
-  case class ClientHolder(client: ActorRef)
 
   private def offline(meta: TaskMeta)(implicit holder: Holder): Receive = {
     implicit val metadata: TaskMeta = meta.createTime = new Date()
@@ -157,11 +139,11 @@ class ExecutionInstance(task: Task, stateHandler: StateHandler, actor: ActorRef)
       log.info("send state: [{}] to sender: [{}]", stateReceive.state, sender)
       sender ! stateReceive.state
     case handler: StateHandler =>
-      val finiteDuration = fd"${handler.checkInterval()}"
+      val finiteDuration = handler.checkInterval()
       holder.cancellable.cancel
       log.info("receive schedule check state request from [{}], start schedule with duration [{}]", sender, finiteDuration)
       val cancelable: Cancellable = schedule(finiteDuration, finiteDuration) {
-        self.tell(CheckState, holder.client.client)
+        self.tell(CheckState, holder.client)
       }
       context.become(stateReceive.receive(holder.copy(cancellable = cancelable)))
   }
@@ -235,6 +217,19 @@ class ExecutionInstance(task: Task, stateHandler: StateHandler, actor: ActorRef)
   }
 
   private def checkState(implicit holder: Holder): Unit = {
-    self.tell(CheckState, holder.client.client)
+    self.tell(CheckState, holder.client)
   }
+
+  case class Holder(hook: Hook, cancellable: Cancellable, client: ActorRef)
+  case class StateReceive(state: State, receive: Holder => Receive)
+  private def offline_(implicit metadata: TaskMeta) : StateReceive = StateReceive(OFFLINE(metadata), offline(metadata)(_))
+  private def prepare_(implicit metadata: TaskMeta) : StateReceive  = StateReceive(PREPARE(metadata), prepare(metadata)(_))
+  private def start_(implicit metadata: TaskMeta) : StateReceive  = StateReceive(START(metadata), start(metadata)(_))
+  private def running_(implicit metadata: TaskMeta) : StateReceive  = StateReceive(RUNNING(metadata), running(metadata)(_))
+  private def retry_(implicit metadata: TaskMeta) : StateReceive  = StateReceive(RETRY(metadata), retry(metadata)(_))
+  private def timeout_(implicit metadata: TaskMeta) : StateReceive  = StateReceive(TIMEOUT(metadata), timeout(metadata)(_))
+  private def success_(implicit metadata: TaskMeta) : StateReceive  = StateReceive(SUCCESS(metadata), success(metadata)(_))
+  private def failed_(implicit metadata: TaskMeta) : StateReceive  = StateReceive(FAILED(metadata), failed(metadata)(_))
+  private def kill_(implicit metadata: TaskMeta) : StateReceive  = StateReceive(KILL(metadata), kill(metadata)(_))
+
 }

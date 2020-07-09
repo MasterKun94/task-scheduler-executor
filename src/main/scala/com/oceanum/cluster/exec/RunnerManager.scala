@@ -4,9 +4,9 @@ import java.util.concurrent.atomic.AtomicInteger
 
 import com.oceanum.client.TaskMeta
 import com.oceanum.cluster.TaskInfoTrigger
-import com.oceanum.common.Implicits.DurationHelper
 import com.oceanum.common.Scheduler.scheduleOnce
 import com.oceanum.common.{Environment, Log, NodeTaskInfoResponse}
+import scala.concurrent.duration._
 
 /**
  * @author chenmingkun
@@ -62,14 +62,14 @@ object RunnerManager extends Log {
             operatorProp.eventListener.retry(meta.message = msg)
             log.info("task begin retry: " + operatorProp.name)
             incRetrying()
-            val cancellable = scheduleOnce(fd"${newOperatorProp.retryInterval}") {
+            val cancellable = scheduleOnce(newOperatorProp.retryInterval) {
               this.submit(newOperatorProp)
               decRetrying()
               TaskInfoTrigger.trigger()
             }
             newOperatorProp.receive(Hook(cancellable))
           } else {
-            scheduleOnce(fd"10s") {
+            scheduleOnce(10.second) {
               operatorProp.prop.close()
             }
             operatorProp.eventListener.failed(meta.message = msg)
@@ -78,7 +78,7 @@ object RunnerManager extends Log {
           }
 
         case ExitCode.OK =>
-          scheduleOnce(fd"10s") {
+          scheduleOnce(10.second) {
             operatorProp.prop.close()
           }
           operatorProp.eventListener.success()
@@ -86,7 +86,7 @@ object RunnerManager extends Log {
           incSuccess()
 
         case ExitCode.KILL =>
-          scheduleOnce(fd"10s") {
+          scheduleOnce(10.second) {
             operatorProp.prop.close()
           }
           operatorProp.eventListener.kill()

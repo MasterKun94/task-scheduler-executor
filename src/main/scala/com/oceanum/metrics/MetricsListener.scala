@@ -68,7 +68,7 @@ class MetricsListener extends Actor with ActorLogging {
     case ClusterInfoMessageHolder(message: ClusterMessage, actor: ActorRef) => message match {
 
       case ClusterMetricsRequest(initialDelay, interval) =>
-        val hook = schedule(fd"$initialDelay", fd"$interval") {
+        val hook = schedule(initialDelay, interval) {
           self ! ClusterInfoMessageHolder(ClusterMetricsRequest, actor)
         }
         metricListeners.put(actor, (System.currentTimeMillis(), hook))
@@ -80,7 +80,7 @@ class MetricsListener extends Actor with ActorLogging {
         actor ! ClusterMetricsResponse(clusterMetricsChanged.nodeMetrics)
 
       case ClusterStateRequest(initialDelay, interval) =>
-        val hook = schedule(fd"$initialDelay", fd"$interval") {
+        val hook = schedule(initialDelay, interval) {
           self ! ClusterInfoMessageHolder(ClusterStateRequest, actor)
         }
         stateListeners.put(actor, (System.currentTimeMillis(), hook))
