@@ -5,7 +5,7 @@ import akka.actor.{ActorContext, ActorRefFactory, ActorSystem, Cancellable}
 import scala.concurrent.ExecutionContext
 import Implicits.DurationHelper
 
-import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.duration._
 
 /**
  * @author chenmingkun
