@@ -3,25 +3,25 @@ package com.oceanum.common
 import akka.actor.ActorRef
 import akka.cluster.ClusterEvent.CurrentClusterState
 import akka.cluster.metrics.NodeMetrics
-import com.oceanum.client.{Metadata, StateHandler, Task}
+import com.oceanum.client.{TaskMeta, StateHandler, Task}
 
 trait Message {}
 @SerialVersionUID(1L)
-case class PrepareMessage(metadata: Metadata) extends Message
+case class PrepareMessage(metadata: TaskMeta) extends Message
 @SerialVersionUID(1L)
-case class RunningMessage(metadata: Metadata) extends Message
+case class RunningMessage(metadata: TaskMeta) extends Message
 @SerialVersionUID(1L)
-case class FailedMessage(metadata: Metadata) extends Message
+case class FailedMessage(metadata: TaskMeta) extends Message
 @SerialVersionUID(1L)
-case class SuccessMessage(metadata: Metadata) extends Message
+case class SuccessMessage(metadata: TaskMeta) extends Message
 @SerialVersionUID(1L)
-case class RetryMessage(metadata: Metadata) extends Message
+case class RetryMessage(metadata: TaskMeta) extends Message
 @SerialVersionUID(1L)
-case class KillMessage(metadata: Metadata) extends Message
+case class KillMessage(metadata: TaskMeta) extends Message
 @SerialVersionUID(1L)
-case class TimeoutMessage(metadata: Metadata) extends Message
+case class TimeoutMessage(metadata: TaskMeta) extends Message
 @SerialVersionUID(1L)
-case class StartMessage(metadata: Metadata) extends Message
+case class StartMessage(metadata: TaskMeta) extends Message
 
 @SerialVersionUID(1L)
 case object KillAction extends Message
@@ -39,9 +39,9 @@ case class AvailableExecutorResponse(executor: TraversableOnce[AvailableExecutor
 @SerialVersionUID(1L)
 case class AvailableExecutor(actor: ActorRef, taskInfo: NodeTaskInfoResponse, topics: Seq[String]) extends Message
 @SerialVersionUID(1L)
-case class ExecuteOperatorRequest(operatorMessage: Task, stateHandler: StateHandler) extends Message
+case class ExecuteOperatorRequest(task: Task, stateHandler: StateHandler) extends Message
 @SerialVersionUID(1L)
-case class ExecuteOperatorResponse(metadata: Metadata, stateHandler: StateHandler) extends Message
+case class ExecuteOperatorResponse(metadata: TaskMeta, stateHandler: StateHandler) extends Message
 @SerialVersionUID(1L)
 case class HandleState(handler: StateHandler) extends Message
 @SerialVersionUID(1L)

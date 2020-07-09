@@ -1,6 +1,5 @@
 package com.oceanum.cluster.exec
 
-import com.oceanum.common.Implicits.TaskMetadataHelper
 /**
  * @author chenmingkun
  * @date 2020/5/30
@@ -10,7 +9,6 @@ abstract class TypedRunner[T <: OperatorTask](types: String*) extends TaskRunner
 
     def run(operatorProp: Operator[_ <: OperatorTask]): ExitCode = {
       if (executable(operatorProp)) {
-        operatorProp.eventListener.start()
         typedRun(operatorProp.asInstanceOf[Operator[T]])
       } else {
         ExitCode.UN_SUPPORT(operatorProp.metadata.taskType)

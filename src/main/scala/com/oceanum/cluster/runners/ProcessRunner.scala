@@ -1,4 +1,4 @@
-package com.oceanum.cluster.executors
+package com.oceanum.cluster.runners
 
 import java.io.{File, IOException, InputStream}
 import java.util.concurrent.TimeUnit
@@ -7,7 +7,6 @@ import java.util.concurrent.atomic.AtomicBoolean
 import com.oceanum.cluster.exec._
 import com.oceanum.cluster.tasks._
 import com.oceanum.common.Environment
-import com.oceanum.common.Implicits.TaskMetadataHelper
 
 import scala.collection.JavaConversions.{mapAsJavaMap, seqAsJavaList}
 

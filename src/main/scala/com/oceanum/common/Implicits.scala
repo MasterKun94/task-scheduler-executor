@@ -4,7 +4,7 @@ import java.io.File
 import java.text.SimpleDateFormat
 import java.util.regex.Matcher
 
-import com.oceanum.client.{Metadata, Task}
+import com.oceanum.client.{TaskMeta, Task}
 import com.oceanum.cluster.exec.InputStreamHandler
 
 import scala.concurrent.duration.{Duration, FiniteDuration}
@@ -31,52 +31,6 @@ object Implicits {
     }
 
     private def toDuration(args: Seq[Any]): Duration = Duration(sc.s(args: _*))
-  }
-
-  implicit class TaskMetadataHelper(metadata: Metadata) {
-    def id: String = metadata("id")
-    def taskType: String = metadata("taskType")
-    def user: String = metadata("user")
-    def createTime: String = metadata("createTime")
-    def stdoutHandler: InputStreamHandler = Environment.CLUSTER_NODE_RUNNER_STDOUT_HANDLER_CLASS
-      .getConstructor(metadata.getClass)
-      .newInstance(metadata)
-      .asInstanceOf[InputStreamHandler]
-    def stderrHandler: InputStreamHandler = Environment.CLUSTER_NODE_RUNNER_STDERR_HANDLER_CLASS
-      .getConstructor(metadata.getClass)
-      .newInstance(metadata)
-      .asInstanceOf[InputStreamHandler]
-    def execDir: String = metadata("execDir")
-
-    type TaskFunc = Task => Task
-    def setLazyInit(func: TaskFunc): Metadata = metadata + ("lazyInit" -> func)
-
-    def lazyInit(task: Task): Task = metadata.get[TaskFunc]("lazyInit") match {
-      case Some(f) => f(task).copy(meta = task.metadata - "lazyInit")
-      case None => task
-    }
-
-    private lazy val outputPath: String = {
-      //创建文件路径//创建文件路径
-      val file: File = (execDir/"out").toFile
-      //判断文件父目录是否已经存在,不存在则创建
-      if (!file.exists)
-        file.mkdirs
-      file.getAbsolutePath
-    }
-    def stdoutPath: String = outputPath/s"$id-stdout.out"
-    def stderrPath: String = outputPath/s"$id-stderr.out"
-
-    def withTask(task: Task): Metadata = {
-      val dateFormat = new SimpleDateFormat("yyyyMMdd").format(System.currentTimeMillis())
-      metadata ++ Metadata(
-        "id" -> task.id,
-        "taskType" -> task.prop.taskType,
-        "user" -> task.user,
-        "createTime" -> System.currentTimeMillis().toString,
-        "execDir" -> Environment.EXEC_WORK_DIR/dateFormat/task.user/task.id
-      )
-    }
   }
 
   implicit class PathHelper(str: String)(implicit separator: String = Environment.PATH_SEPARATOR) {

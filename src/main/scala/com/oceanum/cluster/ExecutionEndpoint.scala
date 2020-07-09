@@ -34,12 +34,10 @@ class ExecutionEndpoint extends Actor {
   }
 
   override def receive: Receive = {
-    case req: ExecuteOperatorRequest =>
-      val instance = context.system.actorOf(Props(classOf[ExecutionInstance]), "execution-instance")
-      instance.tell(req, sender())
+    case ExecuteOperatorRequest(task, stateHandler) =>
+      context.system.actorOf(Props(classOf[ExecutionInstance], task, stateHandler, sender()))
 
-
-    case req: AvailableExecutorRequest =>
+    case _: AvailableExecutorRequest =>
       sender() ! AvailableExecutor(self, RunnerManager.getTaskInfo, Environment.CLUSTER_NODE_TOPICS)
   }
 }

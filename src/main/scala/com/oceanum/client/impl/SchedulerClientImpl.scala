@@ -22,7 +22,7 @@ class SchedulerClientImpl(endpoint: ActorRef, system: ActorSystem)(implicit exec
   }
 
   private def getClient(implicit executionContext: ExecutionContext): ActorRef = {
-    system.actorOf(Props(classOf[ClientEndpoint], endpoint), "client-actor")
+    system.actorOf(Props(classOf[ClientEndpoint], endpoint))
   }
 
   private def doExecute(requestMsg: Message, task: Task, stateHandler: StateHandler): Future[TaskInstance] = {

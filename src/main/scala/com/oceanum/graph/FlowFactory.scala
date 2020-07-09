@@ -3,7 +3,7 @@ package com.oceanum.graph
 import akka.NotUsed
 import akka.stream.{UniformFanInShape, UniformFanOutShape}
 import akka.stream.scaladsl.{Broadcast, Flow, GraphDSL, Merge, Partition, ZipWithN}
-import com.oceanum.client.{Metadata, SchedulerClient, Task}
+import com.oceanum.client.{TaskMeta, SchedulerClient, Task}
 import com.oceanum.cluster.exec.State.{FAILED, KILL, SUCCESS}
 import com.oceanum.common.Environment
 
@@ -12,9 +12,9 @@ import scala.util.{Failure, Success}
 
 class FlowFactory {
   implicit val sc: ExecutionContext = Environment.GLOBAL_EXECUTOR
-  def create(task: Task)(implicit schedulerClient: SchedulerClient): Flow[Metadata, Metadata, NotUsed] = {
-    Flow[Metadata].mapAsync(1) { metadata =>
-      val promise = Promise[Metadata]()
+  def create(task: Task)(implicit schedulerClient: SchedulerClient): Flow[TaskMeta, TaskMeta, NotUsed] = {
+    Flow[TaskMeta].mapAsync(1) { metadata =>
+      val promise = Promise[TaskMeta]()
       val instanceFuture = schedulerClient.execute(task)
       instanceFuture.onComplete {
         case Success(taskInstance) =>
@@ -25,25 +25,25 @@ class FlowFactory {
           }
         case Failure(e) =>
           e.printStackTrace()
-          promise.success(metadata ++ Metadata("error" -> e))
+          promise.success(metadata ++ TaskMeta("error" -> e))
       }
       promise.future
     }
   }
 
-  def broadcast(parallel: Int)(implicit builder: GraphDSL.Builder[NotUsed]): UniformFanOutShape[Metadata, Metadata] = {
+  def broadcast(parallel: Int)(implicit builder: GraphDSL.Builder[NotUsed]): UniformFanOutShape[TaskMeta, TaskMeta] = {
     builder.add(Broadcast(parallel))
   }
 
-  def zip(parallel: Int)(implicit builder: GraphDSL.Builder[NotUsed]): UniformFanInShape[Metadata, Metadata] = {
-    builder.add(ZipWithN[Metadata, Metadata](_.reduce(_ ++ _))(parallel))
+  def zip(parallel: Int)(implicit builder: GraphDSL.Builder[NotUsed]): UniformFanInShape[TaskMeta, TaskMeta] = {
+    builder.add(ZipWithN[TaskMeta, TaskMeta](_.reduce(_ ++ _))(parallel))
   }
 
-  def partition(parallel: Int)(partitioner: Metadata => Int)(implicit builder: GraphDSL.Builder[NotUsed]): UniformFanOutShape[Metadata, Metadata] = {
+  def partition(parallel: Int)(partitioner: TaskMeta => Int)(implicit builder: GraphDSL.Builder[NotUsed]): UniformFanOutShape[TaskMeta, TaskMeta] = {
     builder.add(Partition(parallel, partitioner))
   }
 
-  def merge(parallel: Int)(implicit builder: GraphDSL.Builder[NotUsed]): UniformFanInShape[Metadata, Metadata] = {
+  def merge(parallel: Int)(implicit builder: GraphDSL.Builder[NotUsed]): UniformFanInShape[TaskMeta, TaskMeta] = {
     builder.add(Merge(parallel))
   }
 }

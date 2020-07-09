@@ -1,14 +1,14 @@
 package graph
 
-import akka.NotUsed
+import akka.{Done, NotUsed}
 import akka.stream.scaladsl._
 import GraphDSL.Implicits._
 import akka.actor.ActorSystem
 import akka.stream.{ActorMaterializer, ClosedShape, UniformFanInShape}
 import com.oceanum.common.Environment
+
 import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext.Implicits.global
-
 import scala.concurrent.{Await, Future}
 
 object Graph extends App {

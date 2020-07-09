@@ -2,7 +2,7 @@ package com.oceanum.cluster.exec
 
 import java.util.concurrent.atomic.{AtomicBoolean, AtomicReference}
 
-import com.oceanum.client.Metadata
+import com.oceanum.client.TaskMeta
 
 /**
  * @author chenmingkun
@@ -14,7 +14,7 @@ case class Operator[T <: OperatorTask](name: String,
                                        priority: Int,
                                        prop: T,
                                        eventListener: EventListener,
-                                       metadata: Metadata,
+                                       metadata: TaskMeta,
                                        private val hookRef: AtomicReference[Hook] = new AtomicReference(),
                                        private val ref: AtomicBoolean = new AtomicBoolean(false)
                                        ) {

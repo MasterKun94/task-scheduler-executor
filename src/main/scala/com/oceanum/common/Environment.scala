@@ -8,7 +8,7 @@ import akka.actor.ActorSystem
 import ch.qos.logback.classic.LoggerContext
 import ch.qos.logback.classic.joran.JoranConfigurator
 import com.oceanum.cluster.exec.{OperatorTask, TypedRunner}
-import com.oceanum.cluster.executors.ProcessRunner
+import com.oceanum.cluster.runners.ProcessRunner
 import com.oceanum.common.Implicits.{DurationHelper, PathHelper}
 import com.typesafe.config.ConfigFactory
 import org.slf4j.LoggerFactory
@@ -64,7 +64,7 @@ object Environment {
   lazy val CLUSTER_NODE_LOGGER: String = getProperty(Key.CLUSTER_NODE_LOGGER, logger)
   lazy val CLUSTER_NODE_RUNNER_STDOUT_HANDLER_CLASS: Class[_] = Class.forName(getProperty(Key.CLUSTER_NODE_RUNNER_STDOUT_HANDLER_CLASS, "com.oceanum.cluster.exec.StdoutFileOutputHandler"))
   lazy val CLUSTER_NODE_RUNNER_STDERR_HANDLER_CLASS: Class[_] = Class.forName(getProperty(Key.CLUSTER_NODE_RUNNER_STDERR_HANDLER_CLASS, "com.oceanum.cluster.exec.StderrFileOutputHandler"))
-  lazy val CLUSTER_NODE_RUNNERS_CLASSES: Set[Class[_]] = str2arr(getProperty(Key.CLUSTER_NODE_RUNNER_CLASSES, "com.oceanum.cluster.executors.ProcessRunner")).map(Class.forName).toSet
+  lazy val CLUSTER_NODE_RUNNERS_CLASSES: Set[Class[_]] = str2arr(getProperty(Key.CLUSTER_NODE_RUNNER_CLASSES, "com.oceanum.cluster.runners.ProcessRunner")).map(Class.forName).toSet
 
   lazy val CLIENT_NODE_SYSTEM_NAME: String = getProperty(Key.CLIENT_NODE_SYSTEM_NAME, "client")
   lazy val CLIENT_NODE_PORT: Int = getProperty(Key.CLIENT_NODE_PORT, "4551").toInt
@@ -189,18 +189,15 @@ object Environment {
       .map(_.mkString(":"))
       .toSeq
 
-    import scala.collection.JavaConversions.asScalaSet
     load(Key.CLUSTER_NODE_SEEDS, seedNodes.mkString(","))
-    properties.keySet().map(_.toString).foreach {key =>
-      load(key, getProperty(key))
-    }
+    load(Key.LOG_FILE, LOG_FILE)
+    load(Key.LOG_FILE_MAX_HISTORY, LOG_FILE_MAX_HISTORY)
+    load(Key.LOG_FILE_MAX_SIZE, LOG_FILE_MAX_SIZE)
+    load(Key.LOG_FILE_PATTERN, LOG_FILE_PATTERN)
+    load(Key.LOG_STDOUT_PATTERN, LOG_STDOUT_PATTERN)
+
     val logback = new File(LOG_LOGBACK)
     if (logback.exists()) {
-      load(Key.LOG_FILE, LOG_FILE)
-      load(Key.LOG_FILE_MAX_HISTORY, LOG_FILE_MAX_HISTORY)
-      load(Key.LOG_FILE_MAX_SIZE, LOG_FILE_MAX_SIZE)
-      load(Key.LOG_FILE_PATTERN, LOG_FILE_PATTERN)
-      load(Key.LOG_STDOUT_PATTERN, LOG_STDOUT_PATTERN)
       val configurator = new JoranConfigurator()
       val lc = LoggerFactory.getILoggerFactory.asInstanceOf[LoggerContext]
       configurator.setContext(lc)
