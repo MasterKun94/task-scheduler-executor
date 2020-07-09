@@ -29,8 +29,8 @@ object Environment {
 
   lazy val AKKA_CONF: String = parsePath(getProperty(Key.AKKA_CONF, BASE_PATH/"conf"/"application.conf"))
   lazy val BASE_PATH: String = getBasePath(getProperty(Key.BASE_PATH, SystemProp.userDir))
-  lazy val EXEC_PYTHON: String = getProperty(Key.EXEC_PYTHON, "python3")
-  lazy val EXEC_PYTHON_ENABLED: Boolean = getProperty(Key.EXEC_PYTHON_ENABLED, "false").toBoolean
+  lazy val EXEC_PYTHON: String = getProperty(Key.EXEC_PYTHON, "python")
+  lazy val EXEC_PYTHON_ENABLED: Boolean = getProperty(Key.EXEC_PYTHON_ENABLED, "true").toBoolean
   lazy val EXEC_JAVA: String = getProperty(Key.EXEC_JAVA, SystemProp.javaHome/"bin"/"java")
   lazy val EXEC_JAVA_ENABLED: Boolean = getProperty(Key.EXEC_JAVA_ENABLED, "false").toBoolean
   lazy val EXEC_SCALA: String = getProperty(Key.EXEC_SCALA, "scala")
@@ -42,7 +42,7 @@ object Environment {
   lazy val EXEC_SPARK_HOME: String = getProperty(Key.EXEC_SPARK_HOME)
   lazy val EXEC_DEFAULT_USER: String = getProperty(Key.EXEC_DEFAULT_USER, "root")
   lazy val EXEC_DEFAULT_RETRY_INTERVAL: String = getProperty(Key.EXEC_DEFAULT_RETRY_INTERVAL)
-  lazy val EXEC_DEFAULT_RETRY_MAX: Int = getProperty(Key.EXEC_DEFAULT_RETRY_MAX).toInt
+  lazy val EXEC_DEFAULT_RETRY_MAX: Int = getProperty(Key.EXEC_DEFAULT_RETRY_MAX, "1").toInt
   lazy val EXEC_DEFAULT_PRIORITY: Int = getProperty(Key.EXEC_DEFAULT_PRIORITY, "5").toInt
   lazy val EXEC_DEFAULT_TOPIC: String = getProperty(Key.EXEC_DEFAULT_TOPIC, "default")
   lazy val EXEC_WORK_DIR: String = getProperty(Key.EXEC_WORK_DIR, BASE_PATH/"exec").toAbsolute()
@@ -53,7 +53,7 @@ object Environment {
   lazy val GLOBAL_EXECUTOR: ExecutionContext = ExecutionContext.global
   lazy val CLUSTER_NODE_SYSTEM_NAME: String = getProperty(Key.CLUSTER_NODE_SYSTEM_NAME, "cluster")
   lazy val CLUSTER_NODE_PORT: Int = getProperty(Key.CLUSTER_NODE_PORT, "3551").toInt
-  lazy val CLUSTER_NODE_SEEDS: Seq[String] = getProperty(Key.CLUSTER_NODE_SEEDS, "127.0.0.1:3551").split(",").map(node => s"akka.tcp://$CLUSTER_NODE_SYSTEM_NAME@$node").toSeq
+  lazy val CLUSTER_NODE_SEEDS: Seq[String] = getProperty(Key.CLUSTER_NODE_SEEDS, s"127.0.0.1:$CLUSTER_NODE_PORT").split(",").map(node => s"akka.tcp://$CLUSTER_NODE_SYSTEM_NAME@$node").toSeq
   lazy val CLUSTER_NODE_TOPICS: Seq[String] = getProperty(Key.CLUSTER_NODE_TOPICS, "default").split(",").map(_.trim).toSeq
   lazy val CLUSTER_NODE_SYSTEM: ActorSystem = clusterSystem()
   lazy val CLUSTER_NODE_METRICS_SAMPLE_INTERVAL: String = getProperty(Key.CLUSTER_NODE_METRICS_SAMPLE_INTERVAL, "5s")
@@ -96,10 +96,10 @@ object Environment {
   lazy val LOG_FILE: String = LOG_FILE_DIR/LOG_FILE_NAME
   lazy val LOG_FILE_DIR: String = getProperty(Key.LOG_FILE_DIR, BASE_PATH/"log").toAbsolute()
   lazy val LOG_FILE_NAME: String = getProperty(Key.LOG_FILE_NAME, "task-executor.%d{yyyy-MM-dd}.log")
-  lazy val LOG_FILE_PATTERN: String = getProperty(Key.LOG_FILE_PATTERN, "[%-5level] %date{ISO8601} [%-46logger] - %msg%n")
+  lazy val LOG_FILE_PATTERN: String = getProperty(Key.LOG_FILE_PATTERN, "%date{ISO8601} %-5level %-46logger - %msg%n")
   lazy val LOG_FILE_MAX_HISTORY: String = getProperty(Key.LOG_FILE_MAX_HISTORY, "30")
   lazy val LOG_FILE_MAX_SIZE: String = getProperty(Key.LOG_FILE_MAX_SIZE, "10MB")
-  lazy val LOG_STDOUT_PATTERN: String = getProperty(Key.LOG_STDOUT_PATTERN, "[%highlight(%-5level)] %date{ISO8601} [%-46logger] - %msg%n")
+  lazy val LOG_STDOUT_PATTERN: String = getProperty(Key.LOG_STDOUT_PATTERN, "%date{ISO8601} %highlight(%-5level) %-46logger - %msg%n")
 
   lazy val HADOOP_HOME: String = getProperty(Key.HADOOP_HOME, System.getenv("HADOOP_HOME")).toPath()
   lazy val HADOOP_FS_URL: String = getProperty(Key.HADOOP_FS_URL, "hdfs://localhost:9000")
@@ -127,7 +127,7 @@ object Environment {
     parse(properties.getProperty(key), properties)
   }
 
-  def getProperty(key: String, orElse: String): String = {
+  def getProperty(key: String, orElse: => String): String = {
     parse(properties.getProperty(key, orElse), properties)
   }
 
@@ -157,37 +157,43 @@ object Environment {
       .map(arr => (arr(0), arr(1)))
       .toMap
 
-    load(Key.BASE_PATH, arg.getOrElse("--base-path", new File(".").getCanonicalPath))
+    load(Key.BASE_PATH, arg.getOrElse(Arg.BASE_PATH, new File(".").getCanonicalPath))
 
     val path = BASE_PATH/"conf"/"application.properties"
-    val paths = arg.getOrElse("--conf", path)
+    val paths = arg.getOrElse(Arg.CONF, path)
       .split(",")
       .map(_.trim)
       .filter(_.nonEmpty)
     load(paths)
 
     val topics = arg
-      .get("--topics")
+      .get(Arg.TOPICS)
       .map(str2arr)
       .getOrElse(Array.empty)
       .union(str2arr(getProperty(Key.CLUSTER_NODE_TOPICS)))
       .distinct
       .toSeq
 
-    load(Key.CLUSTER_NODE_TOPICS, topics.mkString(","))
+    if (topics.nonEmpty) {
+      load(Key.CLUSTER_NODE_TOPICS, topics.mkString(","))
+    }
 
-    val host = arg.getOrElse("--host", getProperty(Key.HOST))
+    val host = arg.getOrElse(Arg.HOST, HOST)
     load(Key.HOST, host)
 
-    val port = arg.getOrElse("--port", getProperty(Key.CLUSTER_NODE_PORT)).toInt
+    val port = arg.getOrElse(Arg.PORT, CLUSTER_NODE_PORT.toString).toInt
     load(Key.CLUSTER_NODE_PORT, port.toString)
 
-    val seedNodes: Seq[String] = str2arr(arg
-      .getOrElse("--seed-node", getProperty(Key.CLUSTER_NODE_SEEDS)))
-      .map(_.split(":"))
-      .map(arr => if (arr.length == 1) arr :+ "3551" else arr)
-      .map(_.mkString(":"))
-      .toSeq
+    val seedNodes: Seq[String] = arg
+      .get(Arg.SEED_NODE)
+      .map(str2arr)
+      .map(_
+        .map(_.split(":"))
+        .map(arr => if (arr.length == 1) arr :+ CLUSTER_NODE_PORT else arr)
+        .map(_.mkString(":"))
+        .toSeq
+      )
+      .getOrElse(CLUSTER_NODE_SEEDS)
 
     load(Key.CLUSTER_NODE_SEEDS, seedNodes.mkString(","))
     load(Key.LOG_FILE, LOG_FILE)
@@ -239,6 +245,15 @@ object Environment {
           println(unknown)
           unknown
       }
+  }
+
+  object Arg {
+    val BASE_PATH = "--base-path"
+    val TOPICS = "--topics"
+    val HOST = "--host"
+    val PORT = "--port"
+    val SEED_NODE = "--seed-node"
+    val CONF = "--conf"
   }
 
   object Key {

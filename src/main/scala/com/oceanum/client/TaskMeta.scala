@@ -31,12 +31,19 @@ class TaskMeta(map: Map[String, Any]) extends Meta[TaskMeta](map) {
 
   def execDir: String = this("execDir")
 
+  def message_=(message: String):TaskMeta = this + ("message" -> message)
+
+  def message: String = this("message")
+
   def lazyInit_=(func: Task => Task): TaskMeta = this + ("lazyInit" -> func)
 
-  def lazyInit(task: Task): Task = this.get[Task => Task]("lazyInit") match {
-    case Some(f) => f(task).copy(meta = task.metadata - "lazyInit")
-    case None => task
-  }
+  def lazyInit: Task => Task = this.get[Task => Task ]("lazyInit")
+    .map(_.andThen(task => task.copy(meta = task.metadata - "lazyInit")))
+    .getOrElse(l => l)
+
+  def retryNum: Int = this.get("retryNum").getOrElse(0)
+
+  def incRetry(): TaskMeta = this + ("retryNum" -> (this.retryNum + 1))
 
   def stdoutPath: String = outputPath/s"$id-stdout.out"
 

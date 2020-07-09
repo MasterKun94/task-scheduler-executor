@@ -16,9 +16,9 @@ case class Task(id: String,
                 priority: Int = Environment.EXEC_DEFAULT_PRIORITY,
                 prop: TaskProp,
                 private val meta: TaskMeta = TaskMeta.empty) {
-  def init(listener: TaskMeta => EventListener)(implicit executor: ExecutionContext): Future[Operator[_ <: OperatorTask]] = {
+  def init(implicit listener: TaskMeta => EventListener, executor: ExecutionContext): Future[Operator[_ <: OperatorTask]] = {
     val task = metadata.lazyInit(this)
-    val taskMeta = task.metadata.createTime = new Date()
+    val taskMeta = task.metadata
     task
       .prop
       .init(taskMeta)

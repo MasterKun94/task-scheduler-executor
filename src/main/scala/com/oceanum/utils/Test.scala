@@ -38,7 +38,7 @@ object Test {
       .execute(Task.builder.python()
         .id("test")
         .user("test1")
-        .topic("node1")
+        .topic("default")
         .retryCount(3)
         .retryInterval("5 second")
         .priority(5)

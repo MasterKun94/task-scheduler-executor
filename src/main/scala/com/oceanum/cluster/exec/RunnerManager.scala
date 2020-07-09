@@ -53,12 +53,13 @@ object RunnerManager extends Log {
     operatorProp.eventListener.start()
     incRunning()
     TaskInfoTrigger.trigger()
+    val meta = TaskMeta()
     try {
       run(operatorProp) match {
         case ExitCode.ERROR(msg) =>
           if (operatorProp.retryCount > 1) {
             val newOperatorProp = operatorProp.retry()
-            operatorProp.eventListener.retry(TaskMeta("message" -> msg))
+            operatorProp.eventListener.retry(meta.message = msg)
             log.info("task begin retry: " + operatorProp.name)
             incRetrying()
             val cancellable = scheduleOnce(fd"${newOperatorProp.retryInterval}") {
@@ -71,7 +72,7 @@ object RunnerManager extends Log {
             scheduleOnce(fd"10s") {
               operatorProp.prop.close()
             }
-            operatorProp.eventListener.failed(TaskMeta("message" -> msg))
+            operatorProp.eventListener.failed(meta.message = msg)
             log.info("task failed: " + operatorProp.name)
             incFailed()
           }
@@ -94,7 +95,7 @@ object RunnerManager extends Log {
 
         case unSupport: ExitCode.UN_SUPPORT =>
           log.error(s"no executable executor exists for prop ${operatorProp.prop.getClass}")
-          operatorProp.eventListener.failed(TaskMeta("message" -> s"task type not support: ${unSupport.taskType}"))
+          operatorProp.eventListener.failed(meta.message = s"task type not support: ${unSupport.taskType}")
           operatorProp.prop.close()
           incFailed()
       }
@@ -102,7 +103,7 @@ object RunnerManager extends Log {
       case e: Throwable =>
         val message = "this should never happen, or here is a bug"
         log.error(e, message)
-        operatorProp.eventListener.failed(TaskMeta("message" -> message))
+        operatorProp.eventListener.failed(meta.message = message)
         operatorProp.prop.close()
         incFailed()
     } finally {

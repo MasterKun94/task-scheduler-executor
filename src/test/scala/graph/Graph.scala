@@ -54,13 +54,13 @@ object Test2 extends App {
 
   val resultSink = Sink.foreach(println)
 
-  val g = RunnableGraph.fromGraph(GraphDSL.create(resultSink) { implicit b => sink =>
+  val g: RunnableGraph[Future[Done]] = RunnableGraph.fromGraph(GraphDSL.create(resultSink) { implicit b =>sink =>
     import GraphDSL.Implicits._
 
     // importing the partial graph will return its shape (inlets & outlets)
-    val pm3 = b.add(ZipWithN[Int, Int](_.sum)(3))
-
-    Source(0 to 9) ~> pm3.in(0)
+    val pm3: UniformFanInShape[Int, Int] = b.add(ZipWithN[Int, Int](_.sum)(3))
+    val flow: Flow[Int, Int, NotUsed] = Flow[Int].map(_ + 1)
+    Source(0 to 9) ~> flow ~> pm3.in(0)
     Source(0 to 11) ~> pm3.in(1)
     Source(0 to 12) ~> pm3.in(2)
     pm3.out ~> sink.in

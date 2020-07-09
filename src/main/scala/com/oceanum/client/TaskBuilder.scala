@@ -26,8 +26,8 @@ abstract class TaskBuilder[T <: TaskBuilder[_, _], P <: TaskProp](task: Task) ex
   def priority(priority: Int): T = typedBuilder(task.copy(priority = priority))
 
   def lazyInit(func: T => T): T = {
-    val f: Task => Task = task => func(typedBuilder(task)).build
-    typedBuilder(task.copy(meta = task.metadata.lazyInit_=(f)))
+    val meta = task.metadata.lazyInit = task => func(typedBuilder(task)).build
+    typedBuilder(task.copy(meta = meta))
   }
 
   def build: Task = task
