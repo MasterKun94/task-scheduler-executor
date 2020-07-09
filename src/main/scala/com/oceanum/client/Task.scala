@@ -1,7 +1,5 @@
 package com.oceanum.client
 
-import java.util.Date
-
 import com.oceanum.cluster.exec.{EventListener, Operator, OperatorTask}
 import com.oceanum.common.Environment
 

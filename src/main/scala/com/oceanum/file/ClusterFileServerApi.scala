@@ -4,7 +4,6 @@ import java.io.File
 import java.nio.file.Paths
 import java.util.concurrent.atomic.AtomicInteger
 
-import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
 import akka.stream.scaladsl.{FileIO, Sink, Source}

@@ -5,12 +5,10 @@ import java.net.{InetAddress, UnknownHostException}
 import akka.util.Timeout
 import com.oceanum.ClusterStarter
 import com.oceanum.client.{SchedulerClient, Task}
-import com.oceanum.common.Environment
+import com.oceanum.common.Implicits._
 
 import scala.concurrent.{ExecutionContext, ExecutionContextExecutor}
 import scala.util.{Failure, Success}
-import com.oceanum.common.Implicits._
-import com.oceanum.file.ClusterFileServer
 
 /**
  * @author chenmingkun

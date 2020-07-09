@@ -1,11 +1,10 @@
 package com.oceanum.client.impl
 
-import akka.actor.{Actor, ActorPaths, ActorRef, ActorSystem, PoisonPill, Props}
-import akka.cluster.client.{ClusterClient, ClusterClientSettings}
+import akka.actor.{Actor, ActorRef, ActorSystem, PoisonPill, Props}
 import akka.pattern.ask
 import akka.util.Timeout
-import com.oceanum.client.actors.{ClientInstance, ClientListener, ClientEndpoint, HandlerActor}
-import com.oceanum.client.{SchedulerClient, ShutdownHook, StateHandler, Task, TaskInstance}
+import com.oceanum.client.actors.{ClientEndpoint, ClientInstance, HandlerActor}
+import com.oceanum.client._
 import com.oceanum.common._
 
 import scala.concurrent.{ExecutionContext, Future}

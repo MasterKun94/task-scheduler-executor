@@ -1,11 +1,7 @@
 package com.oceanum.common
 
 import java.io.File
-import java.text.SimpleDateFormat
 import java.util.regex.Matcher
-
-import com.oceanum.client.{TaskMeta, Task}
-import com.oceanum.cluster.exec.InputStreamHandler
 
 import scala.concurrent.duration.{Duration, FiniteDuration}
 import scala.util.Properties

@@ -157,7 +157,7 @@ object Environment {
       .map(arr => (arr(0), arr(1)))
       .toMap
 
-    load(Key.BASE_PATH, arg.getOrElse(Arg.BASE_PATH, new File(".").getCanonicalPath))
+    load(Key.BASE_PATH, arg.getOrElse(Arg.BASE_PATH, SystemProp.userDir))
 
     val path = BASE_PATH/"conf"/"application.properties"
     val paths = arg.getOrElse(Arg.CONF, path)
