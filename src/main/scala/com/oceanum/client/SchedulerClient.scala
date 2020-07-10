@@ -2,35 +2,81 @@ package com.oceanum.client
 
 import java.util.concurrent.TimeUnit
 
-import akka.actor.{ActorPaths, ActorSystem, Props}
+import akka.pattern.ask
+import akka.actor.{Actor, ActorPaths, ActorRef, ActorSystem, PoisonPill, Props}
+import akka.cluster.client.ClusterClient.Publish
 import akka.cluster.client.{ClusterClient, ClusterClientSettings}
 import akka.util.Timeout
-import com.oceanum.client.actors.ClientListener
-import com.oceanum.client.impl.SchedulerClientImpl
-import com.oceanum.common.{ClusterMetricsResponse, ClusterStateResponse, Environment, NodeTaskInfoResponse}
+import com.oceanum.client.actors.{ClientEndpoint, ClientInstance, ClientListener, HandlerActor}
+import com.oceanum.cluster.exec.State
+import com.oceanum.common.{AvailableExecutorRequest, AvailableExecutorResponse, AvailableExecutorsRequest, ClusterInfoMessageHolder, ClusterMessage, ClusterMetrics, ClusterMetricsRequest, ClusterState, ClusterStateRequest, Environment, Message, NodeTaskInfo, NodeTaskInfoRequest, StopRequest}
 
 import scala.collection.concurrent.TrieMap
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{ExecutionContext, Future, Promise}
 
 /**
  * @author chenmingkun
  * @date 2020/5/4
  */
-trait SchedulerClient {
-  def execute(task: Task,
-              stateHandler: StateHandler = StateHandler.default()): Future[TaskInstance]
+class SchedulerClient(endpoint: ActorRef, system: ActorSystem)(implicit executionContext: ExecutionContext, timeout: Timeout) {
 
-  def broadcastExecute(task: Task,
-                       stateHandler: StateHandler = StateHandler.default(),
-                       timeWait: String = "3s"): Future[Seq[TaskInstance]]
+  def execute(task: Task): SingleTaskInstanceRef = {
+    new SingleTaskInstanceRef(doExecute(AvailableExecutorRequest(task.topic), task).map(_.head))
+  }
 
-  def handleClusterMetrics(interval: String)(handler: ClusterMetricsResponse => Unit): ShutdownHook
+  def broadcastExecute(task: Task, timeWait: String): MultiTaskInstanceRef = {
+    new MultiTaskInstanceRef(doExecute(AvailableExecutorsRequest(task.topic, timeWait), task))
+  }
 
-  def handleClusterInfo(interval: String)(handler: ClusterStateResponse => Unit): ShutdownHook
+  def getClient(implicit executionContext: ExecutionContext): ActorRef = {
+    system.actorOf(Props(classOf[ClientEndpoint], endpoint))
+  }
 
-  def handleTaskInfo(handler: NodeTaskInfoResponse => Unit): ShutdownHook
+  def doExecute(requestMsg: Message, task: Task): Future[Seq[TaskInstance]] = {
+    val client = getClient
+    val promise = Promise[State]()
+    client
+      .ask(requestMsg)
+      .mapTo[AvailableExecutorResponse]
+      .map(response => {
+        val res: Seq[ActorRef] = response
+          .executor
+          .map(executor => system.actorOf(Props(classOf[ClientInstance], executor.actor, task, promise)))
+        res.map(TaskInstance(_, promise.future))
+      })
+  }
 
-  def close: Future[Unit]
+  def handleClusterMetrics(interval: String)(handler: ClusterMetrics => Unit): ShutdownHook = {
+    subscribe(ClusterMetricsRequest(interval, interval)) {
+      case res: ClusterMetrics => handler(res)
+    }
+  }
+
+  def handleClusterInfo(interval: String)(handler: ClusterState => Unit): ShutdownHook = {
+    subscribe(ClusterStateRequest(interval, interval)) {
+      case res: ClusterState => handler(res)
+    }
+  }
+
+  def handleTaskInfo(handler: NodeTaskInfo => Unit): ShutdownHook = {
+    subscribe(NodeTaskInfoRequest("", "")) {
+      case res: NodeTaskInfo => handler(res)
+    }
+  }
+
+  def close: Future[Unit] = system.terminate().map(_ => Unit)
+
+  private def subscribe(message: ClusterMessage)(receive: Actor.Receive): ShutdownHook = {
+    val handlerActor = system.actorOf(Props(new HandlerActor(_ => receive)))
+    val publish = Publish(Environment.CLUSTER_NODE_METRICS_TOPIC, ClusterInfoMessageHolder(message, handlerActor))
+    endpoint ! publish
+    new ShutdownHook {
+      override def kill(): Future[Boolean] = {
+        handlerActor ! PoisonPill
+        endpoint.ask(StopRequest(handlerActor)).mapTo
+      }
+    }
+  }
 }
 
 object SchedulerClient {
@@ -60,7 +106,7 @@ object SchedulerClient {
         system.actorOf(Props(classOf[ClientListener], client), "client-event-listener")
         client
       }
-      val client = new SchedulerClientImpl(endpoint, system)(executionContext, timeout)
+      val client = new SchedulerClient(endpoint, system)(executionContext, timeout)
       clients.put(system, client)
       client
     })

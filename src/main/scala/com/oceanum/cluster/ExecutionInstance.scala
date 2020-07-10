@@ -16,7 +16,7 @@ import scala.util.{Failure, Success}
  * @author chenmingkun
  * @date 2020/5/2
  */
-class ExecutionInstance(task: Task, interval: String, actor: ActorRef) extends Actor with ActorLogging {
+class ExecutionInstance(task: Task, actor: ActorRef) extends Actor with ActorLogging {
   case class Start(operator: Operator[_ <: OperatorTask], client: ActorRef, interval: String)
 
   implicit private val listenerGenerator: TaskMeta => EventListener = meta => new EventListener {
@@ -36,7 +36,7 @@ class ExecutionInstance(task: Task, interval: String, actor: ActorRef) extends A
     implicit val executor: ExecutionContext = Environment.GLOBAL_EXECUTOR
     task.init.onComplete {
       case Success(operator) =>
-        self ! Start(operator, actor, interval)
+        self ! Start(operator, actor, task.stateHandler.checkInterval())
       case Failure(e) =>
         e.printStackTrace()
         val cancellable: Cancellable = Cancellable.alreadyCancelled
@@ -136,7 +136,7 @@ class ExecutionInstance(task: Task, interval: String, actor: ActorRef) extends A
 
   private def caseCheckState(stateReceive: StateReceive)(implicit holder: Holder): Receive = {
     case CheckState =>
-      log.info("send state: [{}] to sender: [{}]", stateReceive.state, sender)
+      log.info("send state: [{}] to sender: [{}]", stateReceive.state.name, sender)
       sender ! stateReceive.state
     case handler: StateHandler =>
       val finiteDuration = handler.checkInterval()
@@ -169,50 +169,58 @@ class ExecutionInstance(task: Task, interval: String, actor: ActorRef) extends A
 
   private def casePrepare(implicit meta: TaskMeta, holder: Holder): Receive = {
     case m: PrepareMessage =>
-      log.info("receive status changing, status: PREPARE")
-      context.become(prepare(m.metadata ++ meta))
+      val metadata = m.metadata ++ meta
+      log.info("receive status changing, status: PREPARE({})", metadata)
+      context.become(prepare(metadata))
       checkState
   }
   private def caseStart(implicit meta: TaskMeta, holder: Holder): Receive = {
     case m: StartMessage =>
-      log.info("receive status changing, status: START")
-      context.become(start(m.metadata ++ meta))
+      val metadata = m.metadata ++ meta
+      log.info("receive status changing, status: START({})", metadata)
+      context.become(start(metadata))
       checkState
   }
   private def caseRunning(implicit meta: TaskMeta, holder: Holder): Receive = {
     case m: RunningMessage =>
-      log.info("receive status changing, status: RUNNING")
-      context.become(running(m.metadata ++ meta))
+      val metadata = m.metadata ++ meta
+      log.info("receive status changing, status: RUNNING({})", metadata)
+      context.become(running(metadata))
       checkState
   }
   private def caseSuccess(implicit meta: TaskMeta, holder: Holder): Receive = {
     case m: SuccessMessage =>
-      log.info("receive status changing, status: SUCCESS")
-      context.become(success(m.metadata ++ meta))
+      val metadata = m.metadata ++ meta
+      log.info("receive status changing, status: SUCCESS({})", metadata)
+      context.become(success(metadata))
       checkState
   }
   private def caseFailed(implicit meta: TaskMeta, holder: Holder): Receive = {
     case m: FailedMessage =>
-      log.info("receive status changing, status: FAILED")
-      context.become(failed(m.metadata ++ meta))
+      val metadata = m.metadata ++ meta
+      log.info("receive status changing, status: FAILED({})", metadata)
+      context.become(failed(metadata))
       checkState
   }
   private def caseRetry(implicit meta: TaskMeta, holder: Holder): Receive = {
     case m: RetryMessage =>
-      log.info("receive status changing, status: RETRY")
-      context.become(retry(m.metadata ++ meta))
+      val metadata = m.metadata ++ meta
+      log.info("receive status changing, status: RETRY({})", metadata)
+      context.become(retry(metadata))
       checkState
   }
   private def caseKill(implicit meta: TaskMeta, holder: Holder): Receive = {
     case m: KillMessage =>
-      log.info("receive status changing, status: KILL")
-      context.become(kill(m.metadata ++ meta))
+      val metadata = m.metadata ++ meta
+      log.info("receive status changing, status: KILL({})", metadata)
+      context.become(kill(metadata))
       checkState
   }
   private def caseTimeout(implicit meta: TaskMeta, holder: Holder): Receive = {
     case m: TimeoutMessage =>
-      log.info("receive status changing, status: TIMEOUT")
-      context.become(timeout(m.metadata ++ meta))
+      val metadata = m.metadata ++ meta
+      log.info("receive status changing, status: TIMEOUT({})", metadata)
+      context.become(timeout(metadata))
       checkState
   }
 

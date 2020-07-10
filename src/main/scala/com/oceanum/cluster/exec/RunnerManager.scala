@@ -5,7 +5,7 @@ import java.util.concurrent.atomic.AtomicInteger
 import com.oceanum.client.TaskMeta
 import com.oceanum.cluster.TaskInfoTrigger
 import com.oceanum.common.Scheduler.scheduleOnce
-import com.oceanum.common.{Environment, Log, NodeTaskInfoResponse}
+import com.oceanum.common.{Environment, Log, NodeTaskInfo}
 import scala.concurrent.duration._
 
 /**
@@ -25,8 +25,8 @@ object RunnerManager extends Log {
   private val runners = Environment.CLUSTER_NODE_RUNNERS_CLASSES
     .map(_.getConstructor().newInstance().asInstanceOf[TaskRunner])
 
-  def getTaskInfo: NodeTaskInfoResponse = {
-    NodeTaskInfoResponse(
+  def getTaskInfo: NodeTaskInfo = {
+    NodeTaskInfo(
       preparing = priorityMailbox.queueSize,
       running = runningNum.get(),
       success = successNum.get(),

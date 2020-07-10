@@ -14,6 +14,8 @@ import scala.concurrent.Future
 trait TaskInstance {
   def kill(): Unit
 
+  def isCompleted: Boolean = completeFuture.isCompleted
+
   def completeFuture: Future[State]
 }
 

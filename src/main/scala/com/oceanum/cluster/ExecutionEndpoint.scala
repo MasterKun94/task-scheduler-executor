@@ -34,8 +34,8 @@ class ExecutionEndpoint extends Actor {
   }
 
   override def receive: Receive = {
-    case ExecuteOperatorRequest(task, interval) =>
-      context.system.actorOf(Props(classOf[ExecutionInstance], task, interval, sender()))
+    case ExecuteOperatorRequest(task) =>
+      context.system.actorOf(Props(classOf[ExecutionInstance], task, sender()))
 
     case _: AvailableExecutorRequest =>
       sender() ! AvailableExecutor(self, RunnerManager.getTaskInfo, Environment.CLUSTER_NODE_TOPICS)

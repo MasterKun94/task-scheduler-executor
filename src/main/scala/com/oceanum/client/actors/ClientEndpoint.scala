@@ -21,9 +21,6 @@ class ClientEndpoint(clusterClient: ActorRef) extends Actor with ActorLogging {
     case req: AvailableExecutorRequest =>
       clusterClient ! Publish(req.topic, req)
       context.become(receiveExecutor(sender()))
-
-    case req: ClusterMessage =>
-      clusterClient ! Publish(Environment.CLUSTER_NODE_METRICS_TOPIC, ClusterInfoMessageHolder(req, sender()))
   }
 
   def receiveExecutors(receiver: ActorRef, executors: Array[AvailableExecutor]): Receive = {

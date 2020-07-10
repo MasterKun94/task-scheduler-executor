@@ -58,7 +58,7 @@ class MetricsListener extends Actor with ActorLogging {
     case m: ClusterMetricsChanged ⇒
       context.become(receive(m))
 
-    case taskInfo: NodeTaskInfoResponse =>
+    case taskInfo: NodeTaskInfo =>
       for (actor <- taskInfoListeners.keys) {
         actor ! taskInfo
       }
@@ -71,11 +71,8 @@ class MetricsListener extends Actor with ActorLogging {
         }
         metricListeners.put(actor, (System.currentTimeMillis(), hook))
 
-      case ClusterMetricsStopRequest(handler) =>
-        actor ! removeScheduleNodes(handler, metricListeners)
-
       case ClusterMetricsRequest =>
-        actor ! ClusterMetricsResponse(clusterMetricsChanged.nodeMetrics)
+        actor ! ClusterMetrics(clusterMetricsChanged.nodeMetrics)
 
       case ClusterStateRequest(initialDelay, interval) =>
         val hook = schedule(initialDelay, interval) {
@@ -83,11 +80,8 @@ class MetricsListener extends Actor with ActorLogging {
         }
         stateListeners.put(actor, (System.currentTimeMillis(), hook))
 
-      case ClusterStateStopRequest(handler) =>
-        actor ! removeScheduleNodes(handler, stateListeners)
-
       case ClusterStateRequest =>
-        actor ! ClusterStateResponse(cluster.state)
+        actor ! ClusterState(cluster.state)
 
       case NodeTaskInfoRequest(_, _) =>
         val hook = new  Cancellable {
@@ -96,13 +90,16 @@ class MetricsListener extends Actor with ActorLogging {
         }
         taskInfoListeners.put(actor, (System.currentTimeMillis(), hook))
 
-      case NodeTaskInfoStopRequest(handler) =>
-        actor ! removeScheduleNodes(handler, taskInfoListeners)
+      case StopRequest(handler) =>
+        val b = removeScheduleNodes(handler, metricListeners) ||
+          removeScheduleNodes(handler, stateListeners) ||
+          removeScheduleNodes(handler, taskInfoListeners)
+        actor ! b
     }
 
     case _: MemberEvent | UnreachableMember =>
       for (actor <- stateListeners.keys) {
-        actor ! ClusterStateResponse(cluster.state)
+        actor ! ClusterState(cluster.state)
       }
 
     case Pong =>

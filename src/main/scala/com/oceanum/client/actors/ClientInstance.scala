@@ -8,16 +8,16 @@ import com.oceanum.common._
 
 import scala.concurrent.Promise
 
-class ClientInstance(executor: ActorRef, task: Task, handler: StateHandler, promise: Promise[State]) extends Actor with ActorLogging {
+class ClientInstance(executor: ActorRef, task: Task, promise: Promise[State]) extends Actor with ActorLogging {
 
   override def preStart(): Unit = {
-    executor ! ExecuteOperatorRequest(task, handler.checkInterval())
+    executor ! ExecuteOperatorRequest(task)
   }
 
   override def receive: Receive = {
     case res: ExecuteOperatorResponse =>
       log.info("receive operator response from " + sender())
-      context.become(onRunning(sender(), handler))
+      context.become(onRunning(sender(), task.stateHandler))
   }
 
 //  def prepareRunning(actor: ActorRef = null): Receive = {

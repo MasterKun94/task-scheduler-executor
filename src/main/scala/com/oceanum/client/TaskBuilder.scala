@@ -3,6 +3,8 @@ package com.oceanum.client
 import java.text.SimpleDateFormat
 import java.util.{Date, UUID}
 
+import com.oceanum.cluster.exec.State
+
 import scala.concurrent.duration.Duration
 
 /**
@@ -13,21 +15,37 @@ import scala.concurrent.duration.Duration
 abstract class TaskBuilder[T <: TaskBuilder[_, _], P <: TaskProp](task: Task) extends Serializable {
   protected val prop: P = task.prop.asInstanceOf[P]
 
-  def id(id: String): T = typedBuilder(task.copy(id = id))
+  def id(id: String): T = {
+    typedBuilder(task.copy(id = id))
+  }
 
-  def topic(topic: String): T = typedBuilder(task.copy(topic = topic))
+  def topic(topic: String): T = {
+    typedBuilder(task.copy(topic = topic))
+  }
 
-  def user(user: String): T = typedBuilder(task.copy(user = user))
+  def user(user: String): T = {
+    typedBuilder(task.copy(user = user))
+  }
 
-  def retryCount(int: Int):T = typedBuilder(task.copy(retryCount = int))
+  def retryCount(int: Int):T = {
+    typedBuilder(task.copy(retryCount = int))
+  }
 
-  def retryInterval(interval: String): T = typedBuilder(task.copy(retryInterval = interval))
+  def retryInterval(interval: String): T = {
+    typedBuilder(task.copy(retryInterval = interval))
+  }
 
-  def priority(priority: Int): T = typedBuilder(task.copy(priority = priority))
+  def priority(priority: Int): T = {
+    typedBuilder(task.copy(priority = priority))
+  }
 
   def lazyInit(func: T => T): T = {
     val meta = task.metadata.lazyInit = task => func(typedBuilder(task)).build
     typedBuilder(task.copy(meta = meta))
+  }
+
+  def build(interval: String)(stateHandler: State => Unit): Task = {
+    build.copy(stateHandler = StateHandler(interval)(stateHandler))
   }
 
   def build: Task = task

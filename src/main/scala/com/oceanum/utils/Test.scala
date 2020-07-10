@@ -4,12 +4,10 @@ import java.net.{InetAddress, UnknownHostException}
 
 import akka.util.Timeout
 import com.oceanum.ClusterStarter
-import com.oceanum.client.{SchedulerClient, StateHandler, Task}
-import com.oceanum.cluster.exec.State
+import com.oceanum.client.{SchedulerClient, Task}
 import com.oceanum.common.Implicits._
 
 import scala.concurrent.{ExecutionContext, ExecutionContextExecutor}
-import scala.util.{Failure, Success}
 
 /**
  * @author chenmingkun
@@ -33,27 +31,26 @@ object Test {
     implicit val executionContext: ExecutionContextExecutor = ExecutionContext.global
     implicit val timeout: Timeout = fd"10 second"
     val client = SchedulerClient(ip1, 5551, ip2, "src/main/resources/application.properties")
-    val future = client
+    val instanceRef = client
       .execute(
         task = Task.builder.python()
-        .id("test")
-        .user("test1")
-        .topic("default")
-        .retryCount(3)
-        .retryInterval("5 second")
-        .priority(5)
-        .pyFile("/root/test/test.py")
-        .args("hello", "world")
-        .waitForTimeout("100s")
-        .lazyInit(_
-          .user("root")
-        )
-        .build,
-        stateHandler = StateHandler("3s") { state =>
-          println("state: " + state)
-        }
+          .id("test")
+          .user("test1")
+          .topic("default")
+          .retryCount(3)
+          .retryInterval("5 second")
+          .priority(5)
+          .pyFile("/root/test/test.py")
+          .args("hello", "world")
+          .waitForTimeout("100 second")
+          .lazyInit(_
+            .user("root")
+          )
+          .build("3s") { stat =>
+            println("state: " + stat)
+          }
       )
-    future.flatMap(_.completeFuture).onComplete("complete: " + _.get)
+    instanceRef.completeState.onComplete("complete: " + _.get)
     Thread.sleep(100000)
     client.close
   }
@@ -75,31 +72,31 @@ object Test {
 //    implicit val timeout: Timeout = fd"10 second"
 ////
 //    scala.io.StdIn.readLine()
-//    val client = SchedulerClient(ip1, 5555, ip2)
+    val client = SchedulerClient(ip1, 5551, ip2, "src/main/resources/application.properties")
 //    ClusterFileServer.start().value
 
 //    scala.io.StdIn.readLine()
-//    println("handle cluster metrics")
-//    val hook = client.handleClusterMetrics("2s") { m =>
-//      m.nodeMetrics.foreach(println)
-//    }
-//    scala.io.StdIn.readLine()
-//    println("stop handle cluster metrics")
-//    hook.kill()
-//    scala.io.StdIn.readLine()
-//    println("handle cluster info")
-//    val hook1 = client.handleClusterInfo("2s")(println)
-//    scala.io.StdIn.readLine()
-//    println("stop handle cluster info")
-//    hook1.kill()
-//    scala.io.StdIn.readLine()
-//    println("handle task info")
-//    val hook2 = client.handleTaskInfo(println)
-//    scala.io.StdIn.readLine()
-//    println("stop handle task info")
-//    hook2.kill()
-//    scala.io.StdIn.readLine()
+    println("handle cluster metrics")
+    val hook = client.handleClusterMetrics("2s") { m =>
+      m.nodeMetrics.foreach(println)
+    }
+    scala.io.StdIn.readLine()
+    println("stop handle cluster metrics")
+    hook.kill()
+    scala.io.StdIn.readLine()
+    println("handle cluster info")
+    val hook1 = client.handleClusterInfo("2s")(println)
+    scala.io.StdIn.readLine()
+    println("stop handle cluster info")
+    hook1.kill()
+    scala.io.StdIn.readLine()
+    println("handle task info")
+    val hook2 = client.handleTaskInfo(println)
+    scala.io.StdIn.readLine()
     startClient(args)
+    scala.io.StdIn.readLine()
+    println("stop handle task info")
+    hook2.kill()
 
 //    import ExecutionContext.Implicits.global
 //    val task = Task.builder.python()

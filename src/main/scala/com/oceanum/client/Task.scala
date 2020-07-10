@@ -13,6 +13,7 @@ case class Task(id: String,
                 retryInterval: String = Environment.EXEC_DEFAULT_RETRY_INTERVAL,
                 priority: Int = Environment.EXEC_DEFAULT_PRIORITY,
                 prop: TaskProp,
+                stateHandler: StateHandler = StateHandler.default(),
                 private val meta: TaskMeta = TaskMeta.empty) {
   def init(implicit listener: TaskMeta => EventListener, executor: ExecutionContext): Future[Operator[_ <: OperatorTask]] = {
     val task = metadata.lazyInit(this)

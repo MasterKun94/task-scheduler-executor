@@ -37,9 +37,9 @@ case class AvailableExecutorsRequest(topic: String, maxWait: String) extends Mes
 @SerialVersionUID(1L)
 case class AvailableExecutorResponse(executor: Seq[AvailableExecutor]) extends Message
 @SerialVersionUID(1L)
-case class AvailableExecutor(actor: ActorRef, taskInfo: NodeTaskInfoResponse, topics: Seq[String]) extends Message
+case class AvailableExecutor(actor: ActorRef, taskInfo: NodeTaskInfo, topics: Seq[String]) extends Message
 @SerialVersionUID(1L)
-case class ExecuteOperatorRequest(task: Task, stateCheckInterval: String) extends Message
+case class ExecuteOperatorRequest(task: Task) extends Message
 @SerialVersionUID(1L)
 case class ExecuteOperatorResponse(metadata: TaskMeta) extends Message
 @SerialVersionUID(1L)
@@ -57,7 +57,7 @@ case class ClusterMetricsRequest(initialDelay: String, interval: String) extends
 @SerialVersionUID(1L)
 case class ClusterMetricsStopRequest(handler: ActorRef) extends ClusterMessage
 @SerialVersionUID(1L)
-case class ClusterMetricsResponse(nodeMetrics: Set[NodeMetrics]) extends ClusterMessage
+case class ClusterMetrics(nodeMetrics: Set[NodeMetrics]) extends ClusterMessage
 @SerialVersionUID(1L)
 case object ClusterStateRequest extends ClusterMessage
 @SerialVersionUID(1L)
@@ -65,7 +65,7 @@ case class ClusterStateRequest(initialDelay: String, interval: String) extends C
 @SerialVersionUID(1L)
 case class ClusterStateStopRequest(handler: ActorRef) extends ClusterMessage
 @SerialVersionUID(1L)
-case class ClusterStateResponse(clusterState: CurrentClusterState) extends ClusterMessage
+case class ClusterState(clusterState: CurrentClusterState) extends ClusterMessage
 @SerialVersionUID(1L)
 case object NodeTaskInfoRequest extends ClusterMessage
 @SerialVersionUID(1L)
@@ -73,7 +73,9 @@ case class NodeTaskInfoRequest(initialDelay: String, interval: String) extends C
 @SerialVersionUID(1L)
 case class NodeTaskInfoStopRequest(handler: ActorRef) extends ClusterMessage
 @SerialVersionUID(1L)
-case class NodeTaskInfoResponse(preparing: Int, running: Int, success: Int, failed: Int, retry: Int, killed: Int, complete: Int) extends ClusterMessage
+case class NodeTaskInfo(preparing: Int, running: Int, success: Int, failed: Int, retry: Int, killed: Int, complete: Int) extends ClusterMessage
+@SerialVersionUID(1L)
+case class StopRequest(handler: ActorRef) extends ClusterMessage
 
 @SerialVersionUID(1L)
 case class NodeInfo(hostname: String, ip: String, topics: Seq[String]) extends ClusterMessage

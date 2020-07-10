@@ -93,9 +93,9 @@ object Environment {
   lazy val TASK_RUNNERS: Array[TypedRunner[_ <: OperatorTask]] = Array(new ProcessRunner())
   lazy val PATH_SEPARATOR: String = File.separator
   lazy val LOG_LOGBACK: String = getProperty(Key.LOG_LOGBACK, BASE_PATH/"conf"/"logback.xml").toAbsolute()
-  lazy val LOG_FILE: String = LOG_FILE_DIR/LOG_FILE_NAME
+  lazy val LOG_FILE: String = logFile
   lazy val LOG_FILE_DIR: String = getProperty(Key.LOG_FILE_DIR, BASE_PATH/"log").toAbsolute()
-  lazy val LOG_FILE_NAME: String = getProperty(Key.LOG_FILE_NAME, "task-executor.%d{yyyy-MM-dd}.log")
+  lazy val LOG_FILE_NAME: String = getProperty(Key.LOG_FILE_NAME, "task-executor-%d{yyyy-MM-dd}.log")
   lazy val LOG_FILE_PATTERN: String = getProperty(Key.LOG_FILE_PATTERN, "%date{ISO8601} %-5level %-46logger - %msg%n")
   lazy val LOG_FILE_MAX_HISTORY: String = getProperty(Key.LOG_FILE_MAX_HISTORY, "30")
   lazy val LOG_FILE_MAX_SIZE: String = getProperty(Key.LOG_FILE_MAX_SIZE, "10MB")
@@ -214,6 +214,15 @@ object Environment {
       configurator.doConfigure(logback)
     }
     loaded.set(true)
+  }
+
+  private def logFile: String = {
+    LOG_FILE_DIR/LOG_FILE_NAME
+//    val file = LOG_FILE_NAME
+//    val name = if (file.endsWith(".log")) {
+//      file.substring(0, file.length - 4)
+//    } else file
+//    LOG_FILE_DIR/name
   }
 
   private def str2arr(string: String): Array[String] = {
