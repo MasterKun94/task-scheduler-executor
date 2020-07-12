@@ -13,9 +13,9 @@ import scala.concurrent.duration._
  * @date 2020/4/29
  */
 object RunnerManager extends Log {
-  type Prop = Operator[_ <: OperatorTask]
+  type Prop = ExecutionTask[_ <: TaskConfig]
   private val num = Environment.EXEC_THREAD_NUM
-  private val priorityMailbox = MailBox.priority[Prop](_.priority, num)(execute)
+  private val priorityMailbox = MailBox.priority[Prop](_.priority, num)(consume)
   private val runningNum: AtomicInteger = new AtomicInteger(0)
   private val successNum: AtomicInteger = new AtomicInteger(0)
   private val failedNum: AtomicInteger = new AtomicInteger(0)
@@ -49,7 +49,7 @@ object RunnerManager extends Log {
     log.info("execute manager closed")
   }
 
-  private def execute(operatorProp: Prop): Unit = {
+  private def consume(operatorProp: Prop): Unit = {
     operatorProp.eventListener.start()
     incRunning()
     TaskInfoTrigger.trigger()
@@ -112,16 +112,16 @@ object RunnerManager extends Log {
     }
   }
 
-  private def run(operatorProp: Operator[_ <: OperatorTask]): ExitCode = {
-    runners.find(_.executable(operatorProp)) match {
+  private def run(task: Prop): ExitCode = {
+    runners.find(_.executable(task)) match {
       case Some(executor) =>
-        if (operatorProp.hook.isKilled) {
+        if (task.hook.isKilled) {
           ExitCode.KILL
         } else {
-          executor.run(operatorProp)
+          executor.run(task)
         }
       case None =>
-        ExitCode.UN_SUPPORT(operatorProp.metadata.taskType)
+        ExitCode.UN_SUPPORT(task.metadata.taskType)
     }
   }
 

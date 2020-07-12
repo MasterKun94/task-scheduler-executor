@@ -7,7 +7,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 import akka.actor.ActorSystem
 import ch.qos.logback.classic.LoggerContext
 import ch.qos.logback.classic.joran.JoranConfigurator
-import com.oceanum.cluster.exec.{OperatorTask, TypedRunner}
+import com.oceanum.cluster.exec.{TaskConfig, TypedRunner}
 import com.oceanum.cluster.runners.ProcessRunner
 import com.oceanum.common.Implicits.{DurationHelper, PathHelper}
 import com.typesafe.config.ConfigFactory
@@ -90,7 +90,7 @@ object Environment {
   lazy val FILE_SERVER_LOGGER: String = getProperty(Key.FILE_SERVER_LOGGER, logger)
   lazy val TASK_INFO_TRIGGER_INTERVAL: FiniteDuration = fd"${getProperty(Key.CLUSTER_NODE_TASK_INFO_TRIGGER_INTERVAL, "20s")}"
 
-  lazy val TASK_RUNNERS: Array[TypedRunner[_ <: OperatorTask]] = Array(new ProcessRunner())
+  lazy val TASK_RUNNERS: Array[TypedRunner[_ <: TaskConfig]] = Array(new ProcessRunner())
   lazy val PATH_SEPARATOR: String = File.separator
   lazy val LOG_LOGBACK: String = getProperty(Key.LOG_LOGBACK, BASE_PATH/"conf"/"logback.xml").toAbsolute()
   lazy val LOG_FILE: String = logFile

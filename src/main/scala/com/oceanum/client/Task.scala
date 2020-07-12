@@ -1,6 +1,6 @@
 package com.oceanum.client
 
-import com.oceanum.cluster.exec.{EventListener, Operator, OperatorTask}
+import com.oceanum.cluster.exec.{EventListener, ExecutionTask, TaskConfig}
 import com.oceanum.common.Environment
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -15,13 +15,13 @@ case class Task(id: String,
                 prop: TaskProp,
                 stateHandler: StateHandler = StateHandler.default(),
                 private val meta: TaskMeta = TaskMeta.empty) {
-  def init(implicit listener: TaskMeta => EventListener, executor: ExecutionContext): Future[Operator[_ <: OperatorTask]] = {
+  def init(implicit listener: TaskMeta => EventListener, executor: ExecutionContext): Future[ExecutionTask[_ <: TaskConfig]] = {
     val task = metadata.lazyInit(this)
     val taskMeta = task.metadata
     task
       .prop
       .init(taskMeta)
-      .map(ot => Operator(
+      .map(ot => ExecutionTask(
         name = id,
         retryCount = retryCount,
         retryInterval = retryInterval,

@@ -4,7 +4,7 @@ import java.util.Date
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Cancellable, PoisonPill}
 import com.oceanum.client.{StateHandler, Task, TaskMeta}
-import com.oceanum.cluster.exec.{EventListener, Hook, Operator, OperatorTask, RunnerManager, State}
+import com.oceanum.cluster.exec.{EventListener, Hook, ExecutionTask, TaskConfig, RunnerManager, State}
 import com.oceanum.cluster.exec.State._
 import com.oceanum.common.Scheduler.{schedule, scheduleOnce}
 import com.oceanum.common._
@@ -17,7 +17,7 @@ import scala.util.{Failure, Success}
  * @date 2020/5/2
  */
 class ExecutionInstance(task: Task, actor: ActorRef) extends Actor with ActorLogging {
-  case class Start(operator: Operator[_ <: OperatorTask], client: ActorRef, interval: String)
+  case class Start(operator: ExecutionTask[_ <: TaskConfig], client: ActorRef, interval: String)
 
   implicit private val listenerGenerator: TaskMeta => EventListener = meta => new EventListener {
     override def prepare(message: TaskMeta): Unit = self ! PrepareMessage(meta ++ message)

@@ -5,19 +5,12 @@ import com.oceanum.common.Environment
 
 /**
  * @author chenmingkun
- * @date 2020/5/2
+ * @date 2020/5/1
  */
-case class ShellScriptTask(scriptFile: String,
-                           args: Array[String] = Array.empty,
+case class ShellTaskConfig(cmd: Array[String] = Array.empty,
                            env: Map[String, String] = Map.empty,
                            directory: String = Environment.EXEC_WORK_DIR,
                            waitForTimeout: Long = -1,
                            stdoutHandler: InputStreamHandler,
                            stderrHandler: InputStreamHandler)
-  extends ProcessTask(
-      Environment.EXEC_SHELL +: args :+ scriptFile,
-      env,
-      directory,
-      waitForTimeout,
-      stdoutHandler,
-      stderrHandler)
+extends ProcessTaskConfig(cmd, env, directory, waitForTimeout, stdoutHandler, stderrHandler)

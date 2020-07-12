@@ -7,7 +7,7 @@ import com.oceanum.cluster.exec.InputStreamHandler
  * @date 2020/7/7
  */
 object SysTasks {
-  case class UserAddTask(user: String) extends ProcessTask(
+  case class UserAddTaskConfig(user: String) extends ProcessTaskConfig(
     propCmd = Array("sudo", "useradd", user),
     propStdoutHandler = InputStreamHandler.empty,
     propStderrHandler = InputStreamHandler.empty
