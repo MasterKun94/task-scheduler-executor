@@ -52,7 +52,7 @@ object Environment {
   lazy val HOST: String = getProperty(Key.HOST, "127.0.0.1")
   lazy val GLOBAL_EXECUTOR: ExecutionContext = ExecutionContext.global
   lazy val CLUSTER_NODE_SYSTEM_NAME: String = getProperty(Key.CLUSTER_NODE_SYSTEM_NAME, "cluster")
-  lazy val CLUSTER_NODE_PORT: Int = getProperty(Key.CLUSTER_NODE_PORT, "3551").toInt
+  lazy val CLUSTER_NODE_PORT: Int = getProperty(Key.CLUSTER_NODE_PORT, "4551").toInt
   lazy val CLUSTER_NODE_SEEDS: Seq[String] = getProperty(Key.CLUSTER_NODE_SEEDS, s"127.0.0.1:$CLUSTER_NODE_PORT").split(",").map(node => s"akka.tcp://$CLUSTER_NODE_SYSTEM_NAME@$node").toSeq
   lazy val CLUSTER_NODE_TOPICS: Seq[String] = getProperty(Key.CLUSTER_NODE_TOPICS, "default").split(",").map(_.trim).toSeq
   lazy val CLUSTER_NODE_SYSTEM: ActorSystem = clusterSystem()
@@ -67,7 +67,7 @@ object Environment {
   lazy val CLUSTER_NODE_RUNNERS_CLASSES: Set[Class[_]] = str2arr(getProperty(Key.CLUSTER_NODE_RUNNER_CLASSES, "com.oceanum.cluster.runners.ProcessRunner")).map(Class.forName).toSet
 
   lazy val CLIENT_NODE_SYSTEM_NAME: String = getProperty(Key.CLIENT_NODE_SYSTEM_NAME, "client")
-  lazy val CLIENT_NODE_PORT: Int = getProperty(Key.CLIENT_NODE_PORT, "4551").toInt
+  lazy val CLIENT_NODE_PORT: Int = getProperty(Key.CLIENT_NODE_PORT, "5551").toInt
   lazy val CLIENT_NODE_LOGGER: String = getProperty(Key.CLIENT_NODE_LOGGER, logger)
   lazy val CLIENT_SYSTEM: ActorSystem = clientSystem()
 
@@ -164,6 +164,7 @@ object Environment {
       .split(",")
       .map(_.trim)
       .filter(_.nonEmpty)
+      .filter(p => new File(p).exists())
     load(paths)
 
     val topics = arg
@@ -366,10 +367,6 @@ object Environment {
            | }
            | extensions = ["akka.cluster.client.ClusterClientReceptionist", "akka.cluster.metrics.ClusterMetricsExtension"]
            |}
-           |task-runner-dispatcher {
-           | type = PinnedDispatcher
-           | executor = "thread-pool-executor"
-           |}
            |""".stripMargin))
     ActorSystem.create(CLUSTER_NODE_SYSTEM_NAME, config)
   }
@@ -381,10 +378,6 @@ object Environment {
          | actor {
          |   provider = remote
          |   warn-about-java-serializer-usage = false
-         |   serializers {
-         |     java = "akka.serialization.JavaSerializer"
-         |     proto = "akka.remote.serialization.ProtobufSerializer"
-         |   }
          | }
          | loggers = ["$CLIENT_NODE_LOGGER"]
          | remote {

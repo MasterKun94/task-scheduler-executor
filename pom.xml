@@ -244,9 +244,10 @@ under the License.
 									<directory>src/main/resources/</directory>
 									<includes>
 										<include>**/*.properties</include>
-										<include>**/*.xml</include>
+										<include>**/logback.xml</include>
 									</includes>
 									<excludes>
+										<exclude>**/test/**</exclude>
 										<exclude>**/*.txt</exclude>
 									</excludes>
 								</resource>
@@ -263,7 +264,7 @@ under the License.
 						<configuration>
 							<encoding>UTF-8</encoding>
 							<outputDirectory>
-								${project.build.directory}/${output.dir}
+								${project.build.directory}/${output.dir}/bin
 							</outputDirectory>
 							<resources>
 								<resource>
@@ -304,6 +305,24 @@ under the License.
 								<source>src/test/scala</source>
 							</sources>
 						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<artifactId>maven-assembly-plugin</artifactId>
+				<version>3.1.0</version>
+				<configuration>
+					<descriptors>
+						<descriptor>src/main/resources/assembly.xml</descriptor>
+					</descriptors>
+				</configuration>
+				<executions>
+					<execution>
+						<id>make-assembly</id>
+						<phase>package</phase>
+						<goals>
+							<goal>single</goal>
+						</goals>
 					</execution>
 				</executions>
 			</plugin>

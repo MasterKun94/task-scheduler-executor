@@ -17,4 +17,12 @@ class ClusterFileClient extends FileClient("cluster") {
     val path = uri.getPath
     ClusterFileServerApi.download(host + ":" + port, path, destPath)
   }
+
+  override def upload(srcPath: String, destPath: String): Future[Unit] = {
+    val uri = new URI(destPath)
+    val host = if (uri.getHost == null || uri.getHost.equals("null")) Environment.HOST else uri.getHost
+    val port = if (uri.getPort < 0) Environment.FILE_SERVER_PORT else uri.getPort
+    val path = uri.getPath
+    ClusterFileServerApi.upload(host + ":" + port, srcPath, path)
+  }
 }

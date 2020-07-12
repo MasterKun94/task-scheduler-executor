@@ -14,6 +14,8 @@ import com.oceanum.common.Implicits.PathHelper
  */
 abstract class FileClient(val scheme: String) {
   def download(srcPath: String, destPath: String): Future[Unit]
+
+  def upload(srcPath: String, destPath: String): Future[Unit]
 }
 
 object FileClient extends FileClient("root") {
@@ -23,10 +25,14 @@ object FileClient extends FileClient("root") {
     .toMap
 
   override def download(srcPath: String, destPath: String): Future[Unit] = {
-    val path0 = srcPath.toPath("/")
-    val path = if (new File(path0).isAbsolute && Environment.OS == WINDOWS) "/" + path0 else path0
-    val uri = new URI(path)
+    val uri = new URI(srcPath)
     val scheme = if (uri.getScheme == null || uri.getScheme.equals("null")) Environment.FILE_CLIENT_DEFAULT_SCHEME else uri.getScheme
-    innerClients(scheme).download(path, destPath)
+    innerClients(scheme).download(srcPath, destPath)
+  }
+
+  override def upload(srcPath: String, destPath: String): Future[Unit] = {
+    val uri = new URI(destPath)
+    val scheme = if (uri.getScheme == null || uri.getScheme.equals("null")) Environment.FILE_CLIENT_DEFAULT_SCHEME else uri.getScheme
+    innerClients(scheme).upload(srcPath, destPath)
   }
 }

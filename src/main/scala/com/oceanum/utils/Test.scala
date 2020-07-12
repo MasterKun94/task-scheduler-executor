@@ -20,7 +20,7 @@ object Test {
   val ip1 = getSelfAddress
 
   def startCluster(args: Array[String]): Unit = {
-    ClusterStarter.main(Array("--port=3551", "--topics=t1,a1", s"--host=$ip1", s"--seed-node=$ip2", "--conf=src"/"main"/"resources"/"application.properties,src"/"main"/"resources"/"application-env.properties"))
+    ClusterStarter.main(Array("--port=3551", "--topics=t1,a1", s"--host=$ip1", s"--seed-node=$ip1", "--conf=src"/"main"/"resources"/"application.properties,src"/"main"/"resources"/"application-env.properties"))
   }
 
 
@@ -29,7 +29,6 @@ object Test {
 //    val path = "/root"/"test"
 
     implicit val executionContext: ExecutionContextExecutor = ExecutionContext.global
-    implicit val timeout: Timeout = fd"10 second"
     val client = SchedulerClient(ip1, 5551, ip2, "src/main/resources/application.properties")
     val instanceRef = client
       .execute(
@@ -40,7 +39,7 @@ object Test {
           .retryCount(3)
           .retryInterval("5 second")
           .priority(5)
-          .pyFile("/root/test/test.py")
+          .pyFile("/tmp/test.py")
           .args("hello", "world")
           .waitForTimeout("100 second")
           .lazyInit(_
