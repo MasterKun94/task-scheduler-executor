@@ -6,21 +6,13 @@ import akka.cluster.metrics.NodeMetrics
 import com.oceanum.client.{TaskMeta, StateHandler, Task}
 
 trait Message {}
-@SerialVersionUID(1L)
 case class PrepareMessage(metadata: TaskMeta) extends Message
-@SerialVersionUID(1L)
 case class RunningMessage(metadata: TaskMeta) extends Message
-@SerialVersionUID(1L)
 case class FailedMessage(metadata: TaskMeta) extends Message
-@SerialVersionUID(1L)
 case class SuccessMessage(metadata: TaskMeta) extends Message
-@SerialVersionUID(1L)
 case class RetryMessage(metadata: TaskMeta) extends Message
-@SerialVersionUID(1L)
 case class KillMessage(metadata: TaskMeta) extends Message
-@SerialVersionUID(1L)
 case class TimeoutMessage(metadata: TaskMeta) extends Message
-@SerialVersionUID(1L)
 case class StartMessage(metadata: TaskMeta) extends Message
 
 @SerialVersionUID(1L)
