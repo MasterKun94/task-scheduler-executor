@@ -4,7 +4,7 @@ import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
 
-import com.oceanum.cluster.exec.InputStreamHandler
+import com.oceanum.cluster.exec.StdHandler
 import com.oceanum.common.{Environment, Meta}
 import com.oceanum.common.Implicits.PathHelper
 
@@ -64,15 +64,15 @@ class TaskMeta(map: Map[String, Any]) extends Meta[TaskMeta](map) {
     file.getAbsolutePath
   }
 
-  def stdoutHandler: InputStreamHandler = Environment.CLUSTER_NODE_RUNNER_STDOUT_HANDLER_CLASS
+  def stdoutHandler: StdHandler = Environment.CLUSTER_NODE_RUNNER_STDOUT_HANDLER_CLASS
     .getConstructor(this.getClass)
     .newInstance(this)
-    .asInstanceOf[InputStreamHandler]
+    .asInstanceOf[StdHandler]
 
-  def stderrHandler: InputStreamHandler = Environment.CLUSTER_NODE_RUNNER_STDERR_HANDLER_CLASS
+  def stderrHandler: StdHandler = Environment.CLUSTER_NODE_RUNNER_STDERR_HANDLER_CLASS
     .getConstructor(this.getClass)
     .newInstance(this)
-    .asInstanceOf[InputStreamHandler]
+    .asInstanceOf[StdHandler]
 
   def withTask(task: Task): TaskMeta = {
     val dateFormat = new SimpleDateFormat("yyyyMMdd").format(System.currentTimeMillis())

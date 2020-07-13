@@ -3,7 +3,6 @@ package com.oceanum.metrics
 import akka.actor.{Actor, ActorLogging, ActorRef, Cancellable, PoisonPill, Props}
 import akka.cluster.ClusterEvent.{MemberEvent, UnreachableMember}
 import akka.cluster.metrics.{ClusterMetricsChanged, ClusterMetricsExtension}
-import akka.cluster.pubsub.DistributedPubSub
 import akka.cluster.pubsub.DistributedPubSubMediator.{Subscribe, SubscribeAck, Unsubscribe}
 import akka.cluster.singleton.{ClusterSingletonManager, ClusterSingletonManagerSettings}
 import akka.cluster.{Cluster, ClusterEvent}
@@ -16,7 +15,7 @@ class MetricsListener extends Actor with ActorLogging {
   type Listeners = mutable.Map[ActorRef, (Long, Cancellable)]
   val cluster: Cluster = Cluster(context.system)
   val extension: ClusterMetricsExtension = ClusterMetricsExtension(context.system)
-  val mediator: ActorRef = DistributedPubSub(context.system).mediator
+  val mediator: ActorRef = Environment.CLUSTER_NODE_MEDIATOR
   val metricListeners: Listeners = mutable.Map()
   val stateListeners: Listeners = mutable.Map()
   val taskInfoListeners: Listeners = mutable.Map()

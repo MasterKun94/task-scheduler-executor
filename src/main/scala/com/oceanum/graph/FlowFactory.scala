@@ -11,7 +11,7 @@ import scala.concurrent.{ExecutionContext, Promise}
 import scala.util.{Failure, Success}
 
 class FlowFactory {
-  implicit val sc: ExecutionContext = Environment.GLOBAL_EXECUTOR
+  implicit val sc: ExecutionContext = Environment.CLUSTER_NODE_TASK_INIT_EXECUTOR
   def create(task: Task)(implicit schedulerClient: SchedulerClient): Flow[TaskMeta, TaskMeta, NotUsed] = {
 //    Flow[TaskMeta].mapAsync(1) { metadata =>
 //      val promise = Promise[TaskMeta]()

@@ -13,7 +13,6 @@ import scala.concurrent.{ExecutionContext, Future}
  * @date 2020/7/5
  */
 class HDFSFileClient extends FileClient("hdfs") {
-  implicit val ec: ExecutionContext = Environment.GLOBAL_EXECUTOR
   private lazy val fileSystem = {
     System.setProperty("hadoop.home.dir", Environment.HADOOP_HOME)
     val configuration = new Configuration()
@@ -21,7 +20,7 @@ class HDFSFileClient extends FileClient("hdfs") {
     FileSystem.get(new URI(Environment.HADOOP_FS_URL), configuration, Environment.HADOOP_USER)
   }
 
-  override def download(srcPath: String, destPath: String): Future[Unit] = {
+  override def download(srcPath: String, destPath: String)(implicit ex: ExecutionContext): Future[Unit] = {
     val src = new Path(srcPath)
     val dst = new Path(destPath)
     Future {
@@ -29,7 +28,7 @@ class HDFSFileClient extends FileClient("hdfs") {
     }
   }
 
-  override def upload(srcPath: String, destPath: String): Future[Unit] = {
+  override def upload(srcPath: String, destPath: String)(implicit ex: ExecutionContext): Future[Unit] = {
     val src = new Path(srcPath)
     val dst = new Path(destPath)
     Future {

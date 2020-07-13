@@ -3,14 +3,14 @@ import java.net.URI
 
 import com.oceanum.common.Environment
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 /**
  * @author chenmingkun
  * @date 2020/7/5
  */
 class ClusterFileClient extends FileClient("cluster") {
-  override def download(srcPath: String, destPath: String): Future[Unit] = {
+  override def download(srcPath: String, destPath: String)(implicit ec: ExecutionContext): Future[Unit] = {
     val uri = new URI(srcPath)
     val host = if (uri.getHost == null || uri.getHost.equals("null")) Environment.HOST else uri.getHost
     val port = if (uri.getPort < 0) Environment.FILE_SERVER_PORT else uri.getPort
@@ -18,7 +18,7 @@ class ClusterFileClient extends FileClient("cluster") {
     ClusterFileServerApi.download(host + ":" + port, path, destPath)
   }
 
-  override def upload(srcPath: String, destPath: String): Future[Unit] = {
+  override def upload(srcPath: String, destPath: String)(implicit ec: ExecutionContext): Future[Unit] = {
     val uri = new URI(destPath)
     val host = if (uri.getHost == null || uri.getHost.equals("null")) Environment.HOST else uri.getHost
     val port = if (uri.getPort < 0) Environment.FILE_SERVER_PORT else uri.getPort

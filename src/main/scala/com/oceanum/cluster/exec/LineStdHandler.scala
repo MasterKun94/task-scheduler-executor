@@ -11,7 +11,7 @@ import scala.util.Properties
  * @author chenmingkun
  * @date 2020/4/29
  */
-trait LineHandler extends InputStreamHandler {
+trait LineStdHandler extends StdHandler {
   override def handle(input: InputStream): Unit = {
     val reader = new BufferedReader(new InputStreamReader(input, StandardCharsets.UTF_8))
     try {
@@ -44,7 +44,7 @@ trait LineHandler extends InputStreamHandler {
   def after(): Unit = {}
 }
 
-class FileOutputHandler(stdoutPath: String) extends LineHandler {
+class FileStdHandler(stdoutPath: String) extends LineStdHandler {
   val writer: BufferedWriter = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(stdoutPath), StandardCharsets.UTF_8))
 
   override def handle(line: String): Unit = {
@@ -75,5 +75,5 @@ class FileOutputHandler(stdoutPath: String) extends LineHandler {
   }
 }
 
-class StdoutFileOutputHandler(metadata: TaskMeta) extends FileOutputHandler(metadata.stdoutPath) {}
-class StderrFileOutputHandler(metadata: TaskMeta) extends FileOutputHandler(metadata.stderrPath) {}
+class StdoutFileHandler(metadata: TaskMeta) extends FileStdHandler(metadata.stdoutPath) {}
+class StderrFileHandler(metadata: TaskMeta) extends FileStdHandler(metadata.stderrPath) {}

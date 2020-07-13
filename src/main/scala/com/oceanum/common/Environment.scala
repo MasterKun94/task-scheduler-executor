@@ -4,7 +4,8 @@ import java.io.{File, FileInputStream}
 import java.util.Properties
 import java.util.concurrent.atomic.AtomicBoolean
 
-import akka.actor.ActorSystem
+import akka.actor.{ActorRef, ActorSystem}
+import akka.cluster.pubsub.DistributedPubSub
 import ch.qos.logback.classic.LoggerContext
 import ch.qos.logback.classic.joran.JoranConfigurator
 import com.oceanum.cluster.exec.{TaskConfig, TypedRunner}
@@ -50,21 +51,22 @@ object Environment {
   lazy val EXEC_MAX_TIMEOUT: FiniteDuration = fd"${getProperty(Key.EXEC_MAX_TIMEOUT, "24h")}"
 
   lazy val HOST: String = getProperty(Key.HOST, "127.0.0.1")
-  lazy val GLOBAL_EXECUTOR: ExecutionContext = ExecutionContext.global
+  lazy val CLUSTER_NODE_TASK_INIT_EXECUTOR: ExecutionContext = ExecutionContext.global
   lazy val CLUSTER_NODE_SYSTEM_NAME: String = getProperty(Key.CLUSTER_NODE_SYSTEM_NAME, "cluster")
   lazy val CLUSTER_NODE_PORT: Int = getProperty(Key.CLUSTER_NODE_PORT, "4551").toInt
-  lazy val CLUSTER_NODE_SEEDS: Seq[String] = getProperty(Key.CLUSTER_NODE_SEEDS, s"127.0.0.1:$CLUSTER_NODE_PORT").split(",").map(node => s"akka.tcp://$CLUSTER_NODE_SYSTEM_NAME@$node").toSeq
+  lazy val CLUSTER_NODE_SEEDS: Seq[String] = getProperty(Key.CLUSTER_NODE_SEEDS, s"$HOST:$CLUSTER_NODE_PORT").split(",").map(node => s"akka.tcp://$CLUSTER_NODE_SYSTEM_NAME@$node").toSeq
   lazy val CLUSTER_NODE_TOPICS: Seq[String] = getProperty(Key.CLUSTER_NODE_TOPICS, "default").split(",").map(_.trim).toSeq
-  lazy val CLUSTER_NODE_SYSTEM: ActorSystem = clusterSystem()
   lazy val CLUSTER_NODE_METRICS_SAMPLE_INTERVAL: String = getProperty(Key.CLUSTER_NODE_METRICS_SAMPLE_INTERVAL, "5s")
   lazy val CLUSTER_NODE_METRICS_TOPIC: String = getProperty(Key.CLUSTER_NODE_METRICS_TOPIC, "cluster-node-metrics")
   lazy val CLUSTER_NODE_METRICS_NAME: String = getProperty(Key.CLUSTER_NODE_METRICS_NAME, "cluster-node-metrics")
   lazy val CLUSTER_NODE_METRICS_PING_INTERVAL: FiniteDuration = fd"${getProperty(Key.CLUSTER_NODE_METRICS_PING_INTERVAL, "20s")}"
   lazy val CLUSTER_NODE_METRICS_PING_TIMEOUT: FiniteDuration = fd"${getProperty(Key.CLUSTER_NODE_METRICS_PING_TIMEOUT, "100s")}"
   lazy val CLUSTER_NODE_LOGGER: String = getProperty(Key.CLUSTER_NODE_LOGGER, logger)
-  lazy val CLUSTER_NODE_RUNNER_STDOUT_HANDLER_CLASS: Class[_] = Class.forName(getProperty(Key.CLUSTER_NODE_RUNNER_STDOUT_HANDLER_CLASS, "com.oceanum.cluster.exec.StdoutFileOutputHandler"))
-  lazy val CLUSTER_NODE_RUNNER_STDERR_HANDLER_CLASS: Class[_] = Class.forName(getProperty(Key.CLUSTER_NODE_RUNNER_STDERR_HANDLER_CLASS, "com.oceanum.cluster.exec.StderrFileOutputHandler"))
+  lazy val CLUSTER_NODE_RUNNER_STDOUT_HANDLER_CLASS: Class[_] = Class.forName(getProperty(Key.CLUSTER_NODE_RUNNER_STDOUT_HANDLER_CLASS, "com.oceanum.cluster.exec.StdoutFileHandler"))
+  lazy val CLUSTER_NODE_RUNNER_STDERR_HANDLER_CLASS: Class[_] = Class.forName(getProperty(Key.CLUSTER_NODE_RUNNER_STDERR_HANDLER_CLASS, "com.oceanum.cluster.exec.StderrFileHandler"))
   lazy val CLUSTER_NODE_RUNNERS_CLASSES: Set[Class[_]] = str2arr(getProperty(Key.CLUSTER_NODE_RUNNER_CLASSES, "com.oceanum.cluster.runners.ProcessRunner")).map(Class.forName).toSet
+  lazy val CLUSTER_NODE_SYSTEM: ActorSystem = clusterSystem()
+  lazy val CLUSTER_NODE_MEDIATOR: ActorRef = DistributedPubSub(CLUSTER_NODE_SYSTEM).mediator
 
   lazy val CLIENT_NODE_SYSTEM_NAME: String = getProperty(Key.CLIENT_NODE_SYSTEM_NAME, "client")
   lazy val CLIENT_NODE_PORT: Int = getProperty(Key.CLIENT_NODE_PORT, "5551").toInt
@@ -81,11 +83,11 @@ object Environment {
   lazy val FILE_SERVER_BASE_PATH: String = fileServerBasePath(getProperty(Key.FILE_SERVER_BASE_PATH, if (OS == WINDOWS) "" else "/"))
   lazy val FILE_SERVER_RECURSIVE_TRANSFER_MAX: Int = getProperty(Key.FILE_SERVER_RECURSIVE_TRANSFER_MAX, "100").toInt
   lazy val FILE_SERVER_DISPATCHER_CORE_POOL_SIZE_MIN: Int = getProperty(Key.FILE_SERVER_DISPATCHER_CORE_POOL_SIZE_MIN, "6").toInt
-  lazy val FILE_SERVER_DISPATCHER_CORE_POOL_SIZE_FACTOR: Int = getProperty(Key.FILE_SERVER_DISPATCHER_CORE_POOL_SIZE_MIN, "5").toInt
   lazy val FILE_SERVER_DISPATCHER_CORE_POOL_SIZE_MAX: Int = getProperty(Key.FILE_SERVER_DISPATCHER_CORE_POOL_SIZE_MAX, "60").toInt
+  lazy val FILE_SERVER_DISPATCHER_CORE_POOL_SIZE_FACTOR: Int = getProperty(Key.FILE_SERVER_DISPATCHER_CORE_POOL_SIZE_MIN, "5").toInt
+  lazy val FILE_SERVER_HOST_CONNECTION_POOL_MAX_RETRIES: Int = getProperty(Key.FILE_SERVER_HOST_CONNECTION_POOL_MAX_RETRIES, "5").toInt
   lazy val FILE_SERVER_HOST_CONNECTION_POOL_MAX_CONNECTIONS: Int = getProperty(Key.FILE_SERVER_HOST_CONNECTION_POOL_MAX_CONNECTIONS, "12").toInt
   lazy val FILE_SERVER_HOST_CONNECTION_POOL_MIN_CONNECTIONS: Int = getProperty(Key.FILE_SERVER_HOST_CONNECTION_POOL_MIN_CONNECTIONS, "1").toInt
-  lazy val FILE_SERVER_HOST_CONNECTION_POOL_MAX_RETRIES: Int = getProperty(Key.FILE_SERVER_HOST_CONNECTION_POOL_MAX_RETRIES, "5").toInt
   lazy val FILE_SERVER_HOST_CONNECTION_POOL_MAX_OPEN_REQUESTS: Int = getProperty(Key.FILE_SERVER_HOST_CONNECTION_POOL_MAX_OPEN_REQUESTS, "64").toInt
   lazy val FILE_SERVER_LOGGER: String = getProperty(Key.FILE_SERVER_LOGGER, logger)
   lazy val TASK_INFO_TRIGGER_INTERVAL: FiniteDuration = fd"${getProperty(Key.CLUSTER_NODE_TASK_INFO_TRIGGER_INTERVAL, "20s")}"
@@ -101,11 +103,14 @@ object Environment {
   lazy val LOG_FILE_MAX_SIZE: String = getProperty(Key.LOG_FILE_MAX_SIZE, "10MB")
   lazy val LOG_STDOUT_PATTERN: String = getProperty(Key.LOG_STDOUT_PATTERN, "%date{ISO8601} %highlight(%-5level) %-46logger - %msg%n")
 
-  lazy val HADOOP_HOME: String = getProperty(Key.HADOOP_HOME, System.getenv("HADOOP_HOME")).toPath()
+  lazy val HADOOP_HOME: String = getProperty(Key.HADOOP_HOME, findHadoopHome).toPath()
   lazy val HADOOP_FS_URL: String = getProperty(Key.HADOOP_FS_URL, "hdfs://localhost:9000")
   lazy val HADOOP_USER: String = getProperty(Key.HADOOP_USER, "root")
   lazy val HADOOP_BUFFER_SIZE: Int = getProperty(Key.HADOOP_BUFFER_SIZE, "8192").toInt
   lazy val DEV_MODE: Boolean = getProperty(Key.DEV_MODE, "false").toBoolean
+  lazy val logger = "akka.event.slf4j.Slf4jLogger"
+  lazy val SCHEDULE_EXECUTION_CONTEXT: ExecutionContext = ExecutionContext.global
+
   lazy val OS: OS = {
     val sys = scala.util.Properties
     if (sys.isWin) WINDOWS
@@ -113,8 +118,17 @@ object Environment {
     else LINUX
   }
 
-  lazy val logger = "akka.event.slf4j.Slf4jLogger"
-  implicit lazy val SCHEDULE_EXECUTION_CONTEXT: ExecutionContext = ExecutionContext.global
+  private def findHadoopHome: String = {
+    val p1 = System.getProperty("HADOOP_HOME", System.getenv("HADOOP_HOME"))
+    if (p1 == null || p1.trim.isEmpty) {
+      Array("/opt/cloudera/parcels/CDH/lib/hadoop").find(s => new File(s).isDirectory) match {
+        case Some(s) => s
+        case None => throw new IllegalArgumentException("没有找到HADOOP_HOME")
+      }
+    } else {
+      p1
+    }
+  }
 
   def print(): Unit = {
     import scala.collection.JavaConversions.asScalaSet

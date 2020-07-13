@@ -1,7 +1,6 @@
 package com.oceanum.cluster
 
 import akka.actor.{Actor, ActorRef, Props}
-import akka.cluster.pubsub.DistributedPubSub
 import akka.cluster.pubsub.DistributedPubSubMediator.{Publish, Subscribe, Unsubscribe}
 import com.oceanum.cluster.exec.RunnerManager
 import com.oceanum.cluster.exec.RunnerManager.getTaskInfo
@@ -15,7 +14,7 @@ class ExecutionEndpoint extends Actor {
 
   //使用pub/sub方式设置
   private val topics = Environment.CLUSTER_NODE_TOPICS
-  private val mediator: ActorRef = DistributedPubSub(context.system).mediator
+  private val mediator: ActorRef = Environment.CLUSTER_NODE_MEDIATOR
 
   override def preStart(): Unit = {
     for (topic <- topics) {

@@ -2,6 +2,7 @@ package com.oceanum.file
 
 import java.io.File
 import java.nio.file._
+import java.util.concurrent.atomic.AtomicInteger
 import java.util.regex.Matcher
 
 import akka.http.scaladsl.Http
@@ -92,7 +93,7 @@ object ClusterFileServer extends Log(Environment.FILE_SERVER_SYSTEM) {
               .toMap
             )
             .runWith(Sink.foreachAsync(1) { map =>
-              ClusterFileServerApi.download(map("host"), map("path"), path)
+              ClusterFileServerApi.download(map("host"), map("path"), path)(new AtomicInteger(0), httpMat.system.dispatcher)
             })
           onComplete(fut) { _ =>
             complete(path)

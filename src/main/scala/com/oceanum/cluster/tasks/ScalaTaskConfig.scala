@@ -1,6 +1,6 @@
 package com.oceanum.cluster.tasks
 
-import com.oceanum.cluster.exec.InputStreamHandler
+import com.oceanum.cluster.exec.StdHandler
 import com.oceanum.common.Environment
 
 /**
@@ -14,8 +14,8 @@ case class ScalaTaskConfig(jars: Array[String],
                            env: Map[String, String] = Map.empty,
                            directory: String = Environment.EXEC_WORK_DIR,
                            waitForTimeout: Long = -1,
-                           stdoutHandler: InputStreamHandler,
-                           stderrHandler: InputStreamHandler)
+                           stdoutHandler: StdHandler,
+                           stderrHandler: StdHandler)
   extends ProcessTaskConfig(
     (Environment.EXEC_SCALA +: options :+ "-cp" :+ jars.mkString(":") :+ mainClass) ++ args,
     env,

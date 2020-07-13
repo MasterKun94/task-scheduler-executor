@@ -1,6 +1,6 @@
 package com.oceanum.cluster.tasks
 
-import com.oceanum.cluster.exec.InputStreamHandler
+import com.oceanum.cluster.exec.StdHandler
 
 /**
  * @author chenmingkun
@@ -9,7 +9,7 @@ import com.oceanum.cluster.exec.InputStreamHandler
 object SysTasks {
   case class UserAddTaskConfig(user: String) extends ProcessTaskConfig(
     propCmd = Array("sudo", "useradd", user),
-    propStdoutHandler = InputStreamHandler.empty,
-    propStderrHandler = InputStreamHandler.empty
+    propStdoutHandler = StdHandler.empty,
+    propStderrHandler = StdHandler.empty
   )
 }

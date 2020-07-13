@@ -11,7 +11,7 @@ import akka.stream.{ActorAttributes, ActorMaterializer}
 import akka.util.ByteString
 import com.oceanum.common.{Environment, Log}
 
-import scala.concurrent.{ExecutionContextExecutor, Future}
+import scala.concurrent.{ExecutionContext, ExecutionContextExecutor, Future}
 import scala.util.{Failure, Success}
 
 /**
@@ -21,10 +21,9 @@ import scala.util.{Failure, Success}
 object ClusterFileServerApi extends Log(Environment.FILE_SERVER_SYSTEM) {
 
   private implicit lazy val mat: ActorMaterializer = ActorMaterializer()
-  private implicit lazy val ec: ExecutionContextExecutor = system.dispatcher
   private lazy val http = Http()
 
-  def transfer(srcHost: String, srcPath: String, destHost: String, destPath: String): Future[Unit] = {
+  def transfer(srcHost: String, srcPath: String, destHost: String, destPath: String)(implicit ec: ExecutionContext): Future[Unit] = {
     val srcHost0 = getHost(srcHost)
     val destHost0 = getHost(destHost)
     val request = HttpRequest(HttpMethods.PUT, uri = s"http://$destHost0/${Environment.FILE_SERVER_CONTEXT_PATH}/$destPath")
@@ -48,7 +47,7 @@ object ClusterFileServerApi extends Log(Environment.FILE_SERVER_SYSTEM) {
       }
   }
 
-  def delete(host: String, path: String): Future[Unit] = {
+  def delete(host: String, path: String)(implicit ec: ExecutionContext): Future[Unit] = {
     val host0 = getHost(host)
     val request = HttpRequest(HttpMethods.DELETE, uri = s"http://$host0/${Environment.FILE_SERVER_CONTEXT_PATH}/$path")
     http
@@ -67,7 +66,7 @@ object ClusterFileServerApi extends Log(Environment.FILE_SERVER_SYSTEM) {
       }
   }
 
-  def upload(host: String, srcPath: String, destPath: String): Future[Unit] = {
+  def upload(host: String, srcPath: String, destPath: String)(implicit ec: ExecutionContext): Future[Unit] = {
 
     val host0 = getHost(host)
     val request = HttpRequest(HttpMethods.POST, uri = s"http://$host0/${Environment.FILE_SERVER_CONTEXT_PATH}/$destPath")
@@ -95,7 +94,7 @@ object ClusterFileServerApi extends Log(Environment.FILE_SERVER_SYSTEM) {
       }
   }
 
-  def download(host: String, srcPath: String, destPath: String)(implicit reqNum: AtomicInteger = new AtomicInteger(0)): Future[Unit] = {
+  def download(host: String, srcPath: String, destPath: String)(implicit reqNum: AtomicInteger = new AtomicInteger(0), ec: ExecutionContext): Future[Unit] = {
     if (reqNum.incrementAndGet() > Environment.FILE_SERVER_RECURSIVE_TRANSFER_MAX) {
       throw new IllegalArgumentException("单次下载文件数量超过限制, 最大为" + Environment.FILE_SERVER_RECURSIVE_TRANSFER_MAX)
     }

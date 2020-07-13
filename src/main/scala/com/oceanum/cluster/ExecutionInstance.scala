@@ -33,7 +33,7 @@ class ExecutionInstance(task: Task, actor: ActorRef) extends Actor with ActorLog
   var execTimeoutMax: Cancellable = _
 
   override def preStart(): Unit = {
-    implicit val executor: ExecutionContext = Environment.GLOBAL_EXECUTOR
+    implicit val executor: ExecutionContext = Environment.CLUSTER_NODE_TASK_INIT_EXECUTOR
     task.init.onComplete {
       case Success(operator) =>
         self ! Start(operator, actor, task.stateHandler.checkInterval())

@@ -16,7 +16,7 @@ import scala.collection.JavaConversions.{mapAsJavaMap, seqAsJavaList}
  * @date 2020/4/28
  */
 class ProcessRunner extends TypedRunner[ProcessTaskConfig]("SHELL", "SHELL_SCRIPT", "JAVA", "SCALA", "PYTHON", "USER_ADD") {
-  private val streamOutput = MailBox[(InputStream, InputStreamHandler)](Environment.EXEC_THREAD_NUM * 2) { r =>
+  private val streamOutput = MailBox[(InputStream, StdHandler)](Environment.EXEC_THREAD_NUM * 2) { r =>
     r._2.handle(r._1)
   }
 
