@@ -33,6 +33,7 @@ object Test {
       .user("root")
     )
     .checkStateInterval("3s")
+    .parallelism(1)
     .build
 
   def client: SchedulerClient = SchedulerClient(ip1, 5551, ip2, "src/main/resources/application.properties")

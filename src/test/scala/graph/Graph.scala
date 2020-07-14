@@ -3,11 +3,11 @@ package graph
 import akka.actor.ActorSystem
 import akka.stream.scaladsl.GraphDSL.Implicits._
 import akka.stream.scaladsl.{GraphDSL, _}
-import akka.stream.{ClosedShape, SinkShape, UniformFanInShape}
+import akka.stream.{ClosedShape, Outlet, SinkShape, UniformFanInShape, UniformFanOutShape}
 import akka.{Done, NotUsed}
 import com.oceanum.client.SchedulerClient
 import com.oceanum.common.Environment
-import com.oceanum.graph.{FlowFactory, GraphMeta}
+import com.oceanum.graph.{FlowFactory, GraphBuilder, GraphMeta}
 import com.oceanum.utils.Test
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -74,41 +74,39 @@ object Test2 extends App {
 object Test3 extends App {
   implicit val client: SchedulerClient = Test.client
   implicit val system: ActorSystem = Environment.CLIENT_SYSTEM
-  val resultSink: Sink[GraphMeta, Future[Done]] = Sink.foreach[GraphMeta](m => println(m))
-  val source: Source[GraphMeta, NotUsed] = Source.single(GraphMeta())
-  val graph: RunnableGraph[Future[Done]] = RunnableGraph fromGraph GraphDSL.create(resultSink) { implicit builder: GraphDSL.Builder[Future[Done]] => sink =>
-    val broadcast = FlowFactory.broadcast(2)
-    val zip = FlowFactory.zip(2)
-    val task1 = FlowFactory.create(Test.task("task1"))
-    val task2 = FlowFactory.create(Test.task("task2"))
-    source ~> broadcast ~> task1 ~> zip ~> sink
-              broadcast ~> task2 ~> zip
-    ClosedShape
-  }
 
-  graph.run()
+  create(
+    new GraphBuilder {
+      override def build(implicit source: Source[GraphMeta, NotUsed], sink: SinkShape[GraphMeta], builder: GraphDSL.Builder[Future[Done]]): Unit = {
+        val task1: Flow[GraphMeta, GraphMeta, NotUsed] = FlowFactory.create(Test.task("task1"))
+        val task2: Flow[GraphMeta, GraphMeta, NotUsed] = FlowFactory.create(Test.task("task2"))
+        val broadcast: UniformFanOutShape[GraphMeta, GraphMeta] = FlowFactory.broadcast(2)
+        val zip: UniformFanInShape[GraphMeta, GraphMeta] = FlowFactory.zip(2)
+        val choose: UniformFanOutShape[GraphMeta, GraphMeta] = FlowFactory.partition(1)(m => 0)
+        val out: Outlet[GraphMeta] = choose.out(0)
+        val o: PortOps[GraphMeta] = broadcast ~> task1
+        val v: PortOps[GraphMeta] = source ~> broadcast
+        broadcast.out(0) ~> task1
+        val e: PortOps[GraphMeta] = broadcast ~> zip
+        val t: PortOps[GraphMeta] = source ~> task1
+        val m: Unit = broadcast ~> sink
+        val p = v ~> sink
+        source ~> broadcast
+        broadcast ~> task1 ~> zip
+        broadcast ~> task2 ~> zip
+        zip ~> sink
+      }
+    })
+    .run()
 
-  val graph2 = RunnableGraph fromGraph GraphDSL.create(resultSink) { implicit builder: GraphDSL.Builder[Future[Done]] => sink =>
-    val broadcast = FlowFactory.broadcast(2)
-    val zip = FlowFactory.zip(2)
-    val task1 = Flow[GraphMeta].mapAsync(0)(m => Future.successful(m))
-    val task2 = FlowFactory.create(Test.task("task2"))
-    broadcast ~> task1 ~> zip
-    broadcast ~> task2 ~> zip
-    source ~> broadcast
-    zip ~> sink
-    ClosedShape
-  }
-
-  def create(func: (GraphDSL.Builder[Future[Done]], Source[GraphMeta, NotUsed], SinkShape[GraphMeta]) => Unit) = {
+  def create(builder: GraphBuilder): RunnableGraph[Future[Done]] = {
     implicit val client: SchedulerClient = Test.client
     implicit val system: ActorSystem = Environment.CLIENT_SYSTEM
     val resultSink: Sink[GraphMeta, Future[Done]] = Sink.foreach[GraphMeta](m => println(m))
     val source: Source[GraphMeta, NotUsed] = Source.single(GraphMeta())
-    val graph: RunnableGraph[Future[Done]] = RunnableGraph fromGraph GraphDSL.create(resultSink) { builder => sink =>
-        func(builder, source, sink)
+    RunnableGraph fromGraph GraphDSL.create(resultSink) { b => sink =>
+        builder.build(source, sink, b)
         ClosedShape
     }
-
   }
 }
