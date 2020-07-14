@@ -3,7 +3,7 @@ package com.oceanum.client.actors
 import akka.actor.{Actor, ActorLogging, ActorRef, PoisonPill}
 import com.oceanum.client.{StateHandler, Task}
 import com.oceanum.cluster.exec.State
-import com.oceanum.cluster.exec.State.{FAILED, KILL, SUCCESS}
+import com.oceanum.cluster.exec.{FAILED, KILL, SUCCESS}
 import com.oceanum.common._
 
 import scala.concurrent.Promise

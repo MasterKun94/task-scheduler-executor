@@ -7,6 +7,7 @@ import akka.stream.{ClosedShape, Outlet, SinkShape, UniformFanInShape, UniformFa
 import akka.{Done, NotUsed}
 import com.oceanum.client.SchedulerClient
 import com.oceanum.common.Environment
+import com.oceanum.graph.Operator.{End, Start}
 import com.oceanum.graph.{FlowFactory, GraphBuilder, GraphMeta}
 import com.oceanum.utils.Test
 
@@ -77,24 +78,24 @@ object Test3 extends App {
 
   create(
     new GraphBuilder {
-      override def build(implicit source: Source[GraphMeta, NotUsed], sink: SinkShape[GraphMeta], builder: GraphDSL.Builder[Future[Done]]): Unit = {
-        val task1: Flow[GraphMeta, GraphMeta, NotUsed] = FlowFactory.create(Test.task("task1"))
-        val task2: Flow[GraphMeta, GraphMeta, NotUsed] = FlowFactory.create(Test.task("task2"))
-        val broadcast: UniformFanOutShape[GraphMeta, GraphMeta] = FlowFactory.broadcast(2)
-        val zip: UniformFanInShape[GraphMeta, GraphMeta] = FlowFactory.zip(2)
-        val choose: UniformFanOutShape[GraphMeta, GraphMeta] = FlowFactory.partition(1)(m => 0)
-        val out: Outlet[GraphMeta] = choose.out(0)
-        val o: PortOps[GraphMeta] = broadcast ~> task1
-        val v: PortOps[GraphMeta] = source ~> broadcast
-        broadcast.out(0) ~> task1
-        val e: PortOps[GraphMeta] = broadcast ~> zip
-        val t: PortOps[GraphMeta] = source ~> task1
-        val m: Unit = broadcast ~> sink
-        val p = v ~> sink
-        source ~> broadcast
-        broadcast ~> task1 ~> zip
-        broadcast ~> task2 ~> zip
-        zip ~> sink
+      override def build(implicit start: Start, end: End, builder: GraphDSL.Builder[Future[Done]]): Unit = {
+        val task1 = FlowFactory.flow(Test.task("task1"))
+        val task2 = FlowFactory.flow(Test.task("task2"))
+        val task3 = FlowFactory.flow(Test.task("task3"))
+        val task4 = FlowFactory.flow(Test.task("task4"))
+        val task5 = FlowFactory.flow(Test.task("task5"))
+        val fork = FlowFactory.fork(2)
+        val join = FlowFactory.join(2)
+        val decision = FlowFactory.decision(2)(_[Int]("value") % 2)
+        val converge = FlowFactory.converge(2)
+
+        start ==> fork
+        fork ==> task1 ==> join
+        fork ==> task2 ==> decision
+        decision.condition(0) ==> task3 ==> converge
+        decision.condition(1) ==> task4 ==> converge
+        converge ==> task5 ==> join
+        join ==> end
       }
     })
     .run()
@@ -102,11 +103,13 @@ object Test3 extends App {
   def create(builder: GraphBuilder): RunnableGraph[Future[Done]] = {
     implicit val client: SchedulerClient = Test.client
     implicit val system: ActorSystem = Environment.CLIENT_SYSTEM
-    val resultSink: Sink[GraphMeta, Future[Done]] = Sink.foreach[GraphMeta](m => println(m))
-    val source: Source[GraphMeta, NotUsed] = Source.single(GraphMeta())
+    val resultSink = Sink.foreach[GraphMeta](m => println(m))
+    val source = Source.single(GraphMeta(("value" -> 1)))
     RunnableGraph fromGraph GraphDSL.create(resultSink) { b => sink =>
-        builder.build(source, sink, b)
-        ClosedShape
+      val start = Start(source)
+      val end = End(sink)
+      builder.build(start, end, b)
+      ClosedShape
     }
   }
 }

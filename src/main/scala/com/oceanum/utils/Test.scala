@@ -17,7 +17,7 @@ object Test {
 //  val ip: String = getSelfAddress
 //  val ip: String = "127.0.0.1"
   val ip2 = "192.168.10.131"
-  val ip1 = "192.168.10.55"
+  val ip1 = getSelfAddress
 
   def task(id: String): Task = Task.builder.python()
     .id(id)
@@ -36,7 +36,7 @@ object Test {
     .parallelism(1)
     .build
 
-  def client: SchedulerClient = SchedulerClient(ip1, 5551, ip2, "src/main/resources/application.properties")
+  def client: SchedulerClient = SchedulerClient(ip1, 5555, ip2, "src/main/resources/application.properties")
 
   def startCluster(args: Array[String]): Unit = {
     ClusterStarter.main(Array("--port=3551", "--topics=t1,a1", s"--host=$ip1", s"--seed-node=$ip1", "--conf=src"/"main"/"resources"/"application.properties,src"/"main"/"resources"/"application-env.properties"))

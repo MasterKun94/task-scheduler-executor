@@ -1,19 +1,20 @@
 package com.oceanum.graph
 
-import akka.NotUsed
-import akka.stream.{UniformFanInShape, UniformFanOutShape}
 import akka.stream.scaladsl.{Broadcast, Flow, GraphDSL, Merge, Partition, ZipWithN}
-import com.oceanum.client.{TaskMeta, SchedulerClient, Task}
-import com.oceanum.cluster.exec.State.{FAILED, KILL, SUCCESS}
+import com.oceanum.client.{SchedulerClient, Task, TaskMeta}
+import com.oceanum.cluster.exec.FAILED
 import com.oceanum.common.Environment
+import com.oceanum.graph.Operator._
 
 import scala.concurrent.{ExecutionContext, Promise}
 import scala.util.{Failure, Success}
 
 object FlowFactory {
   implicit val sc: ExecutionContext = Environment.CLUSTER_NODE_TASK_INIT_EXECUTOR
-  def create(task: Task)(implicit schedulerClient: SchedulerClient): Flow[GraphMeta, GraphMeta, NotUsed] = {
-    Flow[GraphMeta].mapAsync(task.parallelism) { metadata =>
+
+
+  def flow(task: Task)(implicit schedulerClient: SchedulerClient): TaskFlow = {
+    val flow = Flow[GraphMeta].mapAsync(task.parallelism) { metadata =>
       val promise = Promise[GraphMeta]()
       schedulerClient.execute(task)
         .completeState.onComplete {
@@ -26,21 +27,22 @@ object FlowFactory {
       }
       promise.future
     }
+    TaskFlow(flow)
   }
 
-  def broadcast[T](parallel: Int)(implicit builder: GraphDSL.Builder[T]): UniformFanOutShape[GraphMeta, GraphMeta] = {
-    builder.add(Broadcast(parallel))
+  def fork[T](parallel: Int)(implicit builder: GraphDSL.Builder[T]): Fork = {
+    Fork(builder.add(Broadcast(parallel)))
   }
 
-  def zip[T](parallel: Int)(implicit builder: GraphDSL.Builder[T]): UniformFanInShape[GraphMeta, GraphMeta] = {
-    builder.add(ZipWithN[GraphMeta, GraphMeta](_.reduce(_ merge _))(parallel))
+  def join[T](parallel: Int)(implicit builder: GraphDSL.Builder[T]): Join = {
+    Join(builder.add(ZipWithN[GraphMeta, GraphMeta](_.reduce(_ merge _))(parallel)))
   }
 
-  def partition[T](parallel: Int)(partitioner: GraphMeta => Int)(implicit builder: GraphDSL.Builder[T]): UniformFanOutShape[GraphMeta, GraphMeta] = {
-    builder.add(Partition(parallel, partitioner))
+  def decision[T](parallel: Int)(partitioner: GraphMeta => Int)(implicit builder: GraphDSL.Builder[T]): Decision = {
+    Decision(builder.add(Partition(parallel, partitioner)))
   }
 
-  def merge[T](parallel: Int)(implicit builder: GraphDSL.Builder[T]): UniformFanInShape[GraphMeta, GraphMeta] = {
-    builder.add(Merge(parallel))
+  def converge[T](parallel: Int)(implicit builder: GraphDSL.Builder[T]): Converge = {
+    Converge(builder.add(Merge(parallel)))
   }
 }

@@ -20,24 +20,43 @@ object Operator {
     def ==>(operator: Fork)(implicit builder: GraphDSL.Builder[Future[Done]]): Ops = Ops(elem ~> operator.elem)
     def ==>(operator: Join)(implicit builder: GraphDSL.Builder[Future[Done]]): Ops = Ops(elem ~> operator.elem)
     def ==>(operator: Decision)(implicit builder: GraphDSL.Builder[Future[Done]]): Ops = Ops(elem ~> operator.elem)
-    def ==>(operator: Return)(implicit builder: GraphDSL.Builder[Future[Done]]): Ops = Ops(elem ~> operator.elem)
+    def ==>(operator: Converge)(implicit builder: GraphDSL.Builder[Future[Done]]): Ops = Ops(elem ~> operator.elem)
   }
 
-  case class Join(elem: UniformFanInShape[GraphMeta, GraphMeta]) extends Operator
-
-  case class Decision(elem: UniformFanOutShape[GraphMeta, GraphMeta]) extends Operator {
-    def out(i: Int): OutPort = OutPort(elem.out(i))
-  }
-
-  case class OutPort(elem: Outlet[GraphMeta]) extends Operator {
+  case class Join(elem: UniformFanInShape[GraphMeta, GraphMeta]) extends Operator {
     def ==>(operator: TaskFlow)(implicit builder: GraphDSL.Builder[Future[Done]]): Ops = Ops(elem ~> operator.elem)
     def ==>(operator: Fork)(implicit builder: GraphDSL.Builder[Future[Done]]): Ops = Ops(elem ~> operator.elem)
     def ==>(operator: Join)(implicit builder: GraphDSL.Builder[Future[Done]]): Ops = Ops(elem ~> operator.elem)
     def ==>(operator: Decision)(implicit builder: GraphDSL.Builder[Future[Done]]): Ops = Ops(elem ~> operator.elem)
-    def ==>(operator: Return)(implicit builder: GraphDSL.Builder[Future[Done]]): Ops = Ops(elem ~> operator.elem)
+    def ==>(operator: Converge)(implicit builder: GraphDSL.Builder[Future[Done]]): Ops = Ops(elem ~> operator.elem)
+    def ==>(operator: End)(implicit builder: GraphDSL.Builder[Future[Done]]): Unit = elem ~> operator.elem
   }
 
-  case class Return(elem: UniformFanInShape[GraphMeta, GraphMeta]) extends Operator
+  case class Decision(elem: UniformFanOutShape[GraphMeta, GraphMeta]) extends Operator {
+    def condition(i: Int): Condition = Condition(elem.out(i))
+    def ==>(operator: TaskFlow)(implicit builder: GraphDSL.Builder[Future[Done]]): Ops = Ops(elem ~> operator.elem)
+    def ==>(operator: Fork)(implicit builder: GraphDSL.Builder[Future[Done]]): Ops = Ops(elem ~> operator.elem)
+    def ==>(operator: Join)(implicit builder: GraphDSL.Builder[Future[Done]]): Ops = Ops(elem ~> operator.elem)
+    def ==>(operator: Decision)(implicit builder: GraphDSL.Builder[Future[Done]]): Ops = Ops(elem ~> operator.elem)
+    def ==>(operator: Converge)(implicit builder: GraphDSL.Builder[Future[Done]]): Ops = Ops(elem ~> operator.elem)
+  }
+
+  case class Condition(elem: Outlet[GraphMeta]) extends Operator {
+    def ==>(operator: TaskFlow)(implicit builder: GraphDSL.Builder[Future[Done]]): Ops = Ops(elem ~> operator.elem)
+    def ==>(operator: Fork)(implicit builder: GraphDSL.Builder[Future[Done]]): Ops = Ops(elem ~> operator.elem)
+    def ==>(operator: Join)(implicit builder: GraphDSL.Builder[Future[Done]]): Ops = Ops(elem ~> operator.elem)
+    def ==>(operator: Decision)(implicit builder: GraphDSL.Builder[Future[Done]]): Ops = Ops(elem ~> operator.elem)
+    def ==>(operator: Converge)(implicit builder: GraphDSL.Builder[Future[Done]]): Ops = Ops(elem ~> operator.elem)
+  }
+
+  case class Converge(elem: UniformFanInShape[GraphMeta, GraphMeta]) extends Operator {
+    def ==>(operator: TaskFlow)(implicit builder: GraphDSL.Builder[Future[Done]]): Ops = Ops(elem ~> operator.elem)
+    def ==>(operator: Fork)(implicit builder: GraphDSL.Builder[Future[Done]]): Ops = Ops(elem ~> operator.elem)
+    def ==>(operator: Join)(implicit builder: GraphDSL.Builder[Future[Done]]): Ops = Ops(elem ~> operator.elem)
+    def ==>(operator: Decision)(implicit builder: GraphDSL.Builder[Future[Done]]): Ops = Ops(elem ~> operator.elem)
+    def ==>(operator: Converge)(implicit builder: GraphDSL.Builder[Future[Done]]): Ops = Ops(elem ~> operator.elem)
+    def ==>(operator: End)(implicit builder: GraphDSL.Builder[Future[Done]]): Unit = elem ~> operator.elem
+  }
 
   case class Start(elem: Source[GraphMeta, NotUsed]) extends Operator {
     def ==>(operator: TaskFlow)(implicit builder: GraphDSL.Builder[Future[Done]]): Ops = Ops(elem ~> operator.elem)
@@ -53,7 +72,8 @@ object Operator {
     def ==>(operator: Fork)(implicit builder: GraphDSL.Builder[Future[Done]]): Ops = Ops(elem ~> operator.elem)
     def ==>(operator: Join)(implicit builder: GraphDSL.Builder[Future[Done]]): Ops = Ops(elem ~> operator.elem)
     def ==>(operator: Decision)(implicit builder: GraphDSL.Builder[Future[Done]]): Ops = Ops(elem ~> operator.elem)
-    def ==>(operator: Return)(implicit builder: GraphDSL.Builder[Future[Done]]): Ops = Ops(elem ~> operator.elem)
+    def ==>(operator: Converge)(implicit builder: GraphDSL.Builder[Future[Done]]): Ops = Ops(elem ~> operator.elem)
     def ==>(operator: End)(implicit builder: GraphDSL.Builder[Future[Done]]): Unit = elem ~> operator.elem
+    def ==> : Ops = this
   }
 }

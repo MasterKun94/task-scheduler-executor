@@ -7,24 +7,31 @@ import com.oceanum.client.TaskMeta
  * @date 2020/5/30
  */
 @SerialVersionUID(1L)
-class State(val name: String, val meta: TaskMeta) extends Serializable
-object State {
-  @SerialVersionUID(1L)
-  case class OFFLINE(metadata: TaskMeta) extends State("OFFLINE", metadata)
-  @SerialVersionUID(1L)
-  case class PREPARE(metadata: TaskMeta) extends State("PREPARE", metadata)
-  @SerialVersionUID(1L)
-  case class START(metadata: TaskMeta) extends State("START", metadata)
-  @SerialVersionUID(1L)
-  case class RUNNING(metadata: TaskMeta) extends State("RUNNING", metadata)
-  @SerialVersionUID(1L)
-  case class FAILED(metadata: TaskMeta) extends State("FAILED", metadata)
-  @SerialVersionUID(1L)
-  case class SUCCESS(metadata: TaskMeta) extends State("SUCCESS", metadata)
-  @SerialVersionUID(1L)
-  case class RETRY(metadata: TaskMeta) extends State("RETRY", metadata)
-  @SerialVersionUID(1L)
-  case class TIMEOUT(metadata: TaskMeta) extends State("TIMEOUT", metadata)
-  @SerialVersionUID(1L)
-  case class KILL(metadata: TaskMeta) extends State("KILL", metadata)
+class State(val name: State.value, meta: TaskMeta) extends Serializable {
+  def metadata: TaskMeta = meta.state = name
 }
+
+object State extends Enumeration {
+  type value = Value
+  val OFFLINE, PREPARE, START, RUNNING, FAILED, SUCCESS, RETRY, TIMEOUT, KILL = Value
+
+}
+
+@SerialVersionUID(1L)
+case class OFFLINE(meta: TaskMeta) extends State(State.OFFLINE, meta)
+@SerialVersionUID(1L)
+case class PREPARE(meta: TaskMeta) extends State(State.PREPARE, meta)
+@SerialVersionUID(1L)
+case class START(meta: TaskMeta) extends State(State.START, meta)
+@SerialVersionUID(1L)
+case class RUNNING(meta: TaskMeta) extends State(State.RUNNING, meta)
+@SerialVersionUID(1L)
+case class FAILED(meta: TaskMeta) extends State(State.FAILED, meta)
+@SerialVersionUID(1L)
+case class SUCCESS(meta: TaskMeta) extends State(State.SUCCESS, meta)
+@SerialVersionUID(1L)
+case class RETRY(meta: TaskMeta) extends State(State.RETRY, meta)
+@SerialVersionUID(1L)
+case class TIMEOUT(meta: TaskMeta) extends State(State.TIMEOUT, meta)
+@SerialVersionUID(1L)
+case class KILL(meta: TaskMeta) extends State(State.KILL, meta)

@@ -39,9 +39,9 @@ class TaskMeta(map: Map[String, Any]) extends Meta[TaskMeta](map) {
 
   def error: Throwable = this("error")
 
-  def state_=(state: String): TaskMeta = this + ("state" -> state)
+  def state_=(state: State.value): TaskMeta = this + ("state" -> state)
 
-  def state: String = this("this")
+  def state: State.value = this("this")
 
   def lazyInit_=(func: Task => Task): TaskMeta = this + ("lazyInit" -> func)
 

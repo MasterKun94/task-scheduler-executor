@@ -4,8 +4,7 @@ import java.util.Date
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Cancellable, PoisonPill}
 import com.oceanum.client.{StateHandler, Task, TaskMeta}
-import com.oceanum.cluster.exec.{EventListener, Hook, ExecutionTask, TaskConfig, RunnerManager, State}
-import com.oceanum.cluster.exec.State._
+import com.oceanum.cluster.exec.{EventListener, ExecutionTask, FAILED, Hook, KILL, OFFLINE, PREPARE, RETRY, RUNNING, RunnerManager, START, SUCCESS, State, TIMEOUT, TaskConfig}
 import com.oceanum.common.Scheduler.{schedule, scheduleOnce}
 import com.oceanum.common._
 
