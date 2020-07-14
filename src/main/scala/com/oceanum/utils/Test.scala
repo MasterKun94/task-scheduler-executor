@@ -17,7 +17,25 @@ object Test {
 //  val ip: String = getSelfAddress
 //  val ip: String = "127.0.0.1"
   val ip2 = "192.168.10.131"
-  val ip1 = getSelfAddress
+  val ip1 = "192.168.10.55"
+
+  def task(id: String): Task = Task.builder.python()
+    .id(id)
+    .user("test1")
+    .topic("default")
+    .retryCount(3)
+    .retryInterval("5 second")
+    .priority(5)
+    .pyFile("/tmp/test.py")
+    .args("hello", "world")
+    .waitForTimeout("100 second")
+    .lazyInit(_
+      .user("root")
+    )
+    .checkStateInterval("3s")
+    .build
+
+  def client: SchedulerClient = SchedulerClient(ip1, 5551, ip2, "src/main/resources/application.properties")
 
   def startCluster(args: Array[String]): Unit = {
     ClusterStarter.main(Array("--port=3551", "--topics=t1,a1", s"--host=$ip1", s"--seed-node=$ip1", "--conf=src"/"main"/"resources"/"application.properties,src"/"main"/"resources"/"application-env.properties"))
@@ -29,26 +47,8 @@ object Test {
 //    val path = "/root"/"test"
 
     implicit val executionContext: ExecutionContextExecutor = ExecutionContext.global
-    val client = SchedulerClient(ip1, 5551, ip2, "src/main/resources/application.properties")
     val instanceRef = client
-      .execute(
-        task = Task.builder.python()
-          .id("test")
-          .user("test1")
-          .topic("default")
-          .retryCount(3)
-          .retryInterval("5 second")
-          .priority(5)
-          .pyFile("/tmp/test.py")
-          .args("hello", "world")
-          .waitForTimeout("100 second")
-          .lazyInit(_
-            .user("root")
-          )
-          .build("3s") { stat =>
-            println("state: " + stat)
-          }
-      )
+      .execute(task("test1"))
     instanceRef.completeState.onComplete("complete: " + _.get)
     Thread.sleep(100000)
     client.close

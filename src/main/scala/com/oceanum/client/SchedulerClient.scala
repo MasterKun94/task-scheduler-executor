@@ -20,19 +20,19 @@ import scala.concurrent.{ExecutionContext, Future, Promise}
  */
 class SchedulerClient(endpoint: ActorRef, system: ActorSystem)(implicit executionContext: ExecutionContext, timeout: Timeout) {
 
-  def execute(task: Task): SingleTaskInstanceRef = {
-    new SingleTaskInstanceRef(doExecute(AvailableExecutorRequest(task.topic), task).map(_.head))
+  def execute(task: Task, stateHandler: StateHandler = StateHandler.default()): SingleTaskInstanceRef = {
+    new SingleTaskInstanceRef(doExecute(AvailableExecutorRequest(task.topic), task, stateHandler).map(_.head))
   }
 
-  def broadcastExecute(task: Task, timeWait: String): MultiTaskInstanceRef = {
-    new MultiTaskInstanceRef(doExecute(AvailableExecutorsRequest(task.topic, timeWait), task))
+  def broadcastExecute(task: Task, stateHandler: StateHandler = StateHandler.default(), timeWait: String = "10s"): MultiTaskInstanceRef = {
+    new MultiTaskInstanceRef(doExecute(AvailableExecutorsRequest(task.topic, timeWait), task, stateHandler))
   }
 
   def getClient(implicit executionContext: ExecutionContext): ActorRef = {
     system.actorOf(Props(classOf[ClientEndpoint], endpoint))
   }
 
-  def doExecute(requestMsg: Message, task: Task): Future[Seq[TaskInstance]] = {
+  def doExecute(requestMsg: Message, task: Task, handler: StateHandler): Future[Seq[TaskInstance]] = {
     val client = getClient
     val promise = Promise[State]()
     client
@@ -41,7 +41,7 @@ class SchedulerClient(endpoint: ActorRef, system: ActorSystem)(implicit executio
       .map(response => {
         val res: Seq[ActorRef] = response
           .executor
-          .map(executor => system.actorOf(Props(classOf[ClientInstance], executor.actor, task, promise)))
+          .map(executor => system.actorOf(Props(classOf[ClientInstance], executor.actor, task, handler, promise)))
         res.map(TaskInstance(_, promise.future))
       })
   }

@@ -1,15 +1,17 @@
 package graph
 
-import akka.{Done, NotUsed}
-import akka.stream.scaladsl._
-import GraphDSL.Implicits._
 import akka.actor.ActorSystem
-import akka.stream.{ActorMaterializer, ClosedShape, UniformFanInShape}
+import akka.stream.scaladsl.GraphDSL.Implicits._
+import akka.stream.scaladsl.{GraphDSL, _}
+import akka.stream.{ClosedShape, SinkShape, UniformFanInShape}
+import akka.{Done, NotUsed}
+import com.oceanum.client.SchedulerClient
 import com.oceanum.common.Environment
+import com.oceanum.graph.{FlowFactory, GraphMeta}
+import com.oceanum.utils.Test
 
-import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.{Await, Future}
+import scala.concurrent.Future
 
 object Graph extends App {
   Environment.loadArgs(Array("--conf=src\\main\\resources\\application.properties"))
@@ -67,4 +69,46 @@ object Test2 extends App {
     ClosedShape
   })
   g.run().onComplete(println)
+}
+
+object Test3 extends App {
+  implicit val client: SchedulerClient = Test.client
+  implicit val system: ActorSystem = Environment.CLIENT_SYSTEM
+  val resultSink: Sink[GraphMeta, Future[Done]] = Sink.foreach[GraphMeta](m => println(m))
+  val source: Source[GraphMeta, NotUsed] = Source.single(GraphMeta())
+  val graph: RunnableGraph[Future[Done]] = RunnableGraph fromGraph GraphDSL.create(resultSink) { implicit builder: GraphDSL.Builder[Future[Done]] => sink =>
+    val broadcast = FlowFactory.broadcast(2)
+    val zip = FlowFactory.zip(2)
+    val task1 = FlowFactory.create(Test.task("task1"))
+    val task2 = FlowFactory.create(Test.task("task2"))
+    source ~> broadcast ~> task1 ~> zip ~> sink
+              broadcast ~> task2 ~> zip
+    ClosedShape
+  }
+
+  graph.run()
+
+  val graph2 = RunnableGraph fromGraph GraphDSL.create(resultSink) { implicit builder: GraphDSL.Builder[Future[Done]] => sink =>
+    val broadcast = FlowFactory.broadcast(2)
+    val zip = FlowFactory.zip(2)
+    val task1 = Flow[GraphMeta].mapAsync(0)(m => Future.successful(m))
+    val task2 = FlowFactory.create(Test.task("task2"))
+    broadcast ~> task1 ~> zip
+    broadcast ~> task2 ~> zip
+    source ~> broadcast
+    zip ~> sink
+    ClosedShape
+  }
+
+  def create(func: (GraphDSL.Builder[Future[Done]], Source[GraphMeta, NotUsed], SinkShape[GraphMeta]) => Unit) = {
+    implicit val client: SchedulerClient = Test.client
+    implicit val system: ActorSystem = Environment.CLIENT_SYSTEM
+    val resultSink: Sink[GraphMeta, Future[Done]] = Sink.foreach[GraphMeta](m => println(m))
+    val source: Source[GraphMeta, NotUsed] = Source.single(GraphMeta())
+    val graph: RunnableGraph[Future[Done]] = RunnableGraph fromGraph GraphDSL.create(resultSink) { builder => sink =>
+        func(builder, source, sink)
+        ClosedShape
+    }
+
+  }
 }

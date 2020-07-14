@@ -4,7 +4,7 @@ import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
 
-import com.oceanum.cluster.exec.StdHandler
+import com.oceanum.cluster.exec.{State, StdHandler}
 import com.oceanum.common.{Environment, Meta}
 import com.oceanum.common.Implicits.PathHelper
 
@@ -35,9 +35,13 @@ class TaskMeta(map: Map[String, Any]) extends Meta[TaskMeta](map) {
 
   def message: String = this("message")
 
-  def error_=(e: Throwable): TaskMeta = this + ("error" -> e)
+  def error_=(e: Throwable): TaskMeta = this + ("error" -> e) + ("message" -> e.getMessage)
 
   def error: Throwable = this("error")
+
+  def state_=(state: String): TaskMeta = this + ("state" -> state)
+
+  def state: String = this("this")
 
   def lazyInit_=(func: Task => Task): TaskMeta = this + ("lazyInit" -> func)
 
@@ -52,8 +56,6 @@ class TaskMeta(map: Map[String, Any]) extends Meta[TaskMeta](map) {
   def stdoutPath: String = outputPath/s"$id-stdout.out"
 
   def stderrPath: String = outputPath/s"$id-stderr.out"
-
-  def withFunc(func: TaskMeta => TaskMeta): TaskMeta = func(this)
 
   private lazy val outputPath: String = {
     //创建文件路径//创建文件路径
@@ -85,7 +87,7 @@ class TaskMeta(map: Map[String, Any]) extends Meta[TaskMeta](map) {
     )
   }
 
-  override def toString: String = s"Metadata(${map.toArray.map(t => t._1 + ": " + t._2).mkString(", ")})"
+  override def toString: String = s"TaskMeta(${map.toArray.map(t => t._1 + ": " + t._2).mkString(", ")})"
 }
 
 object TaskMeta {

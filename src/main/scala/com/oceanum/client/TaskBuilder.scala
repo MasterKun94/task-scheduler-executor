@@ -44,8 +44,12 @@ abstract class TaskBuilder[T <: TaskBuilder[_, _], P <: TaskProp](task: Task) ex
     typedBuilder(task.copy(meta = meta))
   }
 
-  def build(interval: String)(stateHandler: State => Unit): Task = {
-    build.copy(stateHandler = StateHandler(interval)(stateHandler))
+  def checkStateInterval(interval: String): T = {
+    typedBuilder(task.copy(checkStateInterval = interval))
+  }
+
+  def parallelism(parallelism: Int): T = {
+    typedBuilder(task.copy(parallelism = parallelism))
   }
 
   def build: Task = task

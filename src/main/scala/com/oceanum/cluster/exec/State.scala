@@ -7,24 +7,24 @@ import com.oceanum.client.TaskMeta
  * @date 2020/5/30
  */
 @SerialVersionUID(1L)
-class State(val name: String) extends Serializable
+class State(val name: String, val meta: TaskMeta) extends Serializable
 object State {
   @SerialVersionUID(1L)
-  case class OFFLINE(metadata: TaskMeta) extends State("OFFLINE")
+  case class OFFLINE(metadata: TaskMeta) extends State("OFFLINE", metadata)
   @SerialVersionUID(1L)
-  case class PREPARE(metadata: TaskMeta) extends State("PREPARE")
+  case class PREPARE(metadata: TaskMeta) extends State("PREPARE", metadata)
   @SerialVersionUID(1L)
-  case class START(metadata: TaskMeta) extends State("START")
+  case class START(metadata: TaskMeta) extends State("START", metadata)
   @SerialVersionUID(1L)
-  case class RUNNING(metadata: TaskMeta) extends State("RUNNING")
+  case class RUNNING(metadata: TaskMeta) extends State("RUNNING", metadata)
   @SerialVersionUID(1L)
-  case class FAILED(metadata: TaskMeta) extends State("FAILED")
+  case class FAILED(metadata: TaskMeta) extends State("FAILED", metadata)
   @SerialVersionUID(1L)
-  case class SUCCESS(metadata: TaskMeta) extends State("SUCCESS")
+  case class SUCCESS(metadata: TaskMeta) extends State("SUCCESS", metadata)
   @SerialVersionUID(1L)
-  case class RETRY(metadata: TaskMeta) extends State("RETRY")
+  case class RETRY(metadata: TaskMeta) extends State("RETRY", metadata)
   @SerialVersionUID(1L)
-  case class TIMEOUT(metadata: TaskMeta) extends State("TIMEOUT")
+  case class TIMEOUT(metadata: TaskMeta) extends State("TIMEOUT", metadata)
   @SerialVersionUID(1L)
-  case class KILL(metadata: TaskMeta) extends State("KILL")
+  case class KILL(metadata: TaskMeta) extends State("KILL", metadata)
 }

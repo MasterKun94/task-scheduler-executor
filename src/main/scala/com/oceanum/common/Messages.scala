@@ -5,6 +5,7 @@ import akka.cluster.ClusterEvent.CurrentClusterState
 import akka.cluster.metrics.NodeMetrics
 import com.oceanum.client.{TaskMeta, StateHandler, Task}
 
+@SerialVersionUID(1L)
 trait Message {}
 case class PrepareMessage(metadata: TaskMeta) extends Message
 case class RunningMessage(metadata: TaskMeta) extends Message
@@ -39,6 +40,7 @@ case class HandleState(handler: StateHandler) extends Message
 @SerialVersionUID(1L)
 case class HandleOnComplete(handler: StateHandler) extends Message
 
+@SerialVersionUID(1L)
 trait ClusterMessage extends Message
 @SerialVersionUID(1L)
 case class ClusterInfoMessageHolder(message: ClusterMessage, actorRef: ActorRef) extends Message
