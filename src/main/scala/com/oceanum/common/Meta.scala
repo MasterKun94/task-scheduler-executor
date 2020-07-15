@@ -18,7 +18,7 @@ class Meta[T <: Meta[_]](private val map: Map[String, Any]) extends Serializable
 
   def remove(key: String): T = this - key
 
-  def apply[OUT](key: String): OUT = map(key).asInstanceOf[OUT]
+  def apply[OUT](key: String): OUT = map.getOrElse(key, null).asInstanceOf[OUT]
 
   def toMap: Map[String, Any] = map
 
