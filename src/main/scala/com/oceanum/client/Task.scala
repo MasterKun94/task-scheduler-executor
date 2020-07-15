@@ -6,7 +6,7 @@ import com.oceanum.common.Environment
 import scala.concurrent.{ExecutionContext, Future}
 
 @SerialVersionUID(1L)
-case class Task(id: String,
+case class Task(id: Int,
                 topic: String = Environment.EXEC_DEFAULT_TOPIC,
                 user: String = Environment.EXEC_DEFAULT_USER,
                 retryCount: Int = Environment.EXEC_DEFAULT_RETRY_MAX,
@@ -23,7 +23,7 @@ case class Task(id: String,
       .prop
       .init(taskMeta)
       .map(ot => ExecutionTask(
-        name = id,
+        name = "task" + id,
         retryCount = retryCount,
         retryInterval = retryInterval,
         priority = priority,

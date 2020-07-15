@@ -47,6 +47,8 @@ object Implicits {
           path + sep + subPath
     }
 
+    def / (sub: AnyVal): String = this / sub.toString
+
     def / : String = this / ""
 
     def toFile : File = new File(str)

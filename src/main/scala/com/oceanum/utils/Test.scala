@@ -19,8 +19,7 @@ object Test {
   val ip2 = "192.168.10.131"
   val ip1 = getSelfAddress
 
-  def task(id: String): Task = Task.builder.python()
-    .id(id)
+  def task: Task = Task.builder.python()
     .user("test1")
     .topic("default")
     .retryCount(3)
@@ -49,7 +48,7 @@ object Test {
 
     implicit val executionContext: ExecutionContextExecutor = ExecutionContext.global
     val instanceRef = client
-      .execute(task("test1"))
+      .execute(task)
     instanceRef.completeState.onComplete("complete: " + _.get)
     Thread.sleep(100000)
     client.close

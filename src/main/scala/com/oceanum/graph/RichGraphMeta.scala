@@ -9,8 +9,8 @@ import com.oceanum.common.Meta
 class RichGraphMeta(map: Map[String, Any]) extends Meta[RichGraphMeta](map) with GraphMeta[RichGraphMeta] {
   override def id: String = this("id")
 
-  override def operators: Map[String, TaskMeta[_]] = {
-    this.get("operators").getOrElse(Map.empty[String, TaskMeta[_]])
+  override def operators: Map[Int, TaskMeta[_]] = {
+    this.get("operators").getOrElse(Map.empty[Int, TaskMeta[_]])
   }
 
   def operators_+(state: State): RichGraphMeta = {
@@ -20,8 +20,7 @@ class RichGraphMeta(map: Map[String, Any]) extends Meta[RichGraphMeta](map) with
       case _: KILL => GraphStatus.KILLED
     }
     val metadata = state.metadata.asInstanceOf[RichTaskMeta]
-    val str = metadata.id
-    val tuple: (String, TaskMeta[_]) = str -> metadata
+    val tuple = metadata.id -> metadata
     updateGraphStatus(graphStatus) + ("operators" -> (this.operators + tuple))
   }
 
@@ -32,6 +31,16 @@ class RichGraphMeta(map: Map[String, Any]) extends Meta[RichGraphMeta](map) with
   def fallbackStrategy_=(strategy: FallbackStrategy.value): RichGraphMeta = {
     this + ("fallbackStrategy" -> strategy)
   }
+
+  override def reRunStrategy: ReRunStrategy.value = this.get("reRunStrategy").getOrElse(ReRunStrategy.NONE)
+
+  def reRunStrategy_=(reRunStrategy: ReRunStrategy.value): RichGraphMeta = {
+    this + ("reRunStrategy" -> reRunStrategy)
+  }
+
+  def reRunFlag: Boolean = this("reRunFlag")
+
+  def reRunFlag_=(flag: Boolean): RichGraphMeta = this + ("reRunFlag" -> (this.reRunFlag || flag))
 
   override def graphStatus: GraphStatus.value = {
     this.get("graphStatus").getOrElse(GraphStatus.OFFLINE)

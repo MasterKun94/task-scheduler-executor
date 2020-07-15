@@ -11,7 +11,7 @@ import com.oceanum.common.Implicits.PathHelper
 
 class RichTaskMeta(map: Map[String, Any]) extends Meta[RichTaskMeta](map) with TaskMeta[RichTaskMeta] {
 
-  override def id: String = this("id")
+  override def id: Int = this("id")
 
   override def taskType: String = this("taskType")
 
