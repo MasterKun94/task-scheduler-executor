@@ -3,7 +3,7 @@ package com.oceanum.cluster.exec
 import java.io._
 import java.nio.charset.StandardCharsets
 
-import com.oceanum.client.TaskMeta
+import com.oceanum.client.RichTaskMeta
 
 import scala.util.Properties
 
@@ -75,5 +75,5 @@ class FileStdHandler(stdoutPath: String) extends LineStdHandler {
   }
 }
 
-class StdoutFileHandler(metadata: TaskMeta) extends FileStdHandler(metadata.stdoutPath) {}
-class StderrFileHandler(metadata: TaskMeta) extends FileStdHandler(metadata.stderrPath) {}
+class StdoutFileHandler(metadata: RichTaskMeta) extends FileStdHandler(metadata.stdoutPath) {}
+class StderrFileHandler(metadata: RichTaskMeta) extends FileStdHandler(metadata.stderrPath) {}

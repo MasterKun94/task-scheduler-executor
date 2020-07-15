@@ -2,7 +2,7 @@ package com.oceanum.cluster.exec
 
 import java.util.concurrent.atomic.AtomicInteger
 
-import com.oceanum.client.TaskMeta
+import com.oceanum.client.RichTaskMeta
 import com.oceanum.cluster.TaskInfoTrigger
 import com.oceanum.common.Scheduler.scheduleOnce
 import com.oceanum.common.{Environment, Log, NodeTaskInfo}
@@ -53,7 +53,7 @@ object RunnerManager extends Log {
     operatorProp.eventListener.start()
     incRunning()
     TaskInfoTrigger.trigger()
-    val meta = TaskMeta()
+    val meta = RichTaskMeta()
     try {
       run(operatorProp) match {
         case ExitCode.ERROR(msg) =>

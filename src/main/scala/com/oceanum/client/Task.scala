@@ -12,11 +12,11 @@ case class Task(id: String,
                 retryCount: Int = Environment.EXEC_DEFAULT_RETRY_MAX,
                 retryInterval: String = Environment.EXEC_DEFAULT_RETRY_INTERVAL,
                 priority: Int = Environment.EXEC_DEFAULT_PRIORITY,
+                checkStateInterval: String = Environment.EXEC_CHECK_STATE_INTERVAL,
                 prop: TaskProp,
-                checkStateInterval: String = "5s",
-                parallelism: Int = 1,
-                private val meta: TaskMeta = TaskMeta.empty) {
-  def init(implicit listener: TaskMeta => EventListener, executor: ExecutionContext): Future[ExecutionTask[_ <: TaskConfig]] = {
+                parallelism: Int = Environment.GRAPH_FLOW_DEFAULT_PARALLELISM,
+                private val meta: RichTaskMeta = RichTaskMeta.empty) {
+  def init(implicit listener: RichTaskMeta => EventListener, executor: ExecutionContext): Future[ExecutionTask[_ <: TaskConfig]] = {
     val task = metadata.lazyInit(this)
     val taskMeta = task.metadata
     task
@@ -33,7 +33,7 @@ case class Task(id: String,
       ))
   }
 
-  def metadata: TaskMeta = meta.withTask(this)
+  def metadata: RichTaskMeta = meta.withTask(this)
 }
 
 object Task {

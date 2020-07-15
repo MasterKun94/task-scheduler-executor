@@ -6,5 +6,5 @@ package com.oceanum.graph
  */
 object FallbackStrategy extends Enumeration {
   type value = Value
-  val RESUME, STOP = Value
+  val CONTINUE, SHUTDOWN = Value
 }

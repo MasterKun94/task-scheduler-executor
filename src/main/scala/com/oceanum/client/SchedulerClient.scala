@@ -18,7 +18,7 @@ import scala.concurrent.{ExecutionContext, Future, Promise}
  * @author chenmingkun
  * @date 2020/5/4
  */
-class SchedulerClient(endpoint: ActorRef, system: ActorSystem)(implicit executionContext: ExecutionContext, timeout: Timeout) {
+class SchedulerClient(endpoint: ActorRef, val system: ActorSystem)(implicit executionContext: ExecutionContext, timeout: Timeout) {
 
   def execute(task: Task, stateHandler: StateHandler = StateHandler.default()): SingleTaskInstanceRef = {
     new SingleTaskInstanceRef(doExecute(AvailableExecutorRequest(task.topic), task, stateHandler).map(_.head))

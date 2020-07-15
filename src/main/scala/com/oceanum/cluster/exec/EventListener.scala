@@ -1,6 +1,6 @@
 package com.oceanum.cluster.exec
 
-import com.oceanum.client.TaskMeta
+import com.oceanum.client.RichTaskMeta
 
 /**
  * @author chenmingkun
@@ -8,19 +8,19 @@ import com.oceanum.client.TaskMeta
  */
 trait EventListener {
 
-  def prepare(message: TaskMeta = TaskMeta.empty)
+  def prepare(message: RichTaskMeta = RichTaskMeta.empty)
 
-  def start(message: TaskMeta = TaskMeta.empty)
+  def start(message: RichTaskMeta = RichTaskMeta.empty)
 
-  def running(message: TaskMeta = TaskMeta.empty)
+  def running(message: RichTaskMeta = RichTaskMeta.empty)
 
-  def failed(message: TaskMeta = TaskMeta.empty)
+  def failed(message: RichTaskMeta = RichTaskMeta.empty)
 
-  def success(message: TaskMeta = TaskMeta.empty)
+  def success(message: RichTaskMeta = RichTaskMeta.empty)
 
-  def retry(message: TaskMeta = TaskMeta.empty)
+  def retry(message: RichTaskMeta = RichTaskMeta.empty)
 
-  def timeout(message: TaskMeta = TaskMeta.empty)
+  def timeout(message: RichTaskMeta = RichTaskMeta.empty)
 
-  def kill(message: TaskMeta = TaskMeta.empty)
+  def kill(message: RichTaskMeta = RichTaskMeta.empty)
 }

@@ -3,18 +3,18 @@ package com.oceanum.common
 import akka.actor.ActorRef
 import akka.cluster.ClusterEvent.CurrentClusterState
 import akka.cluster.metrics.NodeMetrics
-import com.oceanum.client.{TaskMeta, StateHandler, Task}
+import com.oceanum.client.{RichTaskMeta, StateHandler, Task}
 
 @SerialVersionUID(1L)
 trait Message {}
-case class PrepareMessage(metadata: TaskMeta) extends Message
-case class RunningMessage(metadata: TaskMeta) extends Message
-case class FailedMessage(metadata: TaskMeta) extends Message
-case class SuccessMessage(metadata: TaskMeta) extends Message
-case class RetryMessage(metadata: TaskMeta) extends Message
-case class KillMessage(metadata: TaskMeta) extends Message
-case class TimeoutMessage(metadata: TaskMeta) extends Message
-case class StartMessage(metadata: TaskMeta) extends Message
+case class PrepareMessage(metadata: RichTaskMeta) extends Message
+case class RunningMessage(metadata: RichTaskMeta) extends Message
+case class FailedMessage(metadata: RichTaskMeta) extends Message
+case class SuccessMessage(metadata: RichTaskMeta) extends Message
+case class RetryMessage(metadata: RichTaskMeta) extends Message
+case class KillMessage(metadata: RichTaskMeta) extends Message
+case class TimeoutMessage(metadata: RichTaskMeta) extends Message
+case class StartMessage(metadata: RichTaskMeta) extends Message
 
 @SerialVersionUID(1L)
 case object KillAction extends Message
@@ -34,7 +34,7 @@ case class AvailableExecutor(actor: ActorRef, taskInfo: NodeTaskInfo, topics: Se
 @SerialVersionUID(1L)
 case class ExecuteOperatorRequest(task: Task) extends Message
 @SerialVersionUID(1L)
-case class ExecuteOperatorResponse(metadata: TaskMeta) extends Message
+case class ExecuteOperatorResponse(metadata: RichTaskMeta) extends Message
 @SerialVersionUID(1L)
 case class HandleState(handler: StateHandler) extends Message
 @SerialVersionUID(1L)

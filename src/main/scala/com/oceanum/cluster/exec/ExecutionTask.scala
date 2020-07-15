@@ -2,7 +2,7 @@ package com.oceanum.cluster.exec
 
 import java.util.concurrent.atomic.{AtomicBoolean, AtomicReference}
 
-import com.oceanum.client.TaskMeta
+import com.oceanum.client.RichTaskMeta
 
 /**
  * @author chenmingkun
@@ -14,7 +14,7 @@ case class ExecutionTask[T <: TaskConfig](name: String,
                                           priority: Int,
                                           prop: T,
                                           eventListener: EventListener,
-                                          metadata: TaskMeta,
+                                          metadata: RichTaskMeta,
                                           private val hookRef: AtomicReference[Hook] = new AtomicReference(),
                                           private val ref: AtomicBoolean = new AtomicBoolean(false)
                                        ) {

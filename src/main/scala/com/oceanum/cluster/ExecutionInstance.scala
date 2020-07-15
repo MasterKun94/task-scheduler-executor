@@ -3,7 +3,7 @@ package com.oceanum.cluster
 import java.util.Date
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Cancellable, PoisonPill}
-import com.oceanum.client.{StateHandler, Task, TaskMeta}
+import com.oceanum.client.{StateHandler, Task, RichTaskMeta}
 import com.oceanum.cluster.exec.{EventListener, ExecutionTask, FAILED, Hook, KILL, OFFLINE, PREPARE, RETRY, RUNNING, RunnerManager, START, SUCCESS, State, TIMEOUT, TaskConfig}
 import com.oceanum.common.Scheduler.{schedule, scheduleOnce}
 import com.oceanum.common._
@@ -18,15 +18,15 @@ import scala.util.{Failure, Success}
 class ExecutionInstance(task: Task, actor: ActorRef) extends Actor with ActorLogging {
   case class Start(operator: ExecutionTask[_ <: TaskConfig], client: ActorRef, interval: String)
 
-  implicit private val listenerGenerator: TaskMeta => EventListener = meta => new EventListener {
-    override def prepare(message: TaskMeta): Unit = self ! PrepareMessage(meta ++ message)
-    override def start(message: TaskMeta): Unit = self ! StartMessage(meta ++ message)
-    override def running(message: TaskMeta): Unit = self ! RunningMessage(meta ++ message)
-    override def failed(message: TaskMeta): Unit = self ! FailedMessage(meta ++ message)
-    override def success(message: TaskMeta): Unit = self ! SuccessMessage(meta ++ message)
-    override def retry(message: TaskMeta): Unit = self ! RetryMessage(meta ++ message)
-    override def timeout(message: TaskMeta): Unit = self ! TimeoutMessage(meta ++ message)
-    override def kill(message: TaskMeta): Unit = self ! KillMessage(meta ++ message)
+  implicit private val listenerGenerator: RichTaskMeta => EventListener = meta => new EventListener {
+    override def prepare(message: RichTaskMeta): Unit = self ! PrepareMessage(meta ++ message)
+    override def start(message: RichTaskMeta): Unit = self ! StartMessage(meta ++ message)
+    override def running(message: RichTaskMeta): Unit = self ! RunningMessage(meta ++ message)
+    override def failed(message: RichTaskMeta): Unit = self ! FailedMessage(meta ++ message)
+    override def success(message: RichTaskMeta): Unit = self ! SuccessMessage(meta ++ message)
+    override def retry(message: RichTaskMeta): Unit = self ! RetryMessage(meta ++ message)
+    override def timeout(message: RichTaskMeta): Unit = self ! TimeoutMessage(meta ++ message)
+    override def kill(message: RichTaskMeta): Unit = self ! KillMessage(meta ++ message)
   }
 
   var execTimeoutMax: Cancellable = _
@@ -56,29 +56,29 @@ class ExecutionInstance(task: Task, actor: ActorRef) extends Actor with ActorLog
         self.tell(CheckState, client)
       }
       val hook: Hook = RunnerManager.submit(operator)
-      val metadata: TaskMeta = operator.metadata
+      val metadata: RichTaskMeta = operator.metadata
       context.become(offline(metadata)(Holder(hook, cancelable, client)))
       client ! ExecuteOperatorResponse(operator.metadata)
   }
 
-  private def offline(meta: TaskMeta)(implicit holder: Holder): Receive = {
-    implicit val metadata: TaskMeta = meta.createTime = new Date()
+  private def offline(meta: RichTaskMeta)(implicit holder: Holder): Receive = {
+    implicit val metadata: RichTaskMeta = meta.createTime = new Date()
     caseCheckState(offline_)
       .orElse(caseKillAction)
       .orElse(casePrepare)
       .orElse(caseKill)
   }
 
-  private def prepare(meta: TaskMeta)(implicit holder: Holder): Receive = {
-    implicit val metadata: TaskMeta = meta
+  private def prepare(meta: RichTaskMeta)(implicit holder: Holder): Receive = {
+    implicit val metadata: RichTaskMeta = meta
     caseCheckState(prepare_)
       .orElse(caseKillAction)
       .orElse(caseStart)
       .orElse(caseKill)
   }
 
-  private def start(meta: TaskMeta)(implicit holder: Holder): Receive = {
-    implicit val metadata: TaskMeta = meta.startTime = new Date()
+  private def start(meta: RichTaskMeta)(implicit holder: Holder): Receive = {
+    implicit val metadata: RichTaskMeta = meta.startTime = new Date()
     caseCheckState(start_)
       .orElse(caseKillAction)
       .orElse(caseFailed)
@@ -86,8 +86,8 @@ class ExecutionInstance(task: Task, actor: ActorRef) extends Actor with ActorLog
       .orElse(caseKill)
   }
 
-  private def running(meta: TaskMeta)(implicit holder: Holder): Receive = {
-    implicit val metadata: TaskMeta = meta
+  private def running(meta: RichTaskMeta)(implicit holder: Holder): Receive = {
+    implicit val metadata: RichTaskMeta = meta
     caseCheckState(running_)
       .orElse(caseKillAction)
       .orElse(caseSuccess)
@@ -97,16 +97,16 @@ class ExecutionInstance(task: Task, actor: ActorRef) extends Actor with ActorLog
       .orElse(caseKill)
   }
 
-  private def retry(meta: TaskMeta)(implicit holder: Holder): Receive = {
-    implicit val metadata: TaskMeta = meta.incRetry()
+  private def retry(meta: RichTaskMeta)(implicit holder: Holder): Receive = {
+    implicit val metadata: RichTaskMeta = meta.incRetry()
     caseCheckState(retry_)
       .orElse(caseKillAction)
       .orElse(casePrepare)
       .orElse(caseKill)
   }
 
-  private def timeout(meta: TaskMeta)(implicit holder: Holder): Receive = {
-    implicit val metadata: TaskMeta = meta
+  private def timeout(meta: RichTaskMeta)(implicit holder: Holder): Receive = {
+    implicit val metadata: RichTaskMeta = meta
     caseCheckState(timeout_)
       .orElse(caseKillAction)
       .orElse(caseRetry)
@@ -114,20 +114,20 @@ class ExecutionInstance(task: Task, actor: ActorRef) extends Actor with ActorLog
       .orElse(caseKill)
   }
 
-  private def success(meta: TaskMeta)(implicit holder: Holder): Receive = {
-    implicit val metadata: TaskMeta = meta.endTime = new Date()
+  private def success(meta: RichTaskMeta)(implicit holder: Holder): Receive = {
+    implicit val metadata: RichTaskMeta = meta.endTime = new Date()
     caseCheckState(success_)
       .orElse(caseTerminateAction)
   }
 
-  private def failed(meta: TaskMeta)(implicit holder: Holder): Receive = {
-    implicit val metadata: TaskMeta = meta.endTime = new Date()
+  private def failed(meta: RichTaskMeta)(implicit holder: Holder): Receive = {
+    implicit val metadata: RichTaskMeta = meta.endTime = new Date()
     caseCheckState(failed_)
       .orElse(caseTerminateAction)
   }
 
-  private def kill(meta: TaskMeta)(implicit holder: Holder): Receive = {
-    implicit val metadata: TaskMeta = meta.endTime = new Date()
+  private def kill(meta: RichTaskMeta)(implicit holder: Holder): Receive = {
+    implicit val metadata: RichTaskMeta = meta.endTime = new Date()
     caseCheckState(kill_)
       .orElse(caseTerminateAction)
       .orElse(caseFailed)
@@ -150,7 +150,7 @@ class ExecutionInstance(task: Task, actor: ActorRef) extends Actor with ActorLog
   private def caseKillAction(implicit holder: Holder): Receive = {
     case KillAction =>
       holder.hook.kill()
-      self ! KillMessage(TaskMeta.empty)
+      self ! KillMessage(RichTaskMeta.empty)
   }
 
   private def caseTerminateAction(implicit holder: Holder): Receive = {
@@ -166,56 +166,56 @@ class ExecutionInstance(task: Task, actor: ActorRef) extends Actor with ActorLog
       self ! PoisonPill
   }
 
-  private def casePrepare(implicit meta: TaskMeta, holder: Holder): Receive = {
+  private def casePrepare(implicit meta: RichTaskMeta, holder: Holder): Receive = {
     case m: PrepareMessage =>
       val metadata = m.metadata ++ meta
       log.info("receive status changing, status: PREPARE({})", metadata)
       context.become(prepare(metadata))
       checkState
   }
-  private def caseStart(implicit meta: TaskMeta, holder: Holder): Receive = {
+  private def caseStart(implicit meta: RichTaskMeta, holder: Holder): Receive = {
     case m: StartMessage =>
       val metadata = m.metadata ++ meta
       log.info("receive status changing, status: START({})", metadata)
       context.become(start(metadata))
       checkState
   }
-  private def caseRunning(implicit meta: TaskMeta, holder: Holder): Receive = {
+  private def caseRunning(implicit meta: RichTaskMeta, holder: Holder): Receive = {
     case m: RunningMessage =>
       val metadata = m.metadata ++ meta
       log.info("receive status changing, status: RUNNING({})", metadata)
       context.become(running(metadata))
       checkState
   }
-  private def caseSuccess(implicit meta: TaskMeta, holder: Holder): Receive = {
+  private def caseSuccess(implicit meta: RichTaskMeta, holder: Holder): Receive = {
     case m: SuccessMessage =>
       val metadata = m.metadata ++ meta
       log.info("receive status changing, status: SUCCESS({})", metadata)
       context.become(success(metadata))
       checkState
   }
-  private def caseFailed(implicit meta: TaskMeta, holder: Holder): Receive = {
+  private def caseFailed(implicit meta: RichTaskMeta, holder: Holder): Receive = {
     case m: FailedMessage =>
       val metadata = m.metadata ++ meta
       log.info("receive status changing, status: FAILED({})", metadata)
       context.become(failed(metadata))
       checkState
   }
-  private def caseRetry(implicit meta: TaskMeta, holder: Holder): Receive = {
+  private def caseRetry(implicit meta: RichTaskMeta, holder: Holder): Receive = {
     case m: RetryMessage =>
       val metadata = m.metadata ++ meta
       log.info("receive status changing, status: RETRY({})", metadata)
       context.become(retry(metadata))
       checkState
   }
-  private def caseKill(implicit meta: TaskMeta, holder: Holder): Receive = {
+  private def caseKill(implicit meta: RichTaskMeta, holder: Holder): Receive = {
     case m: KillMessage =>
       val metadata = m.metadata ++ meta
       log.info("receive status changing, status: KILL({})", metadata)
       context.become(kill(metadata))
       checkState
   }
-  private def caseTimeout(implicit meta: TaskMeta, holder: Holder): Receive = {
+  private def caseTimeout(implicit meta: RichTaskMeta, holder: Holder): Receive = {
     case m: TimeoutMessage =>
       val metadata = m.metadata ++ meta
       log.info("receive status changing, status: TIMEOUT({})", metadata)
@@ -229,14 +229,14 @@ class ExecutionInstance(task: Task, actor: ActorRef) extends Actor with ActorLog
 
   case class Holder(hook: Hook, cancellable: Cancellable, client: ActorRef)
   case class StateReceive(state: State, receive: Holder => Receive)
-  private def offline_(implicit metadata: TaskMeta) : StateReceive = StateReceive(OFFLINE(metadata), offline(metadata)(_))
-  private def prepare_(implicit metadata: TaskMeta) : StateReceive  = StateReceive(PREPARE(metadata), prepare(metadata)(_))
-  private def start_(implicit metadata: TaskMeta) : StateReceive  = StateReceive(START(metadata), start(metadata)(_))
-  private def running_(implicit metadata: TaskMeta) : StateReceive  = StateReceive(RUNNING(metadata), running(metadata)(_))
-  private def retry_(implicit metadata: TaskMeta) : StateReceive  = StateReceive(RETRY(metadata), retry(metadata)(_))
-  private def timeout_(implicit metadata: TaskMeta) : StateReceive  = StateReceive(TIMEOUT(metadata), timeout(metadata)(_))
-  private def success_(implicit metadata: TaskMeta) : StateReceive  = StateReceive(SUCCESS(metadata), success(metadata)(_))
-  private def failed_(implicit metadata: TaskMeta) : StateReceive  = StateReceive(FAILED(metadata), failed(metadata)(_))
-  private def kill_(implicit metadata: TaskMeta) : StateReceive  = StateReceive(KILL(metadata), kill(metadata)(_))
+  private def offline_(implicit metadata: RichTaskMeta) : StateReceive = StateReceive(OFFLINE(metadata), offline(metadata)(_))
+  private def prepare_(implicit metadata: RichTaskMeta) : StateReceive  = StateReceive(PREPARE(metadata), prepare(metadata)(_))
+  private def start_(implicit metadata: RichTaskMeta) : StateReceive  = StateReceive(START(metadata), start(metadata)(_))
+  private def running_(implicit metadata: RichTaskMeta) : StateReceive  = StateReceive(RUNNING(metadata), running(metadata)(_))
+  private def retry_(implicit metadata: RichTaskMeta) : StateReceive  = StateReceive(RETRY(metadata), retry(metadata)(_))
+  private def timeout_(implicit metadata: RichTaskMeta) : StateReceive  = StateReceive(TIMEOUT(metadata), timeout(metadata)(_))
+  private def success_(implicit metadata: RichTaskMeta) : StateReceive  = StateReceive(SUCCESS(metadata), success(metadata)(_))
+  private def failed_(implicit metadata: RichTaskMeta) : StateReceive  = StateReceive(FAILED(metadata), failed(metadata)(_))
+  private def kill_(implicit metadata: RichTaskMeta) : StateReceive  = StateReceive(KILL(metadata), kill(metadata)(_))
 
 }

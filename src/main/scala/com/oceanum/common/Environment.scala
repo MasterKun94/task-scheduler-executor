@@ -49,6 +49,7 @@ object Environment {
   lazy val EXEC_WORK_DIR: String = getProperty(Key.EXEC_WORK_DIR, BASE_PATH/"exec").toAbsolute()
   lazy val EXEC_THREAD_NUM: Int = getProperty(Key.EXEC_THREAD_NUM, "16").toInt
   lazy val EXEC_MAX_TIMEOUT: FiniteDuration = fd"${getProperty(Key.EXEC_MAX_TIMEOUT, "24h")}"
+  lazy val EXEC_CHECK_STATE_INTERVAL: String = "5s"
 
   lazy val HOST: String = getProperty(Key.HOST, "127.0.0.1")
   lazy val CLUSTER_NODE_TASK_INIT_EXECUTOR: ExecutionContext = ExecutionContext.global
@@ -72,6 +73,9 @@ object Environment {
   lazy val CLIENT_NODE_PORT: Int = getProperty(Key.CLIENT_NODE_PORT, "5551").toInt
   lazy val CLIENT_NODE_LOGGER: String = getProperty(Key.CLIENT_NODE_LOGGER, logger)
   lazy val CLIENT_SYSTEM: ActorSystem = clientSystem()
+
+  lazy val GRAPH_FLOW_DEFAULT_PARALLELISM: Int = 1
+  lazy val GRAPH_DEFAULT_EXECUTOR: ExecutionContext = ExecutionContext.global
 
   lazy val FILE_CLIENT_DEFAULT_SCHEME: String = getProperty(Key.FILE_CLIENT_DEFAULT_SCHEME, "cluster")
   lazy val FILE_CLIENT_CLASSES: Set[Class[_]] = str2arr(getProperty(Key.FILE_CLIENT_CLASSES, "com.oceanum.file.ClusterFileClient")).toSet.map(Class.forName)

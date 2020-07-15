@@ -13,7 +13,7 @@ import com.oceanum.common.Implicits.PathHelper
 @SerialVersionUID(1L)
 abstract class TaskProp(val taskType: String) extends Serializable {
 
-  def init(metadata: TaskMeta)(implicit executor: ExecutionContext): Future[TaskConfig]
+  def init(metadata: RichTaskMeta)(implicit executor: ExecutionContext): Future[TaskConfig]
 }
 
 @SerialVersionUID(1L)
@@ -21,9 +21,9 @@ abstract class ProcessTaskProp(taskType: String) extends TaskProp(taskType) with
 
   def files: Seq[String] = Seq.empty
 
-  def toTask(metadata: TaskMeta, fileMap: Map[String, String]): ProcessTaskConfig
+  def toTask(metadata: RichTaskMeta, fileMap: Map[String, String]): ProcessTaskConfig
 
-  override def init(metadata: TaskMeta)(implicit executor: ExecutionContext): Future[ProcessTaskConfig] = {
+  override def init(metadata: RichTaskMeta)(implicit executor: ExecutionContext): Future[ProcessTaskConfig] = {
     val fileMap: Map[String, String] = files
       .map(src => (src, metadata.execDir/new File(src).getName))
       .toMap
@@ -39,7 +39,7 @@ case class ShellTaskProp(cmd: Array[String] = Array.empty,
                          env: Map[String, String] = Map.empty,
                          directory: String = "",
                          waitForTimeout: Long = -1) extends ProcessTaskProp("SHELL") {
-  override def toTask(metadata: TaskMeta, fileMap: Map[String, String]): ProcessTaskConfig = ShellTaskConfig(
+  override def toTask(metadata: RichTaskMeta, fileMap: Map[String, String]): ProcessTaskConfig = ShellTaskConfig(
     cmd, env, directory, waitForTimeout, metadata.stdoutHandler, metadata.stderrHandler)
 }
 
@@ -51,7 +51,7 @@ case class ShellScriptTaskProp(scriptFile: String = "",
                                waitForTimeout: Long = -1) extends ProcessTaskProp("SHELL_SCRIPT") {
   override def files: Seq[String] = Seq(scriptFile)
 
-  override def toTask(metadata: TaskMeta, fileMap: Map[String, String]): ProcessTaskConfig = ShellScriptTaskConfig(
+  override def toTask(metadata: RichTaskMeta, fileMap: Map[String, String]): ProcessTaskConfig = ShellScriptTaskConfig(
     fileMap(scriptFile), args, env, directory, waitForTimeout, metadata.stdoutHandler, metadata.stderrHandler)
 }
 
@@ -65,7 +65,7 @@ case class JavaTaskProp(jars: Array[String] = Array.empty,
                         waitForTimeout: Long = -1) extends ProcessTaskProp("JAVA") {
   override def files: Seq[String] = jars.toSeq
 
-  override def toTask(metadata: TaskMeta, fileMap: Map[String, String]): ProcessTaskConfig = JavaTaskConfig(
+  override def toTask(metadata: RichTaskMeta, fileMap: Map[String, String]): ProcessTaskConfig = JavaTaskConfig(
     jars.map(s => fileMap(s)), mainClass, args, options, env, directory, waitForTimeout, metadata.stdoutHandler, metadata.stderrHandler)
 }
 
@@ -79,7 +79,7 @@ case class ScalaTaskProp(jars: Array[String] = Array.empty,
                          waitForTimeout: Long = -1) extends ProcessTaskProp("SCALA") {
   override def files: Seq[String] = jars.toSeq
 
-  override def toTask(metadata: TaskMeta, fileMap: Map[String, String]): ProcessTaskConfig = ScalaTaskConfig(
+  override def toTask(metadata: RichTaskMeta, fileMap: Map[String, String]): ProcessTaskConfig = ScalaTaskConfig(
     jars.map(s => fileMap(s)), mainClass, args, options, env, directory, waitForTimeout, metadata.stdoutHandler, metadata.stderrHandler)
 }
 
@@ -91,11 +91,11 @@ case class PythonTaskProp(pyFile: String = "",
                           waitForTimeout: Long = -1) extends ProcessTaskProp("PYTHON") {
   override def files: Seq[String] = Seq(pyFile)
 
-  override def toTask(metadata: TaskMeta, fileMap: Map[String, String]): ProcessTaskConfig = PythonTaskConfig(
+  override def toTask(metadata: RichTaskMeta, fileMap: Map[String, String]): ProcessTaskConfig = PythonTaskConfig(
     fileMap(pyFile), args, env, directory, waitForTimeout, metadata.stdoutHandler, metadata.stderrHandler)
 }
 
 @SerialVersionUID(1L)
 case class UserAdd(user: String) extends ProcessTaskProp("USER_ADD") {
-  override def toTask(metadata: TaskMeta, fileMap: Map[String, String]): ProcessTaskConfig = UserAddTaskConfig(user)
+  override def toTask(metadata: RichTaskMeta, fileMap: Map[String, String]): ProcessTaskConfig = UserAddTaskConfig(user)
 }

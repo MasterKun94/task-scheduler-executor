@@ -1,98 +1,20 @@
 package com.oceanum.client
 
-import java.io.File
-import java.text.SimpleDateFormat
 import java.util.Date
 
-import com.oceanum.cluster.exec.{State, StdHandler}
-import com.oceanum.common.{Environment, Meta}
-import com.oceanum.common.Implicits.PathHelper
+import com.oceanum.cluster.exec.State
+import com.oceanum.common.Meta
 
-
-class TaskMeta(map: Map[String, Any]) extends Meta[TaskMeta](map) {
-
-  def id: String = this("id")
-
-  def taskType: String = this("taskType")
-
-  def user: String = this("user")
-
-  def createTime: Date = this("createTime")
-
-  def createTime_=(date: Date): TaskMeta = this + ("createTime" -> date)
-
-  def startTime: Date = this("startTime")
-
-  def startTime_=(date: Date): TaskMeta = this + ("startTime" -> date)
-
-  def endTime: Date = this("endTime")
-
-  def endTime_=(date: Date): TaskMeta = this + ("endTime" -> date)
-
-  def execDir: String = this("execDir")
-
-  def message_=(message: String):TaskMeta = this + ("message" -> message)
-
-  def message: String = this("message")
-
-  def error_=(e: Throwable): TaskMeta = this + ("error" -> e) + ("message" -> e.getMessage)
-
-  def error: Throwable = this("error")
-
-  def state_=(state: State.value): TaskMeta = this + ("state" -> state)
-
-  def state: State.value = this("this")
-
-  def lazyInit_=(func: Task => Task): TaskMeta = this + ("lazyInit" -> func)
-
-  def lazyInit: Task => Task = this.get[Task => Task ]("lazyInit")
-    .map(_.andThen(task => task.copy(meta = task.metadata - "lazyInit")))
-    .getOrElse(l => l)
-
-  def retryNum: Int = this.get("retryNum").getOrElse(0)
-
-  def incRetry(): TaskMeta = this + ("retryNum" -> (this.retryNum + 1))
-
-  def stdoutPath: String = outputPath/s"$id-stdout.out"
-
-  def stderrPath: String = outputPath/s"$id-stderr.out"
-
-  private lazy val outputPath: String = {
-    //创建文件路径//创建文件路径
-    val file: File = (execDir/"out").toFile
-    //判断文件父目录是否已经存在,不存在则创建
-    if (!file.exists)
-      file.mkdirs
-    file.getAbsolutePath
-  }
-
-  def stdoutHandler: StdHandler = Environment.CLUSTER_NODE_RUNNER_STDOUT_HANDLER_CLASS
-    .getConstructor(this.getClass)
-    .newInstance(this)
-    .asInstanceOf[StdHandler]
-
-  def stderrHandler: StdHandler = Environment.CLUSTER_NODE_RUNNER_STDERR_HANDLER_CLASS
-    .getConstructor(this.getClass)
-    .newInstance(this)
-    .asInstanceOf[StdHandler]
-
-  def withTask(task: Task): TaskMeta = {
-    val dateFormat = new SimpleDateFormat("yyyyMMdd").format(System.currentTimeMillis())
-    this ++ TaskMeta(
-      "id" -> task.id,
-      "taskType" -> task.prop.taskType,
-      "user" -> task.user,
-      "createTime" -> System.currentTimeMillis().toString,
-      "execDir" -> Environment.EXEC_WORK_DIR/dateFormat/task.user/task.id
-    )
-  }
-
-  override def toString: String = s"TaskMeta(${map.toArray.map(t => t._1 + ": " + t._2).mkString(", ")})"
-}
-
-object TaskMeta {
-
-  def empty: TaskMeta = new TaskMeta(Map.empty)
-
-  def apply(kv: (String, Any)*): TaskMeta = new TaskMeta(Map(kv: _*))
+trait TaskMeta[T<:TaskMeta[_]] extends Meta[T] {
+  def id: String
+  def taskType: String
+  def user: String
+  def createTime: Date
+  def startTime: Date
+  def endTime: Date
+  def execDir: String
+  def message: String
+  def error: Throwable
+  def state: State.value
+  def retryNum: Int
 }

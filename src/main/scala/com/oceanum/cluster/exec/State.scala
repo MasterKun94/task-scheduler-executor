@@ -1,14 +1,14 @@
 package com.oceanum.cluster.exec
 
-import com.oceanum.client.TaskMeta
+import com.oceanum.client.{RichTaskMeta, TaskMeta}
 
 /**
  * @author chenmingkun
  * @date 2020/5/30
  */
 @SerialVersionUID(1L)
-class State(val name: State.value, meta: TaskMeta) extends Serializable {
-  def metadata: TaskMeta = meta.state = name
+class State(val name: State.value, meta: RichTaskMeta) extends Serializable {
+  def metadata: TaskMeta[_] = meta.state = name
 }
 
 object State extends Enumeration {
@@ -18,20 +18,20 @@ object State extends Enumeration {
 }
 
 @SerialVersionUID(1L)
-case class OFFLINE(meta: TaskMeta) extends State(State.OFFLINE, meta)
+case class OFFLINE(meta: RichTaskMeta) extends State(State.OFFLINE, meta)
 @SerialVersionUID(1L)
-case class PREPARE(meta: TaskMeta) extends State(State.PREPARE, meta)
+case class PREPARE(meta: RichTaskMeta) extends State(State.PREPARE, meta)
 @SerialVersionUID(1L)
-case class START(meta: TaskMeta) extends State(State.START, meta)
+case class START(meta: RichTaskMeta) extends State(State.START, meta)
 @SerialVersionUID(1L)
-case class RUNNING(meta: TaskMeta) extends State(State.RUNNING, meta)
+case class RUNNING(meta: RichTaskMeta) extends State(State.RUNNING, meta)
 @SerialVersionUID(1L)
-case class FAILED(meta: TaskMeta) extends State(State.FAILED, meta)
+case class FAILED(meta: RichTaskMeta) extends State(State.FAILED, meta)
 @SerialVersionUID(1L)
-case class SUCCESS(meta: TaskMeta) extends State(State.SUCCESS, meta)
+case class SUCCESS(meta: RichTaskMeta) extends State(State.SUCCESS, meta)
 @SerialVersionUID(1L)
-case class RETRY(meta: TaskMeta) extends State(State.RETRY, meta)
+case class RETRY(meta: RichTaskMeta) extends State(State.RETRY, meta)
 @SerialVersionUID(1L)
-case class TIMEOUT(meta: TaskMeta) extends State(State.TIMEOUT, meta)
+case class TIMEOUT(meta: RichTaskMeta) extends State(State.TIMEOUT, meta)
 @SerialVersionUID(1L)
-case class KILL(meta: TaskMeta) extends State(State.KILL, meta)
+case class KILL(meta: RichTaskMeta) extends State(State.KILL, meta)
