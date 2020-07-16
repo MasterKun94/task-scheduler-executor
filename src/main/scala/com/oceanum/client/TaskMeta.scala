@@ -6,7 +6,7 @@ import com.oceanum.cluster.exec.State
 import com.oceanum.common.Meta
 
 trait TaskMeta[T<:TaskMeta[_]] extends Meta[T] {
-  def id: String
+  def id: Int
   def taskType: String
   def user: String
   def createTime: Date

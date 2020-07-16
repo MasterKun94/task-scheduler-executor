@@ -16,11 +16,11 @@ object Graph extends App {
 
   val (actor, future) = createGraph { implicit graph =>
 
-    val task1 = createFlow(Test.task("task1"))
-    val task2 = createFlow(Test.task("task2"))
-    val task3 = createFlow(Test.task("task3"))
-    val task4 = createFlow(Test.task("task4"))
-    val task5 = createFlow(Test.task("task5"))
+    val task1 = createFlow(Test.task)
+    val task2 = createFlow(Test.task)
+    val task3 = createFlow(Test.task)
+    val task4 = createFlow(Test.task)
+    val task5 = createFlow(Test.task)
     val fork = createFork(2)
     val join = createJoin(2)
     val decision = createDecision(2)(_ => 1)

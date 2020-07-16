@@ -1,6 +1,7 @@
 package com.oceanum.client
 
 import java.text.SimpleDateFormat
+import java.util.concurrent.atomic.AtomicInteger
 import java.util.{Date, UUID}
 
 import com.oceanum.cluster.exec.State
@@ -15,7 +16,7 @@ import scala.concurrent.duration.Duration
 abstract class TaskBuilder[T <: TaskBuilder[_, _], P <: TaskProp](task: Task) extends Serializable {
   protected val prop: P = task.prop.asInstanceOf[P]
 
-  def id(id: String): T = {
+  def id(id: Int): T = {
     typedBuilder(task.copy(id = id))
   }
 
@@ -160,8 +161,9 @@ class UserAddTaskBuilder(task: Task) extends TaskBuilder[UserAddTaskBuilder, Use
 }
 
 object TaskBuilder {
+  private val int = new AtomicInteger(0)
   private def dateFormat: String = new SimpleDateFormat("yyyyMMdd").format(new Date())
-  private def getId(prop: TaskProp): String = s"$dateFormat-${prop.taskType}-${UUID.randomUUID().toString}"
+  private def getId(prop: TaskProp): Int = int.getAndIncrement()
   val sys: SystemTaskBuilder.type = SystemTaskBuilder
 
   def shell(): ShellTaskBuilder = {
