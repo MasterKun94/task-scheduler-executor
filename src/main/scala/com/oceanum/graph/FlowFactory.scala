@@ -13,21 +13,21 @@ import scala.language.implicitConversions
 import scala.util.{Failure, Success}
 
 object FlowFactory {
-  case class GraphBuilder(start: Start, end: End, implicit protected[graph] val dslBuilder: GraphDSL.Builder[(ActorRef, Future[Done])])
-  implicit private def toRich(meta: GraphMeta[_]): RichGraphMeta = meta.asInstanceOf[RichGraphMeta]
+  case class GraphBuilder(start: Start, end: End, implicit val dslBuilder: GraphDSL.Builder[(SourceQueueWithComplete[RichGraphMeta], Future[Done])])
+//  implicit private def toRich(meta: GraphMeta[_]): RichGraphMeta = meta.asInstanceOf[RichGraphMeta]
 
-  def map(func: GraphMeta[_] => GraphMeta[_]): TaskFlow = {
-    val flow = Flow[RichGraphMeta].map(func).map(toRich)
+  def map(func: RichGraphMeta => RichGraphMeta): TaskFlow = {
+    val flow = Flow[RichGraphMeta].map(func)
     TaskFlow(flow)
   }
 
-  def mapAsync(parallelism: Int)(func: GraphMeta[_] => Future[GraphMeta[_]])(implicit ec: ExecutionContext): TaskFlow = {
-    val flow = Flow[GraphMeta[_]].mapAsync(parallelism) { meta: GraphMeta[_] =>
+  def mapAsync(parallelism: Int)(func: RichGraphMeta => Future[RichGraphMeta])(implicit schedulerClient: SchedulerClient): TaskFlow = {
+    val flow = Flow[RichGraphMeta].mapAsync(parallelism) { meta =>
       val promise = Promise[RichGraphMeta]()
       func(meta).onComplete {
         case Success(value) => promise.success(value)
-        case Failure(e) => promise.success(toRich(meta).error = e)
-      }
+        case Failure(e) => promise.success(meta.error = e)
+      } (schedulerClient.system.dispatcher)
       promise.future
     }
     TaskFlow(flow)
@@ -37,8 +37,8 @@ object FlowFactory {
     createFlow()(_ => task)
   }
 
-  def createFlow(parallelism: Int = 1)(taskFunc: GraphMeta[_] => Task)(implicit schedulerClient: SchedulerClient): TaskFlow = {
-    val flow = Flow[RichGraphMeta].mapAsync(parallelism) { implicit metadata =>
+  def createFlow(parallelism: Int = 5)(taskFunc: GraphMeta[_] => Task)(implicit schedulerClient: SchedulerClient): TaskFlow = {
+    mapAsync(parallelism) { implicit metadata =>
       metadata.graphStatus match {
         case GraphStatus.RUNNING => create(taskFunc)
 
@@ -55,7 +55,6 @@ object FlowFactory {
           Future.successful(metadata.error = new IllegalArgumentException("this should never happen, unexpected graph state: " + state))
       }
     }
-    TaskFlow(flow)
   }
 
   def create(taskFunc: GraphMeta[_] => Task)(implicit metadata: RichGraphMeta, schedulerClient: SchedulerClient): Future[RichGraphMeta] = {
@@ -92,9 +91,10 @@ object FlowFactory {
   }
 
   def createGraph(builder: GraphBuilder => Unit): Workflow = {
-    val source0: Source[RichGraphMeta, ActorRef] = Source.actorRefWithAck[RichGraphMeta](Unit).map(_.start)
+    val source0 = Source.queue[RichGraphMeta](1000, OverflowStrategy.backpressure).map(_.start)
     val sink0 = Sink.foreach[GraphMeta[_]]{ metadata => {
       println(metadata.graphStatus)
+      println(metadata)
       println(metadata.operators.mkString("\r\n"))
     }}
     val graph = RunnableGraph fromGraph GraphDSL.create(source0, sink0)((_, _)) { implicit b =>(source, sink) =>
