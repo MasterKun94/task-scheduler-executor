@@ -34,7 +34,6 @@ class ClientEndpoint(clusterClient: ActorRef) extends Actor with ActorLogging {
 
   def receiveExecutor(receiver: ActorRef): Receive = {
     case executor: AvailableExecutor =>
-      println(executor)
       receiver ! AvailableExecutorResponse(Seq(executor))
       context.stop(self)
   }

@@ -10,7 +10,7 @@ object ExitCode {
 
   def apply(code: Int): ExitCode = {
     if (code == 0) OK
-    else ERROR("exit with code "+ code)
+    else ERROR("exit with code " + code)
   }
 
   case object OK extends ExitCode
