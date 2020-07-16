@@ -8,7 +8,7 @@ import com.googlecode.aviator.AviatorEvaluator
  */
 object ExprParser {
   def execute(expr: String, env: Map[String, Any]): Any = {
-    val javaEnv = new java.util.HashMap[String, AnyRef](env.size)
+    val javaEnv = new JavaHashMap[String, AnyRef](env.size)
     for (elem <- env) {
       javaEnv.put(elem._1, elem._2.asInstanceOf[AnyRef])
     }
