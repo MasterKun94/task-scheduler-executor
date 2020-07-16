@@ -18,6 +18,7 @@ class RichGraphMeta(map: Map[String, Any]) extends Meta[RichGraphMeta](map) with
       case _: SUCCESS => GraphStatus.RUNNING
       case _: FAILED => GraphStatus.EXCEPTION
       case _: KILL => GraphStatus.KILLED
+      case _ => GraphStatus.RUNNING
     }
     val metadata = state.metadata.asInstanceOf[RichTaskMeta]
     val tuple = metadata.id -> metadata

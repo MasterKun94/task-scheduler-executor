@@ -12,7 +12,7 @@ case class Task(id: Int,
                 retryCount: Int = Environment.EXEC_DEFAULT_RETRY_MAX,
                 retryInterval: String = Environment.EXEC_DEFAULT_RETRY_INTERVAL,
                 priority: Int = Environment.EXEC_DEFAULT_PRIORITY,
-                checkStateInterval: String = Environment.EXEC_CHECK_STATE_INTERVAL,
+                checkStateInterval: String = Environment.EXEC_STATE_UPDATE_INTERVAL,
                 prop: TaskProp,
                 parallelism: Int = Environment.GRAPH_FLOW_DEFAULT_PARALLELISM,
                 private val meta: RichTaskMeta = RichTaskMeta.empty) {

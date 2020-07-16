@@ -1,14 +1,27 @@
 package com.oceanum.graph
 
 import akka.Done
-import akka.actor.ActorSystem
-import akka.stream.scaladsl.{RunnableGraph, SourceQueueWithComplete}
-import com.oceanum.client.SchedulerClient
+import akka.stream.QueueOfferResult
+import akka.stream.scaladsl.SourceQueueWithComplete
 
 import scala.concurrent.Future
-class Workflow(runnableGraph: RunnableGraph[(SourceQueueWithComplete[RichGraphMeta], Future[Done])]) {
-  def run()(implicit client: SchedulerClient): (SourceQueueWithComplete[RichGraphMeta], Future[Done]) = {
-    implicit val system: ActorSystem = client.system
-    runnableGraph.run()
+
+class Workflow(protected val queue: SourceQueueWithComplete[RichGraphMeta],
+                 protected val future: Future[Done]) {
+    def complete(): Future[Done] = {
+      queue.complete()
+      queue.watchCompletion()
+    }
+
+    def fail(e: Throwable): Unit = queue.fail(e)
+
+    def offer(meta: RichGraphMeta): Future[QueueOfferResult] = queue.offer(meta)
+
+    def listenComplete: Future[Done] = future
   }
-}
+
+  object Workflow {
+    def apply(queue: SourceQueueWithComplete[RichGraphMeta], future: Future[Done]): Workflow = new Workflow(queue, future)
+
+    def unapply(arg: Mat): Option[(SourceQueueWithComplete[RichGraphMeta], Future[Done])] = Some((arg.queue, arg.future))
+  }

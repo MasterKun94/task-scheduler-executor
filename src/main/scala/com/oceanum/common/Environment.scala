@@ -6,6 +6,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 
 import akka.actor.{ActorRef, ActorSystem}
 import akka.cluster.pubsub.DistributedPubSub
+import akka.stream.OverflowStrategy
 import ch.qos.logback.classic.LoggerContext
 import ch.qos.logback.classic.joran.JoranConfigurator
 import com.oceanum.cluster.exec.{TaskConfig, TypedRunner}
@@ -49,7 +50,7 @@ object Environment {
   lazy val EXEC_WORK_DIR: String = getProperty(Key.EXEC_WORK_DIR, BASE_PATH/"exec").toAbsolute()
   lazy val EXEC_THREAD_NUM: Int = getProperty(Key.EXEC_THREAD_NUM, "16").toInt
   lazy val EXEC_MAX_TIMEOUT: FiniteDuration = fd"${getProperty(Key.EXEC_MAX_TIMEOUT, "24h")}"
-  lazy val EXEC_CHECK_STATE_INTERVAL: String = "5s"
+  lazy val EXEC_STATE_UPDATE_INTERVAL: String = "10s"
 
   lazy val HOST: String = getProperty(Key.HOST, "127.0.0.1")
   lazy val CLUSTER_NODE_TASK_INIT_EXECUTOR: ExecutionContext = ExecutionContext.global
@@ -75,6 +76,8 @@ object Environment {
   lazy val CLIENT_SYSTEM: ActorSystem = clientSystem()
 
   lazy val GRAPH_FLOW_DEFAULT_PARALLELISM: Int = 1
+  lazy val GRAPH_SOURCE_QUEUE_BUFFER_SIZE: Int = 100
+  lazy val GRAPH_SOURCE_QUEUE_OVERFLOW_STRATEGY: OverflowStrategy = OverflowStrategy.backpressure
   lazy val GRAPH_DEFAULT_EXECUTOR: ExecutionContext = ExecutionContext.global
 
   lazy val FILE_CLIENT_DEFAULT_SCHEME: String = getProperty(Key.FILE_CLIENT_DEFAULT_SCHEME, "cluster")

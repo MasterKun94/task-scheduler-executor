@@ -16,7 +16,7 @@ object SourceDemo extends App {
   ClusterFileServer.start().onComplete {
     case Success(_) =>
 //      ClusterFileServerApi.download(Test.ip, path, path/"file").onComplete(println)
-//      ClusterFileServerApi.upload(Test.ip, path/"test.py", path/ "file"/"test2.py").onComplete(println)
+//      ClusterFileServerApi.upload(Test.ip, path/"python-err.py", path/ "file"/"test2.py").onComplete(println)
 //      Thread.sleep(2000)
 //      ClusterFileServerApi.transfer(Test.ip, path/"file", Test.ip, path/"file2").onComplete(println)
 //      Thread.sleep(2000)

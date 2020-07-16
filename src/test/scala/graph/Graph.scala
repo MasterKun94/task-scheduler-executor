@@ -1,43 +1,44 @@
 package graph
 
-import akka.{Done, NotUsed}
-import akka.actor.{ActorRef, ActorSystem}
-import akka.stream.{ClosedShape, OverflowStrategy}
+import akka.Done
+import akka.actor.ActorSystem
 import akka.stream.scaladsl._
-import com.oceanum.client.SchedulerClient
-import com.oceanum.graph.{GraphMeta, RichGraphMeta, Workflow}
+import akka.stream.{ClosedShape, OverflowStrategy}
+import com.oceanum.client.TaskClient
+import com.oceanum.graph.{GraphMetaHandler, RichGraphMeta}
 import com.oceanum.utils.Test
 
 import scala.concurrent.Future
 
 object Graph extends App {
-  implicit val client: SchedulerClient = Test.client
+  implicit val client: TaskClient = Test.client
+  implicit val metaHandler: GraphMetaHandler = GraphMetaHandler { println }
   import com.oceanum.graph.FlowFactory._
 
-  val (actor, future) = createGraph { implicit graph =>
+  val instance = createGraph { implicit graph =>
 
-    val task1 = createFlow(Test.task)
-    val task2 = createFlow(Test.task)
-    val task3 = createFlow(Test.task)
-    val task4 = createFlow(Test.task)
-    val task5 = createFlow(Test.task)
+    val python1 = createFlow(Test.task("/tmp/task-test/python.py"))
+    val python2 = createFlow(Test.task("/tmp/task-test/python.py"))
+    val python3 = createFlow(Test.task("/tmp/task-test/python.py"))
+    val python4 = createFlow(Test.task("/tmp/task-test/python.py"))
+    val python5 = createFlow(Test.task("/tmp/task-test/python.py"))
     val fork = createFork(2)
     val join = createJoin(2)
     val decision = createDecision(2)(_ => 1)
     val converge = createConverge(2)
 
     graph.start --> fork
-    fork --> task1 --> join
-    fork --> task2 --> decision
-    decision --> task3 --> converge
-    decision --> task4 --> converge
-    converge --> task5 --> join
+    fork --> python1 --> join
+    fork --> python2 --> decision
+    decision --> python3 --> converge
+    decision --> python4 --> converge
+    converge --> python5 --> join
     join --> graph.end
 
   }.run()
 
 
-    actor.offer(RichGraphMeta())
+  instance.offer(RichGraphMeta())
 
 }
 

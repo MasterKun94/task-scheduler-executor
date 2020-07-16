@@ -137,14 +137,6 @@ class ExecutionInstance(task: Task, actor: ActorRef) extends Actor with ActorLog
     case CheckState =>
       log.info("send state: [{}] to sender: [{}]", stateReceive.state.name, sender)
       sender ! stateReceive.state
-    case handler: StateHandler =>
-      val finiteDuration = handler.checkInterval()
-      holder.cancellable.cancel
-      log.info("receive schedule check state request from [{}], start schedule with duration [{}]", sender, finiteDuration)
-      val cancelable: Cancellable = schedule(finiteDuration, finiteDuration) {
-        self.tell(CheckState, holder.client)
-      }
-      context.become(stateReceive.receive(holder.copy(cancellable = cancelable)))
   }
 
   private def caseKillAction(implicit holder: Holder): Receive = {

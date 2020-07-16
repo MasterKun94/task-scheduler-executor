@@ -18,7 +18,7 @@ import scala.concurrent.{ExecutionContext, Future, Promise}
  * @author chenmingkun
  * @date 2020/5/4
  */
-class SchedulerClient(endpoint: ActorRef, val system: ActorSystem)(implicit executionContext: ExecutionContext, timeout: Timeout) {
+class TaskClient(endpoint: ActorRef, val system: ActorSystem)(implicit executionContext: ExecutionContext, timeout: Timeout) {
 
   def execute(task: Task, stateHandler: StateHandler = StateHandler.default()): SingleTaskInstanceRef = {
     new SingleTaskInstanceRef(doExecute(AvailableExecutorRequest(task.topic), task, stateHandler).map(_.head))
@@ -80,17 +80,17 @@ class SchedulerClient(endpoint: ActorRef, val system: ActorSystem)(implicit exec
   }
 }
 
-object SchedulerClient {
-  private val clients: TrieMap[ActorSystem, SchedulerClient] = TrieMap()
+object TaskClient {
+  private val clients: TrieMap[ActorSystem, TaskClient] = TrieMap()
 
-  def apply(host: String, port: Int, seedNodes: String, configFile: String)(implicit timeout: Timeout = Timeout(20, TimeUnit.SECONDS)): SchedulerClient = {
+  def apply(host: String, port: Int, seedNodes: String, configFile: String)(implicit timeout: Timeout = Timeout(20, TimeUnit.SECONDS)): TaskClient = {
     import Environment.Arg
     Environment.loadArgs(Array(s"${Arg.CONF}=$configFile", s"${Arg.SEED_NODE}=$seedNodes", s"${Arg.HOST}=$host", s"${Arg.CLIENT_PORT}=$port"))
     val system = Environment.CLIENT_SYSTEM
-    SchedulerClient.create(system, Environment.CLUSTER_NODE_SEEDS)
+    TaskClient.create(system, Environment.CLUSTER_NODE_SEEDS)
   }
 
-  def create(system: ActorSystem, seedNodes: Seq[String])(implicit timeout: Timeout = Timeout(20, TimeUnit.SECONDS)): SchedulerClient = {
+  def create(system: ActorSystem, seedNodes: Seq[String])(implicit timeout: Timeout = Timeout(20, TimeUnit.SECONDS)): TaskClient = {
     clients.getOrElse(system, {
       val executionContext = ExecutionContext.global
       val endpoint = {
@@ -107,7 +107,7 @@ object SchedulerClient {
         system.actorOf(Props(classOf[ClientListener], client), "client-event-listener")
         client
       }
-      val client = new SchedulerClient(endpoint, system)(executionContext, timeout)
+      val client = new TaskClient(endpoint, system)(executionContext, timeout)
       clients.put(system, client)
       client
     })

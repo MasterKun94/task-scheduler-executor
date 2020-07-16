@@ -4,7 +4,7 @@ import java.net.{InetAddress, UnknownHostException}
 
 import akka.util.Timeout
 import com.oceanum.ClusterStarter
-import com.oceanum.client.{SchedulerClient, Task}
+import com.oceanum.client.{TaskClient, Task}
 import com.oceanum.common.Implicits._
 
 import scala.concurrent.{ExecutionContext, ExecutionContextExecutor}
@@ -19,13 +19,13 @@ object Test {
   val ip2 = "192.168.10.131"
   val ip1 = getSelfAddress
 
-  def task: Task = Task.builder.python()
+  def task(path: String = "/tmp/task-test/python-err.py"): Task = Task.builder.python()
     .user("test1")
     .topic("default")
     .retryCount(3)
     .retryInterval("5 second")
     .priority(5)
-    .pyFile("/tmp/test.py")
+    .pyFile(path)
     .args("hello", "world")
     .waitForTimeout("100 second")
     .lazyInit(_
@@ -35,7 +35,7 @@ object Test {
     .parallelism(1)
     .build
 
-  def client: SchedulerClient = SchedulerClient(ip1, 5555, ip2, "src/main/resources/application.properties")
+  def client: TaskClient = TaskClient(ip1, 5555, ip2, "src/main/resources/application.properties")
 
   def startCluster(args: Array[String]): Unit = {
     ClusterStarter.main(Array("--port=3551", "--topics=t1,a1", s"--host=$ip1", s"--seed-node=$ip1", "--conf=src"/"main"/"resources"/"application.properties,src"/"main"/"resources"/"application-env.properties"))
@@ -48,7 +48,7 @@ object Test {
 
     implicit val executionContext: ExecutionContextExecutor = ExecutionContext.global
     val instanceRef = client
-      .execute(task)
+      .execute(task())
     instanceRef.completeState.onComplete("complete: " + _.get)
     Thread.sleep(100000)
     client.close
@@ -71,7 +71,7 @@ object Test {
 //    implicit val timeout: Timeout = fd"10 second"
 ////
 //    scala.io.StdIn.readLine()
-    val client = SchedulerClient(ip1, 5551, ip2, "src/main/resources/application.properties")
+    val client = TaskClient(ip1, 5551, ip2, "src/main/resources/application.properties")
 //    ClusterFileServer.start().value
 
 //    scala.io.StdIn.readLine()
@@ -104,7 +104,7 @@ object Test {
 //      .retryCount(3)
 //      .retryInterval("5 second")
 //      .priority(5)
-//      .pyFile("cluster://"/Environment.BASE_PATH/"src"/"main"/"resources"/"test.py")
+//      .pyFile("cluster://"/Environment.BASE_PATH/"src"/"main"/"resources"/"python-err.py")
 //      .args("hello", "world")
 //      .waitForTimeout("100s")
 //      .build
