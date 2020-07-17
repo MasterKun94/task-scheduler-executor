@@ -3,6 +3,7 @@ package com.oceanum.graph
 import java.util.concurrent.atomic.AtomicInteger
 
 import akka.Done
+import akka.actor.{PoisonPill, Props}
 import akka.stream.scaladsl.{Broadcast, Flow, GraphDSL, Merge, Partition, RunnableGraph, Sink, Source, SourceQueueWithComplete, ZipWithN}
 import akka.stream.{ClosedShape, OverflowStrategy}
 import com.oceanum.client.{RichTaskMeta, StateHandler, Task, TaskClient}
@@ -21,26 +22,30 @@ object FlowFactory {
     TaskFlow(flow)
   }
 
-  def mapAsync(parallelism: Int = 1)(func: RichGraphMeta => Future[RichGraphMeta])(implicit schedulerClient: TaskClient): TaskFlow = {
+  def mapAsync(parallelism: Int = 1)(func: RichGraphMeta => Future[RichGraphMeta])(implicit taskClient: TaskClient): TaskFlow = {
     val flow = Flow[RichGraphMeta].mapAsync(parallelism) { meta =>
       val promise = Promise[RichGraphMeta]()
       func(meta).onComplete {
         case Success(value) => promise.success(value)
         case Failure(e) => promise.success(meta.error = e)
-      } (schedulerClient.system.dispatcher)
+      } (taskClient.system.dispatcher)
       promise.future
     }
     TaskFlow(flow)
   }
 
-  def createFlow(task: Task, parallelism: Int = 1)(implicit schedulerClient: TaskClient, builder: GraphBuilder): TaskFlow = {
+  def createFlow(task: Task, parallelism: Int = 1)(implicit taskClient: TaskClient, builder: GraphBuilder): TaskFlow = {
     createFlow(parallelism)(_ => task)
   }
 
-  def createFlow(parallelism: Int)(taskFunc: GraphMeta[_] => Task)(implicit schedulerClient: TaskClient, builder: GraphBuilder): TaskFlow = {
+  def createFlow(parallelism: Int)(taskFunc: GraphMeta[_] => Task)(implicit taskClient: TaskClient, builder: GraphBuilder): TaskFlow = {
     val idValue = builder.idValue
     mapAsync(parallelism) { implicit metadata =>
-      val task = taskFunc(metadata).copy(id = idValue)
+      val initialTask = taskFunc(metadata)
+      val task = initialTask.copy(
+        id = idValue,
+        env = metadata.env ++ initialTask.env
+      )
       metadata.graphStatus match {
         case GraphStatus.RUNNING => runOrReRun(task)
         case GraphStatus.EXCEPTION => metadata.fallbackStrategy match {
@@ -69,21 +74,34 @@ object FlowFactory {
     Converge(builder.dslBuilder.add(Merge(parallel)))
   }
 
-  def createGraph(builder: GraphBuilder => Unit)(implicit graphMetaHandler: GraphMetaHandler): WorkflowRunner = {
+  def createGraph(builder: GraphBuilder => Unit)(implicit taskClient: TaskClient, graphMetaHandler: GraphMetaHandler): WorkflowRunner = {
+    val metaHandler: GraphMetaHandler = new GraphMetaHandler {
+      private val actor = taskClient.system.actorOf(Props(classOf[GraphMetaHandlerActor], graphMetaHandler))
+      override def onRunning(richGraphMeta: RichGraphMeta, taskState: State): Unit = actor ! OnRunning(richGraphMeta, taskState)
+
+      override def onComplete(richGraphMeta: RichGraphMeta): Unit = actor ! OnComplete(richGraphMeta)
+
+      override def onStart(richGraphMeta: RichGraphMeta): Unit = actor ! OnStart(richGraphMeta)
+
+      override def close(): Unit = actor ! PoisonPill
+    }
+
     val source0 = Source
       .queue[RichGraphMeta](Environment.GRAPH_SOURCE_QUEUE_BUFFER_SIZE, Environment.GRAPH_SOURCE_QUEUE_OVERFLOW_STRATEGY)
-      .map(_.start)
-    val sink0 = Sink.foreach[GraphMeta[_]]{ metadata => {
-      println(metadata.graphStatus)
-      println(metadata.operators.mkString("\r\n"))
-    }}
-    val graph = RunnableGraph fromGraph GraphDSL.create(source0, sink0)(Workflow(_, _)) { implicit b =>(source, sink) =>
+      .map { meta =>
+        val start = meta.start
+        metaHandler.onStart(start)
+        start
+      }
+
+    val sink0 = Sink.foreach[RichGraphMeta](graphMetaHandler.onComplete)
+    val graph = GraphDSL.create(source0, sink0)(_ -> _) { implicit b => (source, sink) =>
       val start = Start(source)
       val end = End(sink)
-      builder(GraphBuilder(start, end, b, graphMetaHandler))
+      builder(GraphBuilder(start, end, b, metaHandler))
       ClosedShape
     }
-    new WorkflowRunner(graph)
+    new WorkflowRunner(RunnableGraph.fromGraph(graph), metaHandler)
   }
 
   private def runOrReRun(task: Task)(implicit metadata: RichGraphMeta, schedulerClient: TaskClient, builder: GraphBuilder): Future[RichGraphMeta] = {
@@ -117,7 +135,7 @@ object FlowFactory {
     val promise = Promise[RichGraphMeta]()
     val stateHandler = StateHandler { state =>
       val graphMeta = metadata.operators_+(state)
-      builder.metaHandler.handle(graphMeta)
+      builder.handler.onRunning(graphMeta, state)
     }
     schedulerClient.execute(task, stateHandler)
       .completeState.onComplete {

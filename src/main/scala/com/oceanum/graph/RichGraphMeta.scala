@@ -86,6 +86,12 @@ class RichGraphMeta(map: Map[String, Any]) extends Meta[RichGraphMeta](map) with
   override def startTime: Date = this("startTime")
 
   override def endTime: Date = this("endTime")
+
+  override def env: Map[String, Any] = this.get("env").getOrElse(Map.empty)
+
+  def addEnv(kv: (String, Any)): RichGraphMeta = this + ("env", this.env + kv)
+
+  def addEnv(right: Map[String, Any]): RichGraphMeta = this + ("env", this.env ++ right)
 }
 
 object RichGraphMeta {

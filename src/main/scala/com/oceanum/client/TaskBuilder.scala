@@ -53,6 +53,14 @@ abstract class TaskBuilder[T <: TaskBuilder[_, _], P <: TaskProp](task: Task) ex
     typedBuilder(task.copy(parallelism = parallelism))
   }
 
+  def addEnv(key: String, value: Any): T = {
+    typedBuilder(task.copy(env = task.env + (key -> value)))
+  }
+
+  def addEnv(kv: (String, Any)*): T = {
+    typedBuilder(task.copy(env = task.env ++ Map(kv: _*)))
+  }
+
   def build: Task = task
 
   protected def typedBuilder(task: Task): T = this.getClass.getConstructor(task.getClass).newInstance(task).asInstanceOf[T]

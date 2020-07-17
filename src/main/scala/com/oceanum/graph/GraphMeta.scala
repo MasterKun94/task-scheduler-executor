@@ -15,4 +15,5 @@ trait GraphMeta[T<: GraphMeta[_]] extends Meta[T] {
   def createTime: Date
   def startTime: Date
   def endTime: Date
+  def env: Map[String, Any]
 }

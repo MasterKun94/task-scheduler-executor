@@ -88,6 +88,7 @@ class RichTaskMeta(map: Map[String, Any]) extends Meta[RichTaskMeta](map) with T
   }
 
   override def toString: String = s"TaskMeta(${map.toArray.map(t => t._1 + ": " + t._2).mkString(", ")})"
+
 }
 
 object RichTaskMeta {

@@ -18,7 +18,6 @@ import org.slf4j.LoggerFactory
 import scala.collection.JavaConversions.seqAsJavaList
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.FiniteDuration
-import scala.util.matching.Regex
 import scala.util.{Properties => SystemProp}
 
 /**
@@ -51,6 +50,7 @@ object Environment {
   lazy val EXEC_THREAD_NUM: Int = getProperty(Key.EXEC_THREAD_NUM, "16").toInt
   lazy val EXEC_MAX_TIMEOUT: FiniteDuration = fd"${getProperty(Key.EXEC_MAX_TIMEOUT, "24h")}"
   lazy val EXEC_STATE_UPDATE_INTERVAL: String = "10s"
+  lazy val EXEC_UN_REACH_TIMEOUT: Long = fd"100s".toMillis
 
   lazy val HOST: String = getProperty(Key.HOST, "127.0.0.1")
   lazy val CLUSTER_NODE_TASK_INIT_EXECUTOR: ExecutionContext = ExecutionContext.global
@@ -145,11 +145,11 @@ object Environment {
   }
 
   def getProperty(key: String): String = {
-    parse(properties.getProperty(key), properties)
+    StringParser.parseEnv(properties.getProperty(key), properties)
   }
 
   def getProperty(key: String, orElse: => String): String = {
-    parse(properties.getProperty(key, orElse), properties)
+    StringParser.parseEnv(properties.getProperty(key, orElse), properties)
   }
 
   private def getBasePath(path: String): String = new File(path).getAbsolutePath
@@ -258,27 +258,6 @@ object Environment {
         file.toAbsolute()
       else
         BASE_PATH / file
-  }
-
-    val pattern: Regex = """(.*)\$\{(.*)}(.*)""".r  //新建一个正则表达式
-
-  private def parse(line: String, prop: Properties): String = {
-    if (line == null || line.trim.isEmpty)
-      ""
-    else
-      line match {
-        case pattern(pre, reg, str) =>
-          val regValue = parse(prop.getProperty(reg, System.getenv(reg)), prop)
-          prop.setProperty(reg, regValue)
-          if (regValue == null || regValue.trim.isEmpty) {
-            throw new RuntimeException("需要在配置文件或环境变量中设置变量：" + reg)
-          }
-          parse(pre, prop) + regValue + parse(str, prop)
-        case str: String => str
-        case unknown =>
-          println(unknown)
-          unknown
-      }
   }
 
   object Arg {

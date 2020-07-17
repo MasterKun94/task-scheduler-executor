@@ -23,5 +23,5 @@ class Workflow(protected val queue: SourceQueueWithComplete[RichGraphMeta],
   object Workflow {
     def apply(queue: SourceQueueWithComplete[RichGraphMeta], future: Future[Done]): Workflow = new Workflow(queue, future)
 
-    def unapply(arg: Mat): Option[(SourceQueueWithComplete[RichGraphMeta], Future[Done])] = Some((arg.queue, arg.future))
+    def unapply(arg: Workflow): Option[(SourceQueueWithComplete[RichGraphMeta], Future[Done])] = Some((arg.queue, arg.future))
   }

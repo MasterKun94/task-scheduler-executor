@@ -53,5 +53,6 @@ class ClientInstance(executor: ActorRef, task: Task, handler: StateHandler, prom
           self ! TerminateAction
         case _ =>
       }
+      sender() ! Pong
   }
 }

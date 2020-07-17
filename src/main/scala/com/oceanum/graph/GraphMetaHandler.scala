@@ -1,15 +1,25 @@
 package com.oceanum.graph
 
+import com.oceanum.cluster.exec.State
+
 trait GraphMetaHandler {
-  def handle(richGraphMeta: RichGraphMeta): Unit
+  def onStart(richGraphMeta: RichGraphMeta): Unit
+
+  def onRunning(richGraphMeta: RichGraphMeta, taskState: State): Unit
+
+  def onComplete(richGraphMeta: RichGraphMeta): Unit
+
+  def close(): Unit = {}
 }
 
 object GraphMetaHandler {
   def default(): GraphMetaHandler = new GraphMetaHandler {
-    override def handle(richGraphMeta: RichGraphMeta): Unit = println("graphMeta: " + richGraphMeta)
-  }
+    override def onRunning(richGraphMeta: RichGraphMeta, taskState: State): Unit = println("graphMeta: " + richGraphMeta)
 
-  def apply(handler: RichGraphMeta => Unit): GraphMetaHandler = new GraphMetaHandler {
-    override def handle(richGraphMeta: RichGraphMeta): Unit = handler(richGraphMeta)
+    override def onComplete(richGraphMeta: RichGraphMeta): Unit = println("graphMeta complete: " + richGraphMeta)
+
+    override def onStart(richGraphMeta: RichGraphMeta): Unit = println("graphMeta start: " + richGraphMeta)
+
+    override def close(): Unit = println("handler closed")
   }
 }

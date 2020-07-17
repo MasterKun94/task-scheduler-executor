@@ -2,6 +2,7 @@ package com.oceanum.client
 
 import com.oceanum.cluster.exec.{EventListener, ExecutionTask, TaskConfig}
 import com.oceanum.common.Environment
+import com.oceanum.common.StringParser.parseExpr
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -15,9 +16,10 @@ case class Task(id: Int,
                 checkStateInterval: String = Environment.EXEC_STATE_UPDATE_INTERVAL,
                 prop: TaskProp,
                 parallelism: Int = Environment.GRAPH_FLOW_DEFAULT_PARALLELISM,
+                env: Map[String, Any] = Map.empty,
                 private val meta: RichTaskMeta = RichTaskMeta.empty) {
   def init(implicit listener: RichTaskMeta => EventListener, executor: ExecutionContext): Future[ExecutionTask[_ <: TaskConfig]] = {
-    val task = metadata.lazyInit(this)
+    val task = metadata.lazyInit(this).parse
     val taskMeta = task.metadata
     task
       .prop
@@ -32,6 +34,12 @@ case class Task(id: Int,
         metadata = taskMeta
       ))
   }
+
+  def parse: Task = this.copy(
+    user = parseExpr(user)(env),
+    env = env.mapValues(f => if (f.isInstanceOf[String]) parseExpr(f.asInstanceOf)(env) else f),
+    prop = prop.parse(env)
+  )
 
   def metadata: RichTaskMeta = meta.withTask(this)
 }

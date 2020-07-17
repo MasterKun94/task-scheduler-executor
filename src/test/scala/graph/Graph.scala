@@ -12,16 +12,16 @@ import scala.concurrent.Future
 
 object Graph extends App {
   implicit val client: TaskClient = Test.client
-  implicit val metaHandler: GraphMetaHandler = GraphMetaHandler { println }
+  implicit val metaHandler: GraphMetaHandler = GraphMetaHandler.default()
   import com.oceanum.graph.FlowFactory._
 
   val instance = createGraph { implicit graph =>
 
-    val python1 = createFlow(Test.task("/tmp/task-test/python.py"))
-    val python2 = createFlow(Test.task("/tmp/task-test/python.py"))
-    val python3 = createFlow(Test.task("/tmp/task-test/python.py"))
-    val python4 = createFlow(Test.task("/tmp/task-test/python.py"))
-    val python5 = createFlow(Test.task("/tmp/task-test/python.py"))
+    val python1 = createFlow(Test.task("/tmp/task-test/${file_name}.py"))
+    val python2 = createFlow(Test.task("/tmp/task-test/${file_name}.py"))
+    val python3 = createFlow(Test.task("/tmp/task-test/${file_name}.py"))
+    val python4 = createFlow(Test.task("/tmp/task-test/${file_name}.py"))
+    val python5 = createFlow(Test.task("/tmp/task-test/${file_name}.py").copy(env = Map("file_name" -> "python-err")))
     val fork = createFork(2)
     val join = createJoin(2)
     val decision = createDecision(2)(_ => 1)
@@ -38,7 +38,7 @@ object Graph extends App {
   }.run()
 
 
-  instance.offer(RichGraphMeta())
+  instance.offer(RichGraphMeta() addEnv ("file_name" -> "python"))
 
 }
 

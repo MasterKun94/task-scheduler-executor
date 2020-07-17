@@ -3,8 +3,8 @@ package com.oceanum.cluster
 import java.util.Date
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Cancellable, PoisonPill}
-import com.oceanum.client.{StateHandler, Task, RichTaskMeta}
-import com.oceanum.cluster.exec.{EventListener, ExecutionTask, FAILED, Hook, KILL, OFFLINE, PREPARE, RETRY, RUNNING, RunnerManager, START, SUCCESS, State, TIMEOUT, TaskConfig}
+import com.oceanum.client.{RichTaskMeta, Task}
+import com.oceanum.cluster.exec._
 import com.oceanum.common.Scheduler.{schedule, scheduleOnce}
 import com.oceanum.common._
 
@@ -30,6 +30,7 @@ class ExecutionInstance(task: Task, actor: ActorRef) extends Actor with ActorLog
   }
 
   var execTimeoutMax: Cancellable = _
+  var clientCheckTime: Long = System.currentTimeMillis()
 
   override def preStart(): Unit = {
     implicit val executor: ExecutionContext = Environment.CLUSTER_NODE_TASK_INIT_EXECUTOR
@@ -137,6 +138,13 @@ class ExecutionInstance(task: Task, actor: ActorRef) extends Actor with ActorLog
     case CheckState =>
       log.info("send state: [{}] to sender: [{}]", stateReceive.state.name, sender)
       sender ! stateReceive.state
+      if ((System.currentTimeMillis() - clientCheckTime) > Environment.EXEC_UN_REACH_TIMEOUT
+        && Array(State.SUCCESS, State.KILL, State.FAILED).contains(stateReceive.state.name)) {
+        self ! TerminateAction
+      }
+
+    case Pong =>
+      clientCheckTime = System.currentTimeMillis()
   }
 
   private def caseKillAction(implicit holder: Holder): Receive = {
