@@ -2,7 +2,7 @@ package com.oceanum.common
 
 import java.util.Properties
 
-import com.oceanum.expr.ExprParser
+import com.oceanum.expr.Evaluator
 
 import scala.util.matching.Regex
 
@@ -34,8 +34,9 @@ object StringParser {
     else
       expr match {
         case pattern(pre, reg, str) =>
-          val regValue = ExprParser.execute(reg, env)
-          parseExpr(pre) + regValue.toString + parseExpr(str)
+          val regValue = Evaluator.execute(reg, env)
+          val value = if (regValue == null) "" else regValue.toString
+          parseExpr(pre) + value + parseExpr(str)
         case str: String => str
         case unknown =>
           println(unknown)

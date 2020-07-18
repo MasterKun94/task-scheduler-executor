@@ -16,17 +16,39 @@ import scala.util.{Failure, Success}
  * @date 2020/5/2
  */
 class ExecutionInstance(task: Task, actor: ActorRef) extends Actor with ActorLogging {
-  case class Start(operator: ExecutionTask[_ <: TaskConfig], client: ActorRef, interval: String)
 
   implicit private val listenerGenerator: RichTaskMeta => EventListener = meta => new EventListener {
-    override def prepare(message: RichTaskMeta): Unit = self ! PrepareMessage(meta ++ message)
-    override def start(message: RichTaskMeta): Unit = self ! StartMessage(meta ++ message)
-    override def running(message: RichTaskMeta): Unit = self ! RunningMessage(meta ++ message)
-    override def failed(message: RichTaskMeta): Unit = self ! FailedMessage(meta ++ message)
-    override def success(message: RichTaskMeta): Unit = self ! SuccessMessage(meta ++ message)
-    override def retry(message: RichTaskMeta): Unit = self ! RetryMessage(meta ++ message)
-    override def timeout(message: RichTaskMeta): Unit = self ! TimeoutMessage(meta ++ message)
-    override def kill(message: RichTaskMeta): Unit = self ! KillMessage(meta ++ message)
+    override def prepare(message: RichTaskMeta): Unit = {
+      self ! PrepareMessage(meta ++ message)
+    }
+
+    override def start(message: RichTaskMeta): Unit = {
+      self ! StartMessage(meta ++ message)
+    }
+
+    override def running(message: RichTaskMeta): Unit = {
+      self ! RunningMessage(meta ++ message)
+    }
+
+    override def failed(message: RichTaskMeta): Unit = {
+      self ! FailedMessage(meta ++ message)
+    }
+
+    override def success(message: RichTaskMeta): Unit = {
+      self ! SuccessMessage(meta ++ message)
+    }
+
+    override def retry(message: RichTaskMeta): Unit = {
+      self ! RetryMessage(meta ++ message)
+    }
+
+    override def timeout(message: RichTaskMeta): Unit = {
+      self ! TimeoutMessage(meta ++ message)
+    }
+
+    override def kill(message: RichTaskMeta): Unit = {
+      self ! KillMessage(meta ++ message)
+    }
   }
 
   var execTimeoutMax: Cancellable = _
@@ -34,15 +56,17 @@ class ExecutionInstance(task: Task, actor: ActorRef) extends Actor with ActorLog
 
   override def preStart(): Unit = {
     implicit val executor: ExecutionContext = Environment.CLUSTER_NODE_TASK_INIT_EXECUTOR
-    task.init.onComplete {
-      case Success(operator) =>
-        self ! Start(operator, actor, task.checkStateInterval)
-      case Failure(e) =>
-        e.printStackTrace()
-        val cancellable: Cancellable = Cancellable.alreadyCancelled
-        val hook: Hook = Hook(cancellable)
-        context.become(failed(task.metadata.message = e.getMessage)(Holder(hook, cancellable, actor)))
+    val operator = task.toExecutionTask(listenerGenerator)
+    val interval = task.checkStateInterval
+    val client = actor
+    log.info("receive operator: [{}], receive schedule check state request from [{}], start schedule with duration [{}]", operator, sender, interval)
+    val cancelable: Cancellable = schedule(interval, interval) {
+      self.tell(CheckState, client)
     }
+    val hook: Hook = RunnerManager.submit(operator)
+    val metadata: RichTaskMeta = operator.metadata
+    context.become(offline(metadata)(Holder(hook, cancelable, client)))
+    client ! ExecuteOperatorResponse(operator.metadata)
     execTimeoutMax = scheduleOnce(Environment.EXEC_MAX_TIMEOUT) {
       context.stop(self)
     }
@@ -50,20 +74,10 @@ class ExecutionInstance(task: Task, actor: ActorRef) extends Actor with ActorLog
 
   override def postStop(): Unit = execTimeoutMax.cancel()
 
-  override def receive: Receive = {
-    case Start(operator, client, interval) =>
-      log.info("receive operator: [{}], receive schedule check state request from [{}], start schedule with duration [{}]", operator, sender, interval)
-      val cancelable: Cancellable = schedule(interval, interval) {
-        self.tell(CheckState, client)
-      }
-      val hook: Hook = RunnerManager.submit(operator)
-      val metadata: RichTaskMeta = operator.metadata
-      context.become(offline(metadata)(Holder(hook, cancelable, client)))
-      client ! ExecuteOperatorResponse(operator.metadata)
-  }
+  override def receive: Receive = { case _ => }
 
   private def offline(meta: RichTaskMeta)(implicit holder: Holder): Receive = {
-    implicit val metadata: RichTaskMeta = meta.createTime = new Date()
+    implicit val metadata: RichTaskMeta = meta
     caseCheckState(offline_)
       .orElse(caseKillAction)
       .orElse(casePrepare)

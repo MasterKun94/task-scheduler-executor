@@ -1,4 +1,4 @@
-package graph
+package com.oceanum.Test
 
 import java.net.{InetAddress, UnknownHostException}
 
@@ -8,7 +8,6 @@ import akka.stream.scaladsl._
 import akka.stream.{ClosedShape, OverflowStrategy}
 import com.oceanum.client.{Task, TaskClient}
 import com.oceanum.graph.{GraphMetaHandler, RichGraphMeta}
-import com.oceanum.Test.Test
 
 import scala.concurrent.Future
 
@@ -16,7 +15,6 @@ object Graph {
   val ip2 = "192.168.10.131"
   val ip1 = getSelfAddress
   def getSelfAddress: String = {
-    //    "127.0.0.1"
     try {
       InetAddress.getLocalHost.getHostAddress
     } catch {
@@ -33,11 +31,11 @@ object Graph {
 
     val instance = createGraph { implicit graph =>
 
-      val python1 = createFlow(task())
-      val python2 = createFlow(task())
-      val python3 = createFlow(task())
-      val python4 = createFlow(task())
-      val python5 = createFlow(task().copy(rawEnv = Map("file_name" -> "python-err")))
+      val python1 = createFlow(Test.task())
+      val python2 = createFlow(Test.task())
+      val python3 = createFlow(Test.task())
+      val python4 = createFlow(Test.task())
+      val python5 = createFlow(Test.task().copy(rawEnv = Map("file_name" -> "python-err")))
       val fork = createFork(2)
       val join = createJoin(2)
       val decision = createDecision(2)(_ => 1)
@@ -57,19 +55,6 @@ object Graph {
     instance.offer(RichGraphMeta() addEnv ("file_name" -> "python"))
 
   }
-
-  def task(path: String = "/tmp/task-test/${file_name}.py"): Task = Task.builder.python()
-    .user("root")
-    .topic("default")
-    .retryCount(3)
-    .retryInterval("5 second")
-    .priority(5)
-    .pyFile(path)
-    .args("hello", "${task.createTime()}")
-    .waitForTimeout("100 second")
-    .checkStateInterval("3s")
-    .parallelism(1)
-    .build
 }
 
 object Test1 extends App {
@@ -81,8 +66,8 @@ object Test1 extends App {
     println(metadata.operators.mkString("\r\n"))
   }}
   val graph = RunnableGraph.fromGraph(GraphDSL.create(source0, sink0)((_, _)) { implicit builder: GraphDSL.Builder[(SourceQueueWithComplete[RichGraphMeta], Future[Done])] =>(source, sink) =>
-    //    val start = Start(source)
-    //    val end = End(sink)
+//    val start = Start(source)
+//    val end = End(sink)
     import GraphDSL.Implicits._
     val flow = Flow[RichGraphMeta].mapAsync(1)(m => Future({Thread.sleep(3000); println(m); m}))
     source ~> flow ~> sink

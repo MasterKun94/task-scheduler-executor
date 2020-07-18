@@ -1,15 +1,17 @@
 package com.oceanum.graph
 
+import java.text.SimpleDateFormat
+import java.util.Date
 import java.util.concurrent.atomic.AtomicInteger
 
-import akka.Done
 import akka.actor.{PoisonPill, Props}
-import akka.stream.scaladsl.{Broadcast, Flow, GraphDSL, Merge, Partition, RunnableGraph, Sink, Source, SourceQueueWithComplete, ZipWithN}
-import akka.stream.{ClosedShape, OverflowStrategy}
+import akka.stream.ClosedShape
+import akka.stream.scaladsl.{Broadcast, Flow, GraphDSL, Merge, Partition, RunnableGraph, Sink, Source, ZipWithN}
 import com.oceanum.client.{RichTaskMeta, StateHandler, Task, TaskClient}
 import com.oceanum.cluster.exec.{FAILED, State}
 import com.oceanum.common.Environment
 import com.oceanum.graph.Operator._
+import com.oceanum.common.Implicits.PathHelper
 
 import scala.concurrent.{Future, Promise}
 import scala.language.implicitConversions
@@ -40,20 +42,17 @@ object FlowFactory {
 
   def createFlow(parallelism: Int)(taskFunc: GraphMeta[_] => Task)(implicit taskClient: TaskClient, builder: GraphBuilder): TaskFlow = {
     val idValue = builder.idValue
-    mapAsync(parallelism) { implicit metadata =>
-      val initialTask = taskFunc(metadata)
-      val task = initialTask.copy(
-        id = idValue,
-        env = metadata.env ++ initialTask.env
-      )
-      metadata.graphStatus match {
+    mapAsync(parallelism) { implicit graphMeta =>
+      val initialTask = taskFunc(graphMeta)
+      val task = initialTask.addGraphMeta(graphMeta).copy(id = idValue)
+      graphMeta.graphStatus match {
         case GraphStatus.RUNNING => runOrReRun(task)
-        case GraphStatus.EXCEPTION => metadata.fallbackStrategy match {
+        case GraphStatus.EXCEPTION => graphMeta.fallbackStrategy match {
           case FallbackStrategy.CONTINUE => runOrReRun(task)
-          case FallbackStrategy.SHUTDOWN => Future.successful(metadata.updateGraphStatus(GraphStatus.FAILED))
+          case FallbackStrategy.SHUTDOWN => Future.successful(graphMeta.updateGraphStatus(GraphStatus.FAILED))
         }
-        case GraphStatus.FAILED | GraphStatus.KILLED => Future.successful(metadata)
-        case other: GraphStatus.value => Future.successful(metadata.error = new IllegalArgumentException("this should never happen, unexpected graph state: " + other))
+        case GraphStatus.FAILED | GraphStatus.KILLED => Future.successful(graphMeta)
+        case other: GraphStatus.value => Future.successful(graphMeta.error = new IllegalArgumentException("this should never happen, unexpected graph state: " + other))
       }
     }
   }
@@ -85,11 +84,17 @@ object FlowFactory {
 
       override def close(): Unit = actor ! PoisonPill
     }
-
+    val atomicInteger = new AtomicInteger(0)
+    val date = new Date()
     val source0 = Source
       .queue[RichGraphMeta](Environment.GRAPH_SOURCE_QUEUE_BUFFER_SIZE, Environment.GRAPH_SOURCE_QUEUE_OVERFLOW_STRATEGY)
       .map { meta =>
-        val start = meta.start
+        val start = meta.copy(
+          _.createTime = date,
+          _.startTime = new Date(),
+          _.updateGraphStatus(GraphStatus.RUNNING),
+          _.id = atomicInteger.getAndIncrement()
+        )
         metaHandler.onStart(start)
         start
       }
@@ -144,7 +149,7 @@ object FlowFactory {
         promise.success(meta)
       case Failure(e) =>
         e.printStackTrace()
-        val meta = m.operators_+(FAILED(RichTaskMeta().withTask(task).error = e))
+        val meta = m.operators_+(FAILED(RichTaskMeta().failure(task, e)))
         promise.success(meta)
     }
     promise.future

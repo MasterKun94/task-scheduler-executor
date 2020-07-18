@@ -1,10 +1,11 @@
 package com.oceanum.client
 
+import java.util.Date
+
 import com.oceanum.cluster.exec.{EventListener, ExecutionTask, TaskConfig}
 import com.oceanum.common.Environment
-import com.oceanum.common.StringParser.parseExpr
-
-import scala.concurrent.{ExecutionContext, Future}
+import com.oceanum.common.Implicits.EnvHelper
+import com.oceanum.graph.{GraphMeta, RichGraphMeta}
 
 @SerialVersionUID(1L)
 case class Task(id: Int,
@@ -16,32 +17,27 @@ case class Task(id: Int,
                 checkStateInterval: String = Environment.EXEC_STATE_UPDATE_INTERVAL,
                 prop: TaskProp,
                 parallelism: Int = Environment.GRAPH_FLOW_DEFAULT_PARALLELISM,
-                env: Map[String, Any] = Map.empty,
-                private val meta: RichTaskMeta = RichTaskMeta.empty) {
-  def init(implicit listener: RichTaskMeta => EventListener, executor: ExecutionContext): Future[ExecutionTask[_ <: TaskConfig]] = {
-    val task = metadata.lazyInit(this).parse
+                rawEnv: Map[String, Any] = Map.empty) {
+  def toExecutionTask(implicit listener: RichTaskMeta => EventListener): ExecutionTask[_ <: TaskConfig] = {
+    val task = this
     val taskMeta = task.metadata
-    task
-      .prop
-      .init(taskMeta)
-      .map(ot => ExecutionTask(
-        name = "task" + id,
-        retryCount = retryCount,
-        retryInterval = retryInterval,
-        priority = priority,
-        prop = ot,
-        eventListener = listener(taskMeta),
-        metadata = taskMeta
-      ))
+    ExecutionTask(
+      name = "task" + id,
+      retryCount = retryCount,
+      retryInterval = retryInterval,
+      priority = priority,
+      prop = prop.toTask(taskMeta),
+      eventListener = listener(taskMeta),
+      metadata = taskMeta.createTime = new Date(),
+      env = env
+    )
   }
 
-  def parse: Task = this.copy(
-    user = parseExpr(user)(env),
-    env = env.mapValues(f => if (f.isInstanceOf[String]) parseExpr(f.asInstanceOf)(env) else f),
-    prop = prop.parse(env)
-  )
+  def addGraphMeta(graphMeta: RichGraphMeta): Task = this.copy(rawEnv = rawEnv.addGraph(graphMeta))
 
-  def metadata: RichTaskMeta = meta.withTask(this)
+  def env: Map[String, Any] = rawEnv + (EnvHelper.taskKey -> metadata)
+
+  private def metadata: RichTaskMeta = rawEnv.getTask.withTask(this)
 }
 
 object Task {

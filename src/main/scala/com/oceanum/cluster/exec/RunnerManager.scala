@@ -1,12 +1,17 @@
 package com.oceanum.cluster.exec
 
+import java.util.Date
+import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.atomic.AtomicInteger
 
 import com.oceanum.client.RichTaskMeta
 import com.oceanum.cluster.TaskInfoTrigger
 import com.oceanum.common.Scheduler.scheduleOnce
 import com.oceanum.common.{Environment, Log, NodeTaskInfo}
+
+import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
+import scala.util.{Failure, Success, Try}
 
 /**
  * @author chenmingkun
@@ -49,7 +54,8 @@ object RunnerManager extends Log {
     log.info("execute manager closed")
   }
 
-  private def consume(operatorProp: Prop): Unit = {
+  private def consume(prop: Prop): Unit = {
+    val operatorProp = prop
     operatorProp.eventListener.start()
     incRunning()
     TaskInfoTrigger.trigger()
@@ -112,16 +118,25 @@ object RunnerManager extends Log {
     }
   }
 
-  private def run(task: Prop): ExitCode = {
-    runners.find(_.executable(task)) match {
-      case Some(executor) =>
-        if (task.hook.isKilled) {
-          ExitCode.KILL
-        } else {
-          executor.run(task)
-        }
-      case None =>
-        ExitCode.UN_SUPPORT(task.metadata.taskType)
+  private def run(prop: Prop): ExitCode = {
+    val queue = new ArrayBlockingQueue[Try[Prop]](1)
+    prop.prepareStart(ExecutionContext.global)
+      .onComplete(queue.put)(Environment.CLUSTER_NODE_TASK_INIT_EXECUTOR)
+    queue.take() match {
+      case Success(task) =>
+        runners.find(_.executable(task)) match {
+        case Some(executor) =>
+          if (task.hook.isKilled) {
+            ExitCode.KILL
+          } else {
+            executor.run(task)
+          }
+        case None =>
+          ExitCode.UN_SUPPORT(task.metadata.taskType)
+      }
+      case Failure(exception) =>
+        exception.printStackTrace()
+        ExitCode.ERROR(exception.getMessage)
     }
   }
 

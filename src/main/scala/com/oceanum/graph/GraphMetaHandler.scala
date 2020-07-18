@@ -16,9 +16,14 @@ object GraphMetaHandler {
   def default(): GraphMetaHandler = new GraphMetaHandler {
     override def onRunning(richGraphMeta: RichGraphMeta, taskState: State): Unit = println("graphMeta: " + richGraphMeta)
 
-    override def onComplete(richGraphMeta: RichGraphMeta): Unit = println("graphMeta complete: " + richGraphMeta)
+    override def onComplete(richGraphMeta: RichGraphMeta): Unit = {
+      println("graphMeta complete: " + richGraphMeta.graphStatus)
+      richGraphMeta.operators.foreach(println)
+    }
 
-    override def onStart(richGraphMeta: RichGraphMeta): Unit = println("graphMeta start: " + richGraphMeta)
+    override def onStart(richGraphMeta: RichGraphMeta): Unit = {
+      println("graphMeta start: " + richGraphMeta)
+    }
 
     override def close(): Unit = println("handler closed")
   }

@@ -22,6 +22,10 @@ class Meta[T <: Meta[_]](private val map: Map[String, Any]) extends Serializable
 
   def toMap: Map[String, Any] = map
 
+  def copy(funcs: (T => T)*): T = {
+    funcs.foldLeft(this.asInstanceOf[T])((m, f) => f(m))
+  }
+
   private def newInstance(map: Map[String, Any]): T = {
     this.getClass.getConstructor(classOf[Map[String, Any]]).newInstance(map).asInstanceOf[T]
   }

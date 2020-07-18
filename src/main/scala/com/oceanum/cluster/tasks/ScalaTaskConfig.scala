@@ -2,6 +2,7 @@ package com.oceanum.cluster.tasks
 
 import com.oceanum.cluster.exec.StdHandler
 import com.oceanum.common.Environment
+import com.oceanum.common.StringParser.parseExpr
 
 /**
  * @author chenmingkun
@@ -23,4 +24,18 @@ case class ScalaTaskConfig(jars: Array[String],
     waitForTimeout,
     stdoutHandler,
     stderrHandler
+  ) {
+  override def parseFunction(implicit exprEnv: Map[String, Any]): ScalaTaskConfig = this.copy(
+    jars = jars.map(parseExpr),
+    mainClass = parseExpr(mainClass),
+    args = args.map(parseExpr),
+    options = options.map(parseExpr),
+    env = env.map(kv => (parseExpr(kv._1), parseExpr(kv._2))),
+    directory = parseExpr(directory)
   )
+  override def files: Seq[String] = jars.toSeq
+
+  override def convert(fileMap: Map[String, String]): ScalaTaskConfig = this.copy(
+    jars = jars.map(fileMap.apply)
+  )
+}

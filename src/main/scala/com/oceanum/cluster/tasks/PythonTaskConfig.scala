@@ -2,6 +2,7 @@ package com.oceanum.cluster.tasks
 
 import com.oceanum.cluster.exec.StdHandler
 import com.oceanum.common.Environment
+import com.oceanum.common.StringParser.parseExpr
 
 /**
  * @author chenmingkun
@@ -20,4 +21,16 @@ case class PythonTaskConfig(pyFile: String,
     directory,
     waitForTimeout,
     stdoutHandler,
-    stderrHandler)
+    stderrHandler) {
+  override def parseFunction(implicit exprEnv: Map[String, Any]): PythonTaskConfig = this.copy(
+    pyFile = parseExpr(pyFile),
+    args = args.map(parseExpr),
+    env = env.map(kv => (parseExpr(kv._1), parseExpr(kv._2))),
+    directory = parseExpr(directory)
+  )
+  override def files: Seq[String] = Seq(pyFile)
+
+  override def convert(fileMap: Map[String, String]): PythonTaskConfig = this.copy(
+    pyFile = fileMap(pyFile)
+  )
+}

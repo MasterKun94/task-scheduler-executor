@@ -1,8 +1,7 @@
-package com.oceanum.utils
+package com.oceanum.Test
 
 import java.net.{InetAddress, UnknownHostException}
 
-import akka.util.Timeout
 import com.oceanum.ClusterStarter
 import com.oceanum.client.{TaskClient, Task}
 import com.oceanum.common.Implicits._
@@ -19,18 +18,31 @@ object Test {
   val ip2 = "192.168.10.131"
   val ip1 = getSelfAddress
 
-  def task(path: String = "/tmp/task-test/python-err.py"): Task = Task.builder.python()
-    .user("test1")
+//  def task(): Task = Task.builder.python()
+//    .user("test1")
+//    .topic("default")
+//    .retryCount(3)
+//    .retryInterval("5 second")
+//    .priority(5)
+//    .pyFile("/tmp/task-test/${file_name}.py")
+//    .args("hello")
+//    .waitForTimeout("100 second")
+//    .lazyInit(_
+//      .user("root")
+//    )
+//    .checkStateInterval("3s")
+//    .parallelism(1)
+//    .build
+
+  def task(path: String = "/tmp/task-test/${file_name}.py"): Task = Task.builder.python()
+    .user("root")
     .topic("default")
     .retryCount(3)
     .retryInterval("5 second")
     .priority(5)
     .pyFile(path)
-    .args("hello", "world")
+    .args("hello", "${task.id()}", "${task.startTime()}")
     .waitForTimeout("100 second")
-    .lazyInit(_
-      .user("root")
-    )
     .checkStateInterval("3s")
     .parallelism(1)
     .build

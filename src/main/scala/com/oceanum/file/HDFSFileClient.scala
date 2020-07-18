@@ -13,26 +13,49 @@ import scala.concurrent.{ExecutionContext, Future}
  * @date 2020/7/5
  */
 class HDFSFileClient extends FileClient("hdfs") {
-  private lazy val fileSystem = {
+
+  override def download(srcPath: String, destPath: String)(implicit ex: ExecutionContext): Future[Unit] = {
+    Future {
+      HDFSFileClient.download(srcPath, destPath)
+    }
+  }
+
+  override def upload(srcPath: String, destPath: String)(implicit ex: ExecutionContext): Future[Unit] = {
+    Future {
+      HDFSFileClient.upload(srcPath, destPath)
+    }
+  }
+}
+
+object HDFSFileClient {
+  private val fileSystem = {
     System.setProperty("hadoop.home.dir", Environment.HADOOP_HOME)
     val configuration = new Configuration()
     FileSystem.setDefaultUri(configuration, new URI(Environment.HADOOP_FS_URL))
     FileSystem.get(new URI(Environment.HADOOP_FS_URL), configuration, Environment.HADOOP_USER)
   }
 
-  override def download(srcPath: String, destPath: String)(implicit ex: ExecutionContext): Future[Unit] = {
+  def upload(srcPath: String, destPath: String): Unit = {
     val src = new Path(srcPath)
     val dst = new Path(destPath)
-    Future {
-      fileSystem.copyToLocalFile(src, dst)
-    }
+    fileSystem.copyFromLocalFile(src, dst)
   }
 
-  override def upload(srcPath: String, destPath: String)(implicit ex: ExecutionContext): Future[Unit] = {
+  def download(srcPath: String, destPath: String): Unit = {
     val src = new Path(srcPath)
     val dst = new Path(destPath)
-    Future {
-      fileSystem.copyFromLocalFile(src, dst)
-    }
+    fileSystem.copyToLocalFile(src, dst)
+  }
+
+  def exist(path: String): Boolean = {
+    fileSystem.exists(new Path(path))
+  }
+
+  def isDir(path: String): Boolean = {
+    fileSystem.isDirectory(new Path(path))
+  }
+
+  def isFile(path: String): Boolean = {
+    fileSystem.isFile(new Path(path))
   }
 }

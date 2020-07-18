@@ -1,8 +1,11 @@
 package com.oceanum.cluster.exec
 
+import java.util.Date
 import java.util.concurrent.atomic.{AtomicBoolean, AtomicReference}
 
 import com.oceanum.client.RichTaskMeta
+
+import scala.concurrent.{ExecutionContext, Future}
 
 /**
  * @author chenmingkun
@@ -15,6 +18,7 @@ case class ExecutionTask[T <: TaskConfig](name: String,
                                           prop: T,
                                           eventListener: EventListener,
                                           metadata: RichTaskMeta,
+                                          env: Map[String, Any],
                                           private val hookRef: AtomicReference[Hook] = new AtomicReference(),
                                           private val ref: AtomicBoolean = new AtomicBoolean(false)
                                        ) {
@@ -35,6 +39,12 @@ case class ExecutionTask[T <: TaskConfig](name: String,
       hook.kill()
     }
   }
-
   def retry(): ExecutionTask[T] = this.copy(retryCount = this.retryCount - 1)
+
+  def prepareStart(implicit ec: ExecutionContext): Future[ExecutionTask[_<:TaskConfig]] = {
+    import com.oceanum.common.Implicits.EnvHelper
+    val meta = metadata.startTime = new Date()
+    this.prop.prepare(meta, env.addTask(meta))
+      .map(p => this.copy(prop = p))
+  }
 }

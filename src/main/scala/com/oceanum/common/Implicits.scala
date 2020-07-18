@@ -3,6 +3,9 @@ package com.oceanum.common
 import java.io.File
 import java.util.regex.Matcher
 
+import com.oceanum.client.{RichTaskMeta, TaskMeta}
+import com.oceanum.graph.{GraphMeta, RichGraphMeta}
+
 import scala.concurrent.duration.{Duration, FiniteDuration}
 import scala.util.Properties
 
@@ -68,5 +71,20 @@ object Implicits {
     private def toPath(str: String, separator: String): String = {
       str.replaceAll("[/\\\\]", Matcher.quoteReplacement(separator))
     }
+  }
+
+  implicit class EnvHelper(env: Map[String, Any]) {
+    def addGraph(graphMeta: RichGraphMeta): Map[String, Any] = env + (EnvHelper.graphKey -> graphMeta) ++ graphMeta.env
+
+    def getGraph: RichGraphMeta = env(EnvHelper.graphKey).asInstanceOf[RichGraphMeta]
+
+    def addTask(taskMeta: RichTaskMeta): Map[String, Any] = env + (EnvHelper.taskKey -> taskMeta)
+
+    def getTask: RichTaskMeta = env.get(EnvHelper.taskKey).map(_.asInstanceOf[RichTaskMeta]).getOrElse(RichTaskMeta.empty)
+  }
+
+  object EnvHelper {
+    val taskKey = "task"
+    val graphKey = "graph"
   }
 }

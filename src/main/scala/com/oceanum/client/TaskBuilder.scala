@@ -40,11 +40,6 @@ abstract class TaskBuilder[T <: TaskBuilder[_, _], P <: TaskProp](task: Task) ex
     typedBuilder(task.copy(priority = priority))
   }
 
-  def lazyInit(func: T => T): T = {
-    val meta = task.metadata.lazyInit = task => func(typedBuilder(task)).build
-    typedBuilder(task.copy(meta = meta))
-  }
-
   def checkStateInterval(interval: String): T = {
     typedBuilder(task.copy(checkStateInterval = interval))
   }
@@ -54,11 +49,11 @@ abstract class TaskBuilder[T <: TaskBuilder[_, _], P <: TaskProp](task: Task) ex
   }
 
   def addEnv(key: String, value: Any): T = {
-    typedBuilder(task.copy(env = task.env + (key -> value)))
+    typedBuilder(task.copy(rawEnv = task.env + (key -> value)))
   }
 
   def addEnv(kv: (String, Any)*): T = {
-    typedBuilder(task.copy(env = task.env ++ Map(kv: _*)))
+    typedBuilder(task.copy(rawEnv = task.env ++ Map(kv: _*)))
   }
 
   def build: Task = task

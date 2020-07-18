@@ -4,7 +4,7 @@ import java.util
 
 import com.googlecode.aviator.AviatorEvaluator
 import com.oceanum.common.StringParser
-import com.oceanum.expr.ExprParser
+import com.oceanum.expr.Evaluator
 
 /**
  * @author chenmingkun
@@ -13,5 +13,5 @@ import com.oceanum.expr.ExprParser
 object Test extends App {
   val expr = "file_name"
   val env = Map("file_name" -> "python")
-  println(ExprParser.execute(expr, env))
+  println(Evaluator.execute(expr, env))
 }

@@ -1,13 +1,19 @@
 package com.oceanum.graph
 
-import java.util.Date
+import java.util.{Date, UUID}
 
 import com.oceanum.client.{RichTaskMeta, TaskMeta}
 import com.oceanum.cluster.exec.{FAILED, KILL, SUCCESS, State}
 import com.oceanum.common.Meta
 
+@SerialVersionUID(1L)
 class RichGraphMeta(map: Map[String, Any]) extends Meta[RichGraphMeta](map) with GraphMeta[RichGraphMeta] {
-  override def id: String = this("id")
+
+  override def id: Int = this("id")
+
+  def id_=(int: Int): RichGraphMeta = this + ("id" -> int)
+
+  override def name: String = this("name")
 
   override def operators: Map[Int, TaskMeta[_]] = {
     this.get("operators").getOrElse(Map.empty[Int, TaskMeta[_]])
@@ -63,11 +69,6 @@ class RichGraphMeta(map: Map[String, Any]) extends Meta[RichGraphMeta](map) with
     this + ("error" -> e) updateGraphStatus GraphStatus.FAILED
   }
 
-
-  def start: RichGraphMeta = {
-    this + ("startTime" -> new Date()) updateGraphStatus GraphStatus.RUNNING
-  }
-
   def end: RichGraphMeta = {
     val meta = graphStatus match {
       case GraphStatus.RUNNING => this.updateGraphStatus(GraphStatus.SUCCESS)
@@ -81,9 +82,17 @@ class RichGraphMeta(map: Map[String, Any]) extends Meta[RichGraphMeta](map) with
 
   override def toString: String = s"GraphMeta(${map.toArray.map(t => t._1 + ": " + t._2).mkString(", ")})"
 
-  override def createTime: Date = this("startTime")
+  override def createTime: Date = this("createTime")
+
+  def createTime_=(date: Date): RichGraphMeta = this + ("createTime" -> date)
+
+  override def scheduleTime: Date = this("scheduleTime")
+
+  def scheduleTime_=(date: Date): RichGraphMeta = this + ("scheduleTime" -> date)
 
   override def startTime: Date = this("startTime")
+
+  def startTime_=(date: Date): RichGraphMeta = this + ("startTime" -> date)
 
   override def endTime: Date = this("endTime")
 
@@ -96,7 +105,16 @@ class RichGraphMeta(map: Map[String, Any]) extends Meta[RichGraphMeta](map) with
 
 object RichGraphMeta {
 
-  def apply(map: Map[String, Any]): RichGraphMeta = new RichGraphMeta(map + ("createTime" -> new Date()))
+  def apply(map: Map[String, Any]): RichGraphMeta = {
+    val meta = new RichGraphMeta(map).scheduleTime = new Date()
+    if (meta.name != null && meta.name.trim.nonEmpty) {
+      meta
+    } else {
+      meta + ("name" -> UUID.randomUUID().toString)
+    }
+  }
+
+  def create(name: String): RichGraphMeta = RichGraphMeta("name" -> name)
 
   def apply(elems: (String, Any)*): RichGraphMeta = RichGraphMeta(Map(elems: _*))
 }
