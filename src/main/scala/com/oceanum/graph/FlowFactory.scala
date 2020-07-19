@@ -1,6 +1,5 @@
 package com.oceanum.graph
 
-import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -10,8 +9,9 @@ import akka.stream.scaladsl.{Broadcast, Flow, GraphDSL, Merge, Partition, Runnab
 import com.oceanum.client.{RichTaskMeta, StateHandler, Task, TaskClient}
 import com.oceanum.cluster.exec.{FAILED, State}
 import com.oceanum.common.Environment
+import com.oceanum.common.Implicits.EnvHelper
+import com.oceanum.expr.{Evaluator, JavaMap}
 import com.oceanum.graph.Operator._
-import com.oceanum.common.Implicits.PathHelper
 
 import scala.concurrent.{Future, Promise}
 import scala.language.implicitConversions
@@ -69,6 +69,32 @@ object FlowFactory {
     Decision(builder.dslBuilder.add(Partition(parallel, decide)))
   }
 
+  def createDecision(decide: Array[GraphMeta[_] => Boolean])(implicit builder: GraphBuilder): Decision = {
+    val parallel = decide.length + 1
+    val func: GraphMeta[_] => Int = meta => decide.zipWithIndex.find(_._1(meta)).map(_._2) match {
+      case Some(int) => int
+      case None => parallel - 1
+    }
+    createDecision(parallel)(func)
+  }
+
+  def createDecision(expr: Array[String])(implicit builder: GraphBuilder): Decision = {
+    val parallel = expr.length + 1
+    val func: GraphMeta[_] => Int = meta => {
+      val env: JavaMap[String, AnyRef] = meta.env.combineGraph(meta.asInstanceOf[RichGraphMeta]).toJava
+      val booFunc: String => Boolean = str => Evaluator.rawExecute(str, env) match {
+        case s: String => s.toBoolean
+        case b: Boolean => b
+        case other => other.toString.toBoolean
+      }
+      expr.zipWithIndex.find(t => booFunc(t._1)).map(_._2) match {
+        case Some(int) => int
+        case None => parallel - 1
+      }
+    }
+    createDecision(parallel)(func)
+  }
+
   def createConverge(parallel: Int)(implicit builder: GraphBuilder): Converge = {
     Converge(builder.dslBuilder.add(Merge(parallel)))
   }
@@ -92,8 +118,9 @@ object FlowFactory {
         val start = meta.copy(
           _.createTime = date,
           _.startTime = new Date(),
-          _.updateGraphStatus(GraphStatus.RUNNING),
-          _.id = atomicInteger.getAndIncrement()
+          _.graphStatus = GraphStatus.RUNNING,
+          _.id = atomicInteger.getAndIncrement(),
+          _.reRunFlag = false
         )
         metaHandler.onStart(start)
         start
@@ -126,7 +153,8 @@ object FlowFactory {
 
   private def runIfNotSuccess(task: Task)(implicit metadata: RichGraphMeta, schedulerClient: TaskClient, builder: GraphBuilder): Future[RichGraphMeta] = {
     metadata.operators.get(task.id) match {
-      case Some(meta) => meta.state match {
+      case Some(meta) =>
+        meta.state match {
         case State.KILL | State.FAILED | State.OFFLINE => run(task)
         case _: State.value => Future.successful(metadata)
       }
@@ -135,7 +163,6 @@ object FlowFactory {
   }
 
   private def run(task: Task)(implicit metadata: RichGraphMeta, schedulerClient: TaskClient, builder: GraphBuilder): Future[RichGraphMeta] = {
-    val m = metadata.reRunFlag = true
     import schedulerClient.system.dispatcher
     val promise = Promise[RichGraphMeta]()
     val stateHandler = StateHandler { state =>
@@ -145,11 +172,11 @@ object FlowFactory {
     schedulerClient.execute(task, stateHandler)
       .completeState.onComplete {
       case Success(value) =>
-        val meta = m.operators_+(value)
+        val meta = metadata.operators_+(value).reRunFlag = true
         promise.success(meta)
       case Failure(e) =>
         e.printStackTrace()
-        val meta = m.operators_+(FAILED(RichTaskMeta().failure(task, e)))
+        val meta = metadata.operators_+(FAILED(RichTaskMeta().failure(task, e)))
         promise.success(meta)
     }
     promise.future

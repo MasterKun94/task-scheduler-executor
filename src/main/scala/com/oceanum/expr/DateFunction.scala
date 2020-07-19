@@ -5,6 +5,7 @@ import java.util.Date
 
 import com.googlecode.aviator.runtime.`type`.{AviatorObject, AviatorRuntimeJavaType, AviatorType}
 import com.googlecode.aviator.runtime.function.{AbstractFunction, FunctionUtils}
+import com.oceanum.common.DateUtil
 
 import scala.concurrent.duration.Duration
 
@@ -17,7 +18,7 @@ class DateFormatFunction extends AbstractFunction {
 
   override def call(env: JavaMap[String, AnyRef], format: AviatorObject): AviatorObject = {
     val str = FunctionUtils.getStringValue(format, env)
-    AviatorRuntimeJavaType.valueOf(new SimpleDateFormat(str).format(new Date()))
+    AviatorRuntimeJavaType.valueOf(DateUtil.format(str).format(new Date()))
   }
 
   override def call(env: JavaMap[String, AnyRef], format: AviatorObject, date: AviatorObject): AviatorObject = {
@@ -29,11 +30,13 @@ class DateFormatFunction extends AbstractFunction {
       case AviatorType.String =>
         val duration = Duration(FunctionUtils.getStringValue(date, env))
         new Date(System.currentTimeMillis() + duration.toMillis)
+      case AviatorType.Long =>
+        new Date(FunctionUtils.getNumberValue(date, env).longValue())
       case _ =>
         throw new IllegalArgumentException("illegal argument type: " + date.getAviatorType)
     }
     val str = FunctionUtils.getStringValue(format, env)
-    AviatorRuntimeJavaType.valueOf(new SimpleDateFormat(str).format(date0))
+    AviatorRuntimeJavaType.valueOf(DateUtil.format(str).format(date0))
   }
 
   override def call(env: JavaMap[String, AnyRef], format: AviatorObject, date: AviatorObject, shift: AviatorObject): AviatorObject = {
@@ -45,10 +48,13 @@ class DateFormatFunction extends AbstractFunction {
       case _ =>
         throw new IllegalArgumentException("illegal argument type: " + date.getAviatorType)
     }
-    val date0: Date = FunctionUtils.getJavaObject(date, env).asInstanceOf[Date]
+    val date0: Date = date.getAviatorType match {
+      case AviatorType.JavaType => FunctionUtils.getJavaObject(date, env).asInstanceOf[Date]
+      case AviatorType.Long => new Date(FunctionUtils.getNumberValue(date, env).longValue())
+    }
     val date1: Date = new Date(date0.getTime + duration.toMillis)
     val str = FunctionUtils.getStringValue(format, env)
-    AviatorRuntimeJavaType.valueOf(new SimpleDateFormat(str).format(date1))
+    AviatorRuntimeJavaType.valueOf(DateUtil.format(str).format(date1))
   }
 }
 
@@ -58,7 +64,7 @@ class DateParseFunction extends AbstractFunction {
   override def call(env: JavaMap[String, AnyRef], format: AviatorObject, dateStr: AviatorObject): AviatorObject = {
     val dateStr0 = FunctionUtils.getStringValue(dateStr, env)
     val format0 = FunctionUtils.getStringValue(format, env)
-    AviatorRuntimeJavaType.valueOf(new SimpleDateFormat(format0).parse(dateStr0))
+    AviatorRuntimeJavaType.valueOf(DateUtil.format(format0).parse(dateStr0))
   }
 }
 

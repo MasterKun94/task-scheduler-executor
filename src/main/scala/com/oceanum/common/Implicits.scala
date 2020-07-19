@@ -3,11 +3,12 @@ package com.oceanum.common
 import java.io.File
 import java.util.regex.Matcher
 
-import com.oceanum.client.{RichTaskMeta, TaskMeta}
-import com.oceanum.graph.{GraphMeta, RichGraphMeta}
+import com.oceanum.client.RichTaskMeta
+import com.oceanum.expr.JavaMap
+import com.oceanum.graph.RichGraphMeta
 
+import scala.collection.JavaConverters._
 import scala.concurrent.duration.{Duration, FiniteDuration}
-import scala.util.Properties
 
 /**
  * @author chenmingkun
@@ -74,13 +75,36 @@ object Implicits {
   }
 
   implicit class EnvHelper(env: Map[String, Any]) {
-    def addGraph(graphMeta: RichGraphMeta): Map[String, Any] = env + (EnvHelper.graphKey -> graphMeta) ++ graphMeta.env
+    def combineGraph(graphMeta: RichGraphMeta): Map[String, Any] = graphMeta.env ++ env + (EnvHelper.graphKey -> graphMeta)
 
     def getGraph: RichGraphMeta = env(EnvHelper.graphKey).asInstanceOf[RichGraphMeta]
 
     def addTask(taskMeta: RichTaskMeta): Map[String, Any] = env + (EnvHelper.taskKey -> taskMeta)
 
     def getTask: RichTaskMeta = env.get(EnvHelper.taskKey).map(_.asInstanceOf[RichTaskMeta]).getOrElse(RichTaskMeta.empty)
+
+    def toJava: JavaMap[String, AnyRef] = evaluate(toJava(env).asInstanceOf[JavaMap[String, AnyRef]])
+
+    private def toJava(ref: Any): AnyRef = ref.asInstanceOf[AnyRef] match {
+      case map: Map[_, _] => map.mapValues(_.asInstanceOf[AnyRef]).mapValues(toJava).asJava
+      case seq: Seq[_] => seq.map(_.asInstanceOf[AnyRef]).map(toJava).asJava
+      case set: Set[_] => set.map(_.asInstanceOf[AnyRef]).map(toJava).asJava
+      case itr: Iterable[_] => itr.map(_.asInstanceOf[AnyRef]).map(toJava).asJava
+      case itr: Iterator[_] => itr.map(_.asInstanceOf[AnyRef]).map(toJava).asJava
+      case default => default
+    }
+
+    def evaluate(ref: AnyRef, env: JavaMap[String, AnyRef]): AnyRef = ref match {
+      case str: String => StringParser.parseExprRaw(str)(env)
+      case map: java.util.Map[_, _] => map.asScala.mapValues(v => evaluate(v.asInstanceOf[AnyRef], env)).asJava
+      case seq: java.util.List[_] => seq.asScala.map(v => evaluate(v.asInstanceOf[AnyRef], env)).asJava
+      case set: java.util.Set[_] => set.asScala.map(v => evaluate(v.asInstanceOf[AnyRef], env)).asJava
+      case default => default
+    }
+
+    def evaluate(env: JavaMap[String, AnyRef]): JavaMap[String, AnyRef] = {
+      evaluate(env, env).asInstanceOf[JavaMap[String, AnyRef]]
+    }
   }
 
   object EnvHelper {

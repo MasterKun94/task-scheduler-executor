@@ -2,7 +2,8 @@ package com.oceanum.cluster.tasks
 
 import com.oceanum.cluster.exec.StdHandler
 import com.oceanum.common.Environment
-import com.oceanum.common.StringParser.parseExpr
+import com.oceanum.common.StringParser.parseExprRaw
+import com.oceanum.expr.JavaMap
 
 /**
  * @author chenmingkun
@@ -22,11 +23,11 @@ case class PythonTaskConfig(pyFile: String,
     waitForTimeout,
     stdoutHandler,
     stderrHandler) {
-  override def parseFunction(implicit exprEnv: Map[String, Any]): PythonTaskConfig = this.copy(
-    pyFile = parseExpr(pyFile),
-    args = args.map(parseExpr),
-    env = env.map(kv => (parseExpr(kv._1), parseExpr(kv._2))),
-    directory = parseExpr(directory)
+  override def parseFunction(implicit exprEnv: JavaMap[String, AnyRef]): PythonTaskConfig = this.copy(
+    pyFile = parseExprRaw(pyFile),
+    args = args.map(parseExprRaw),
+    env = env.map(kv => (parseExprRaw(kv._1), parseExprRaw(kv._2))),
+    directory = parseExprRaw(directory)
   )
   override def files: Seq[String] = Seq(pyFile)
 

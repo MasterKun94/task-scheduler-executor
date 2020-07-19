@@ -2,7 +2,8 @@ package com.oceanum.common
 
 import java.util.Properties
 
-import com.oceanum.expr.Evaluator
+import com.oceanum.expr.{Evaluator, JavaMap}
+import Implicits.EnvHelper
 
 import scala.util.matching.Regex
 
@@ -29,14 +30,18 @@ object StringParser {
   }
 
   def parseExpr(expr: String)(implicit env: Map[String, Any]): String = {
+    parseExprRaw(expr)(env.toJava)
+  }
+
+  def parseExprRaw(expr: String)(implicit env: JavaMap[String, AnyRef]): String = {
     if (expr == null || expr.trim.isEmpty)
       ""
     else
       expr match {
         case pattern(pre, reg, str) =>
-          val regValue = Evaluator.execute(reg, env)
+          val regValue = Evaluator.rawExecute(reg, env)
           val value = if (regValue == null) "" else regValue.toString
-          parseExpr(pre) + value + parseExpr(str)
+          parseExprRaw(pre) + value + parseExprRaw(str)
         case str: String => str
         case unknown =>
           println(unknown)

@@ -58,4 +58,20 @@ object HDFSFileClient {
   def isFile(path: String): Boolean = {
     fileSystem.isFile(new Path(path))
   }
+
+  def size(path: String): Long = {
+    fileSystem.getFileStatus(new Path(path)).getLen
+  }
+
+  def accessTime(path: String): Long = {
+    fileSystem.getFileStatus(new Path(path)).getAccessTime
+  }
+
+  def modifiedTime(path: String): Long = {
+    fileSystem.getFileStatus(new Path(path)).getModificationTime
+  }
+
+  def owner(path: String): String = {
+    fileSystem.getFileStatus(new Path(path)).getOwner
+  }
 }

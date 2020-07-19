@@ -2,7 +2,8 @@ package com.oceanum.cluster.tasks
 
 import com.oceanum.cluster.exec.{StdHandler, TaskConfig}
 import com.oceanum.common.Environment
-import com.oceanum.common.StringParser.parseExpr
+import com.oceanum.common.StringParser.parseExprRaw
+import com.oceanum.expr.JavaMap
 
 /**
  * @author chenmingkun
@@ -25,13 +26,13 @@ case class JavaTaskConfig(jars: Array[String],
     stdoutHandler,
     stderrHandler
   ) {
-  override def parseFunction(implicit exprEnv: Map[String, Any]): JavaTaskConfig = this.copy(
-    jars = jars.map(parseExpr),
-    mainClass = parseExpr(mainClass),
-    args = args.map(parseExpr),
-    options = options.map(parseExpr),
-    env = env.map(kv => (parseExpr(kv._1), parseExpr(kv._2))),
-    directory = parseExpr(directory)
+  override def parseFunction(implicit exprEnv: JavaMap[String, AnyRef]): JavaTaskConfig = this.copy(
+    jars = jars.map(parseExprRaw),
+    mainClass = parseExprRaw(mainClass),
+    args = args.map(parseExprRaw),
+    options = options.map(parseExprRaw),
+    env = env.map(kv => (parseExprRaw(kv._1), parseExprRaw(kv._2))),
+    directory = parseExprRaw(directory)
   )
   override def files: Seq[String] = jars.toSeq
 

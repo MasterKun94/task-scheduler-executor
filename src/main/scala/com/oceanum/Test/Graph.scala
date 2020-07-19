@@ -2,14 +2,14 @@ package com.oceanum.Test
 
 import java.net.{InetAddress, UnknownHostException}
 
-import akka.Done
-import akka.actor.ActorSystem
-import akka.stream.scaladsl._
-import akka.stream.{ClosedShape, OverflowStrategy}
-import com.oceanum.client.{Task, TaskClient}
-import com.oceanum.graph.{GraphMetaHandler, RichGraphMeta}
+import com.oceanum.ClusterStarter
+import com.oceanum.Test.Graph.getSelfAddress
+import com.oceanum.client.TaskClient
+import com.oceanum.cluster.exec.State
+import com.oceanum.common.Environment.Arg
+import com.oceanum.graph.{GraphMetaHandler, ReRunStrategy, RichGraphMeta}
 
-import scala.concurrent.Future
+import scala.concurrent.Promise
 
 object Graph {
   val ip2 = "192.168.10.131"
@@ -23,22 +23,43 @@ object Graph {
     }
   }
 
-  implicit val client: TaskClient = TaskClient(ip1, 5555, ip2, "src/main/resources/application.properties")
-  implicit val metaHandler: GraphMetaHandler = GraphMetaHandler.default()
+  val promise = Promise[RichGraphMeta]()
+
+  implicit val client: TaskClient = TaskClient(ip1, 5552, ip2, "src/main/resources/application.properties")
+
+  implicit val metaHandler: GraphMetaHandler = new GraphMetaHandler {
+    override def onRunning(richGraphMeta: RichGraphMeta, taskState: State): Unit = {
+      println("state: " + taskState)
+      println("graphMeta: " + richGraphMeta)
+    }
+
+    override def onComplete(richGraphMeta: RichGraphMeta): Unit = {
+      println("graphMeta complete: " + richGraphMeta.graphStatus)
+      println(richGraphMeta)
+      richGraphMeta.operators.foreach(println)
+      if (!promise.isCompleted) promise.success(richGraphMeta)
+    }
+
+    override def onStart(richGraphMeta: RichGraphMeta): Unit = {
+      println("graphMeta start: " + richGraphMeta)
+    }
+
+    override def close(): Unit = println("handler closed")
+  }
 
   def main(args: Array[String]): Unit = {
     import com.oceanum.graph.FlowFactory._
 
     val instance = createGraph { implicit graph =>
 
-      val python1 = createFlow(Test.task())
+      val python1 = createFlow(Test.task().copy(rawEnv = Map("file_name" -> "${(graph.id() % 2 == 0) ? 'python-err' : 'python'}")))
       val python2 = createFlow(Test.task())
       val python3 = createFlow(Test.task())
       val python4 = createFlow(Test.task())
-      val python5 = createFlow(Test.task().copy(rawEnv = Map("file_name" -> "python-err")))
+      val python5 = createFlow(Test.task())
       val fork = createFork(2)
       val join = createJoin(2)
-      val decision = createDecision(2)(_ => 1)
+      val decision = createDecision(Array("false"))
       val converge = createConverge(2)
 
       graph.start --> fork
@@ -46,38 +67,27 @@ object Graph {
       fork --> python2 --> decision
       decision --> python3 --> converge
       decision --> python4 --> converge
-      converge --> python5 --> join
-      join --> graph.end
+      converge --> join
+      join --> python5 --> graph.end
 
     }.run()
 
 
     instance.offer(RichGraphMeta() addEnv ("file_name" -> "python"))
 
+    import scala.concurrent.ExecutionContext.Implicits.global
+    promise.future.onComplete(meta => {
+      Thread.sleep(3000)
+      val m = meta.get.reRunStrategy = ReRunStrategy.RUN_ALL_AFTER_FAILED
+      println("retry: " + m)
+      instance.offer(m)
+    })
+
   }
 }
 
 object Test1 extends App {
-  implicit val sys: ActorSystem = Test.client.system
-  import scala.concurrent.ExecutionContext.Implicits.global
-  val source0 = Source.queue[RichGraphMeta](1000, OverflowStrategy.backpressure)
-  val sink0 = Sink.foreach[RichGraphMeta]{ metadata => {
-    println(metadata.graphStatus)
-    println(metadata.operators.mkString("\r\n"))
-  }}
-  val graph = RunnableGraph.fromGraph(GraphDSL.create(source0, sink0)((_, _)) { implicit builder: GraphDSL.Builder[(SourceQueueWithComplete[RichGraphMeta], Future[Done])] =>(source, sink) =>
-//    val start = Start(source)
-//    val end = End(sink)
-    import GraphDSL.Implicits._
-    val flow = Flow[RichGraphMeta].mapAsync(1)(m => Future({Thread.sleep(3000); println(m); m}))
-    source ~> flow ~> sink
-    ClosedShape
-  })
-    .run()
-
-  for (e <- 1 to 5) {
-    Thread.sleep(2000)
-    println("start")
-    graph._1.offer(RichGraphMeta())
-  }
+  val configFile = "arc/main/resources/application.properties"
+  val ip2 = getSelfAddress
+  ClusterStarter.main(Array(s"${Arg.CONF}=$configFile", s"${Arg.HOST}=$ip2"))
 }

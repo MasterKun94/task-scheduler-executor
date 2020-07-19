@@ -6,6 +6,7 @@ import com.oceanum.client.TaskMeta
 import com.oceanum.cluster.exec.{StdHandler, TaskConfig}
 import com.oceanum.common.Environment
 import com.oceanum.common.Implicits.PathHelper
+import com.oceanum.expr.JavaMap
 import com.oceanum.file.FileClient
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -27,7 +28,10 @@ abstract class ProcessTaskConfig(val propCmd: Array[String] = Array.empty,
   }
 
   override def prepare(taskMeta: TaskMeta[_], env: Map[String, Any])(implicit ec: ExecutionContext): Future[ProcessTaskConfig] = {
-    val taskConfig = SuUserTaskConfig(taskMeta.user, this).parseFunction(env)
+    import com.oceanum.common.Implicits.EnvHelper
+    val rawEnv = env.toJava
+    env.foreach(println)
+    val taskConfig = SuUserTaskConfig(taskMeta.user, this).parseFunction(rawEnv)
     val fileMap: Map[String, String] = taskConfig.files
       .map(src => (src, taskMeta.execDir/new File(src).getName))
       .toMap
@@ -37,7 +41,7 @@ abstract class ProcessTaskConfig(val propCmd: Array[String] = Array.empty,
       .map(_ => newConfig)
   }
 
-  def parseFunction(implicit exprEnv: Map[String, Any]): ProcessTaskConfig
+  def parseFunction(implicit exprEnv: JavaMap[String, AnyRef]): ProcessTaskConfig
 
   def files: Seq[String] = Seq.empty
 

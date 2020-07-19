@@ -45,12 +45,16 @@ class RichGraphMeta(map: Map[String, Any]) extends Meta[RichGraphMeta](map) with
     this + ("reRunStrategy" -> reRunStrategy)
   }
 
-  def reRunFlag: Boolean = this("reRunFlag")
+  def reRunFlag: Boolean = this.get("reRunFlag").getOrElse(false)
 
-  def reRunFlag_=(flag: Boolean): RichGraphMeta = this + ("reRunFlag" -> (this.reRunFlag || flag))
+  def reRunFlag_=(flag: Boolean): RichGraphMeta = this + ("reRunFlag" -> flag)
 
   override def graphStatus: GraphStatus.value = {
     this.get("graphStatus").getOrElse(GraphStatus.OFFLINE)
+  }
+
+  def graphStatus_=(status: GraphStatus.value): RichGraphMeta = {
+    this + ("graphStatus" -> status)
   }
 
   def updateGraphStatus(status: GraphStatus.value): RichGraphMeta = {
@@ -58,7 +62,18 @@ class RichGraphMeta(map: Map[String, Any]) extends Meta[RichGraphMeta](map) with
   }
 
   def merge(meta: RichGraphMeta): RichGraphMeta = {
-    this + ("operators" -> (this.operators ++ meta.operators)) updateGraphStatus meta.graphStatus
+    val keys: Set[Int] = this.operators.keySet ++ meta.operators.keySet
+    val map: Map[Int, TaskMeta[_]] = keys.map { key => {
+      val task = (this.operators.get(key), meta.operators.get(key)) match {
+        case (Some(o1), Some(o2)) => if (o1.createTime.before(o2.createTime)) o2 else o1
+        case (None, Some(o2)) => o2
+        case (Some(o1), None) => o1
+        case (None, None) => throw new IllegalArgumentException
+      }
+      (key, task.asInstanceOf[RichTaskMeta])
+    }}.toMap
+
+    this + ("operators" -> map) updateGraphStatus meta.graphStatus
   }
 
   override def error: Throwable = {

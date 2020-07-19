@@ -2,6 +2,7 @@ package com.oceanum.cluster.tasks
 
 import com.oceanum.cluster.exec.StdHandler
 import com.oceanum.common.StringParser
+import com.oceanum.expr.JavaMap
 
 /**
  * @author chenmingkun
@@ -13,8 +14,8 @@ object SysTasks {
     propStdoutHandler = StdHandler.empty,
     propStderrHandler = StdHandler.empty
   ) {
-    override def parseFunction(implicit exprEnv: Map[String, Any]): ProcessTaskConfig = this.copy(
-      user = StringParser.parseExpr(user)
+    override def parseFunction(implicit exprEnv: JavaMap[String, AnyRef]): ProcessTaskConfig = this.copy(
+      user = StringParser.parseExprRaw(user)
     )
   }
 }

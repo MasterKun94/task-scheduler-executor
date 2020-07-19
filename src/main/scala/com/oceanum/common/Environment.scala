@@ -1,7 +1,7 @@
 package com.oceanum.common
 
 import java.io.{File, FileInputStream}
-import java.util.Properties
+import java.util.{Locale, Properties}
 import java.util.concurrent.atomic.AtomicBoolean
 
 import akka.actor.{ActorRef, ActorSystem}
@@ -12,6 +12,7 @@ import ch.qos.logback.classic.joran.JoranConfigurator
 import com.oceanum.cluster.exec.{TaskConfig, TypedRunner}
 import com.oceanum.cluster.runners.ProcessRunner
 import com.oceanum.common.Implicits.{DurationHelper, PathHelper}
+import com.oceanum.expr.Evaluator
 import com.typesafe.config.ConfigFactory
 import org.slf4j.LoggerFactory
 
@@ -27,7 +28,7 @@ import scala.util.{Properties => SystemProp}
 object Environment {
 
   private val properties = new Properties()
-
+  lazy val LOCALE: Locale = Locale.ENGLISH
   lazy val AKKA_CONF: String = parsePath(getProperty(Key.AKKA_CONF, BASE_PATH/"conf"/"application.conf"))
   lazy val BASE_PATH: String = getBasePath(getProperty(Key.BASE_PATH, SystemProp.userDir))
   lazy val EXEC_PYTHON: String = getProperty(Key.EXEC_PYTHON, "python")
@@ -236,6 +237,7 @@ object Environment {
       configurator.doConfigure(logback)
     }
     loaded.set(true)
+    Evaluator.init()
   }
 
   private def logFile: String = {

@@ -33,7 +33,6 @@ class TaskClient(endpoint: ActorRef, val system: ActorSystem)(implicit execution
   }
 
   def doExecute(requestMsg: Message, task: Task, handler: StateHandler): Future[Seq[TaskInstance]] = {
-//    println("do execute: " + task)
     val client = getClient
     val promise = Promise[State]()
     client

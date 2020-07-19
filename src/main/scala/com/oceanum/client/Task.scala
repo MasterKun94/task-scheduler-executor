@@ -33,7 +33,7 @@ case class Task(id: Int,
     )
   }
 
-  def addGraphMeta(graphMeta: RichGraphMeta): Task = this.copy(rawEnv = rawEnv.addGraph(graphMeta))
+  def addGraphMeta(graphMeta: RichGraphMeta): Task = this.copy(rawEnv = rawEnv.combineGraph(graphMeta))
 
   def env: Map[String, Any] = rawEnv + (EnvHelper.taskKey -> metadata)
 

@@ -112,12 +112,20 @@ class FSListFilePathsFunction extends AbstractFunction {
   }
 }
 
-
-class FSSizePathsFunction extends AbstractFunction {
+class FSSizeFunction extends AbstractFunction {
   override def getName: String = "fs.size"
 
   override def call(env: JavaMap[String, AnyRef], path: AviatorObject): AviatorObject = {
     val str = FunctionUtils.getStringValue(path, env)
-    AviatorLong.valueOf(new File(str).getTotalSpace)
+    AviatorLong.valueOf(new File(str).length())
+  }
+}
+
+class FSModifiedTimeFunction extends AbstractFunction {
+  override def getName: String = "fs.modifiedTime"
+
+  override def call(env: JavaMap[String, AnyRef], path: AviatorObject): AviatorObject = {
+    val str = FunctionUtils.getStringValue(path, env)
+    AviatorLong.valueOf(new File(str).lastModified())
   }
 }

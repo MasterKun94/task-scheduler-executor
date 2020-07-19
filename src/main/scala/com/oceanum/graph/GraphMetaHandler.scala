@@ -14,7 +14,10 @@ trait GraphMetaHandler {
 
 object GraphMetaHandler {
   def default(): GraphMetaHandler = new GraphMetaHandler {
-    override def onRunning(richGraphMeta: RichGraphMeta, taskState: State): Unit = println("graphMeta: " + richGraphMeta)
+    override def onRunning(richGraphMeta: RichGraphMeta, taskState: State): Unit = {
+      println("state: " + taskState)
+      println("graphMeta: " + richGraphMeta)
+    }
 
     override def onComplete(richGraphMeta: RichGraphMeta): Unit = {
       println("graphMeta complete: " + richGraphMeta.graphStatus)

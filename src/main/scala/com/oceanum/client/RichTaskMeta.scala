@@ -44,7 +44,7 @@ class RichTaskMeta(map: Map[String, Any]) extends Meta[RichTaskMeta](map) with T
 
   def state_=(state: State.value): RichTaskMeta = this + ("state" -> state)
 
-  override def state: State.value = this("this")
+  override def state: State.value = this("state")
 
   override def retryNum: Int = this.get("retryNum").getOrElse(0)
 
@@ -76,14 +76,12 @@ class RichTaskMeta(map: Map[String, Any]) extends Meta[RichTaskMeta](map) with T
   def withTask(task: Task): RichTaskMeta = {
     import com.oceanum.common.Implicits.EnvHelper
     val graphMeta = task.rawEnv.getGraph
-    val taskMeta = task.rawEnv.getTask
     val dateFormat = new SimpleDateFormat("yyyyMMdd").format(graphMeta.startTime)
-
     this ++ RichTaskMeta(
       "id" -> task.id,
       "taskType" -> task.prop.taskType,
       "user" -> task.user,
-      "execDir" -> Environment.EXEC_WORK_DIR/dateFormat/graphMeta.name/graphMeta.id/taskMeta.id
+      "execDir" -> Environment.EXEC_WORK_DIR/dateFormat/graphMeta.name/graphMeta.id/task.id
     )
   }
 

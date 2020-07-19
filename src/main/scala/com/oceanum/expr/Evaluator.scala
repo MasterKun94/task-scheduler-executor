@@ -1,34 +1,40 @@
 package com.oceanum.expr
 
+import java.util.Date
+
 import com.googlecode.aviator.AviatorEvaluator
+import com.googlecode.aviator.lexer.token.OperatorType
 import com.googlecode.aviator.runtime.`type`.AviatorFunction
-import com.oceanum.common.StringParser
+import com.oceanum.common.Implicits.EnvHelper
 
 /**
  * @author chenmingkun
  * @date 2020/7/16
  */
 object Evaluator {
-  def addFunction(function: AviatorFunction): Unit = {
-    AviatorEvaluator.addFunction(function)
+  def addFunction(function: AviatorFunction): Unit = AviatorEvaluator.addFunction(function)
+
+  def addOpFunction(operatorType: OperatorType, function: AviatorFunction): Unit = AviatorEvaluator.addOpFunction(operatorType, function)
+
+  def execute(expr: String, env: Map[String, Any]): Any = rawExecute(expr, env.toJava)
+
+  def rawExecute(expr: String, env: JavaMap[String, AnyRef]): Any = {
+    if (env.isEmpty) AviatorEvaluator.execute(expr)
+    else AviatorEvaluator.execute(expr, env)
   }
 
-  def execute(expr: String, env: Map[String, Any]): Any = {
-    init
-    val javaEnv = new JavaHashMap[String, AnyRef](env.size)
-    for (elem <- env) {
-      javaEnv.put(elem._1, elem._2.asInstanceOf[AnyRef])
-    }
-    AviatorEvaluator.execute(expr, javaEnv)
-  }
-
-  private lazy val init: Unit = {
+  def init(): Unit = {
     addFunction(new DurationFunction)
     addFunction(new DurationMillisFunction)
+    addFunction(new DurationMilliFunction)
     addFunction(new DurationSecondsFunction)
+    addFunction(new DurationSecondFunction)
     addFunction(new DurationMinutesFunction)
+    addFunction(new DurationMinuteFunction)
     addFunction(new DurationHoursFunction)
+    addFunction(new DurationHourFunction)
     addFunction(new DurationDaysFunction)
+    addFunction(new DurationDayFunction)
 
     addFunction(new DateFormatFunction)
     addFunction(new DateParseFunction)
@@ -47,11 +53,15 @@ object Evaluator {
     addFunction(new FSParentFunction)
     addFunction(new FSListFunction)
     addFunction(new FSListFilePathsFunction)
-    addFunction(new FSSizePathsFunction)
+    addFunction(new FSSizeFunction)
+    addFunction(new FSModifiedTimeFunction)
 
     addFunction(new HDFSExistFunction)
     addFunction(new HDFSIsDirFunction)
     addFunction(new HDFSIsFileFunction)
+    addFunction(new HDFSAccessTimeFunction)
+    addFunction(new HDFSSizeFunction)
+    addFunction(new HDFSModifiedTimeFunction)
 
     addFunction(new TaskIdFunction)
     addFunction(new TaskUserFunction)
@@ -59,15 +69,59 @@ object Evaluator {
     addFunction(new TaskStartTimeFunction)
     addFunction(new TaskTypeFunction)
     addFunction(new TaskExecDirFunction)
+
+    addFunction(new GraphIdFunction)
+    addFunction(new GraphNameFunction)
+    addFunction(new GraphCreateTimeFunction)
+    addFunction(new GraphScheduleTimeFunction)
+    addFunction(new GraphStartTimeFunction)
+
+    addFunction(new NodeHostFunction)
+    addFunction(new NodePortFunction)
+    addFunction(new NodeTopicsFunction)
+    addFunction(new NodeBaseDirFunction)
+    addFunction(new NodeWorkDirFunction)
+    addFunction(new NodeLogDirFunction)
+    addFunction(new NodeEnvFunction)
+
+    addOpFunction(OperatorType.ADD, new OpAddFunction)
+    addOpFunction(OperatorType.SUB, new OpSubFunction)
+    addOpFunction(OperatorType.NEG, new OpNegFunction)
+    addOpFunction(OperatorType.DIV, new OpDivFunction)
+    addOpFunction(OperatorType.MULT, new OpMulFunction)
+    addOpFunction(OperatorType.GT, new OpGtFunction)
+    addOpFunction(OperatorType.GE, new OpGeFunction)
+    addOpFunction(OperatorType.LT, new OpLtFunction)
+    addOpFunction(OperatorType.LE, new OpLeFunction)
+    addOpFunction(OperatorType.EQ, new OpEqFunction)
+    addOpFunction(OperatorType.NEQ, new OpNEqFunction)
   }
 
   def main(args: Array[String]): Unit = {
-    init
-    println(Evaluator.execute("duration.days(-1)", Map.empty))
-    println(Evaluator.execute("date.format('yyyyMMdd', date.now())", Map.empty))
-    println(Evaluator.execute("date.format('yyyyMMdd', '-1 day')", Map.empty))
-    println(Evaluator.execute("date.format('yyyyMMdd', date.now(), duration('1 day'))", Map.empty))
-    println(Evaluator.execute("fs.listFiles('C:/Users/chenmingkun/work/idea/work/task-scheduler-core/task-scheduler-executor')", Map.empty).asInstanceOf[Array[String]].toSeq)
-    println(Evaluator.execute("fs.parent('C:/Users/chenmingkun/work/idea/work/task-scheduler-core/task-scheduler-executor')", Map.empty))
+    init()
+    println(new Date())
+    println(Evaluator.execute("(date.now() - duration.days(1)) > date.parse('yyyy-MM-dd HH:mm:ss', '2020-07-19 21:41:00')", Map.empty))
+    import com.googlecode.aviator.AviatorEvaluator
+    println(AviatorEvaluator.execute("a=date.now(); b=duration.day(1); a+b"))
+    println(Evaluator.execute("d1=date.now(); d2=duration.day(1); d1 + d2", Map.empty))
+    println(Evaluator.execute("duration.days(1) > duration.days(2)", Map.empty))
+    println(Evaluator.execute("duration.days(1) < duration.days(2)", Map.empty))
+    println(Evaluator.execute("duration.days(1) >= duration.days(2)", Map.empty))
+    println(Evaluator.execute("duration.days(1) <= duration.days(2)", Map.empty))
+    println(Evaluator.execute("duration.days(1) == duration.hours(24)", Map.empty))
+
+//    println(Evaluator.execute("date.now() + date.now()", Map.empty))
+//    println(DateUtil.format("yyyy-MM-dd HH:mm:ss").format(new Date()))
+//    println(Evaluator.execute("date.format('yyyy-MM-dd HH:mm:ss', fs.modifiedTime('C:/Users/chenmingkun/work/idea/work/task-scheduler-core/task-scheduler-executor'))", Map.empty))
+//    println(StringParser.parseExpr("${name}")(Map("graph" -> (RichGraphMeta().id = 1), "name" -> "${(graph.id() % 2 == 0) ? 'python-err' : 'python'}")))
+//    println(Evaluator.execute("true", Map.empty))
+//    println(Evaluator.execute("duration.days(-1)", Map.empty))
+//    println(Evaluator.execute("date.format('yyyyMMdd', date.now())", Map.empty))
+//    println(Evaluator.execute("date.format('yyyyMMdd', '-1 day')", Map.empty))
+//    println(Evaluator.execute("date.format('yyyyMMdd', date.now(), duration('1 day'))", Map.empty))
+//    println(Evaluator.execute("fs.listFiles('C:/Users/chenmingkun/work/idea/work/task-scheduler-core/task-scheduler-executor')", Map.empty).asInstanceOf[Array[String]].toSeq)
+//    println(Evaluator.execute("fs.parent('C:/Users/chenmingkun/work/idea/work/task-scheduler-core/task-scheduler-executor')", Map.empty))
+//    println(Evaluator.execute("test.name", Map("test" -> Map("name" -> 1))))
+////    println(Evaluator.execute("test.name", Map("test" -> new Test("name", 1))))
   }
 }
