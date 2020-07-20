@@ -44,6 +44,15 @@ class HDFSSizeFunction extends AbstractFunction {
   }
 }
 
+class HDFSBlockSizeFunction extends AbstractFunction {
+  override def getName: String = "hdfs.blockSize"
+
+  override def call(env: JavaMap[String, AnyRef], path: AviatorObject): AviatorObject = {
+    val str = FunctionUtils.getStringValue(path, env)
+    AviatorLong.valueOf(HDFSFileClient.blockSize(str))
+  }
+}
+
 class HDFSAccessTimeFunction extends AbstractFunction {
   override def getName: String = "hdfs.accessTime"
 

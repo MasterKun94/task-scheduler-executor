@@ -48,4 +48,18 @@ object StringParser {
           unknown
       }
   }
+
+  def validate(expr: String): Unit = {
+    if (!(expr == null) && !expr.trim.isEmpty) {
+      expr match {
+        case pattern(pre, reg, str) =>
+          val regValue = Evaluator.compile(reg, cache = false)
+          val value = if (regValue == null) "" else regValue.toString
+          validate(pre) + value + validate(str)
+        case str: String =>
+        case unknown =>
+          println(unknown)
+      }
+    }
+  }
 }

@@ -79,20 +79,11 @@ object FlowFactory {
   }
 
   def createDecision(expr: Array[String])(implicit builder: GraphBuilder): Decision = {
-    val parallel = expr.length + 1
-    val func: GraphMeta[_] => Int = meta => {
-      val env: JavaMap[String, AnyRef] = meta.env.combineGraph(meta.asInstanceOf[RichGraphMeta]).toJava
-      val booFunc: String => Boolean = str => Evaluator.rawExecute(str, env) match {
-        case s: String => s.toBoolean
-        case b: Boolean => b
-        case other => other.toString.toBoolean
-      }
-      expr.zipWithIndex.find(t => booFunc(t._1)).map(_._2) match {
-        case Some(int) => int
-        case None => parallel - 1
-      }
-    }
-    createDecision(parallel)(func)
+    val meta2env = (meta: GraphMeta[_]) => meta.env.combineGraph(meta.asInstanceOf[RichGraphMeta]).toJava
+    val decide = expr
+      .map(Evaluator.compile(_, cache = false))
+      .map(expr => (meta: GraphMeta[_]) => expr.execute(meta2env(meta)).asInstanceOf[Boolean])
+    createDecision(decide)
   }
 
   def createConverge(parallel: Int)(implicit builder: GraphBuilder): Converge = {
@@ -166,17 +157,17 @@ object FlowFactory {
     import schedulerClient.system.dispatcher
     val promise = Promise[RichGraphMeta]()
     val stateHandler = StateHandler { state =>
-      val graphMeta = metadata.operators_+(state)
+      val graphMeta = metadata.addOperators(state)
       builder.handler.onRunning(graphMeta, state)
     }
     schedulerClient.execute(task, stateHandler)
       .completeState.onComplete {
       case Success(value) =>
-        val meta = metadata.operators_+(value).reRunFlag = true
+        val meta = metadata.addOperators(value).reRunFlag = true
         promise.success(meta)
       case Failure(e) =>
         e.printStackTrace()
-        val meta = metadata.operators_+(FAILED(RichTaskMeta().failure(task, e)))
+        val meta = metadata.addOperators(FAILED(RichTaskMeta().failure(task, e)))
         promise.success(meta)
     }
     promise.future

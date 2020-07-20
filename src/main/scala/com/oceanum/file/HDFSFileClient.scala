@@ -74,4 +74,8 @@ object HDFSFileClient {
   def owner(path: String): String = {
     fileSystem.getFileStatus(new Path(path)).getOwner
   }
+
+  def blockSize(path: String): Long = {
+    fileSystem.getFileStatus(new Path(path)).getBlockSize
+  }
 }

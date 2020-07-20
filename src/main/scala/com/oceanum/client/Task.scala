@@ -33,6 +33,10 @@ case class Task(id: Int,
     )
   }
 
+  def validate: Unit = {
+    prop.validate
+  }
+
   def addGraphMeta(graphMeta: RichGraphMeta): Task = this.copy(rawEnv = rawEnv.combineGraph(graphMeta))
 
   def env: Map[String, Any] = rawEnv + (EnvHelper.taskKey -> metadata)

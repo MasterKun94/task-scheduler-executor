@@ -7,5 +7,9 @@ import java.text.SimpleDateFormat
  * @date 2020/7/19
  */
 object DateUtil {
-  def format(format: String): SimpleDateFormat = new SimpleDateFormat(format, Environment.LOCALE)
+  def format(str: String): SimpleDateFormat = {
+    val format = new SimpleDateFormat(str, Environment.LOCALE)
+    format.setTimeZone(Environment.TIME_ZONE)
+    format
+  }
 }

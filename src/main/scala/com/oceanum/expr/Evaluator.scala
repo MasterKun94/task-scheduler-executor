@@ -2,9 +2,10 @@ package com.oceanum.expr
 
 import java.util.Date
 
-import com.googlecode.aviator.AviatorEvaluator
+import com.googlecode.aviator.{AviatorEvaluator, Expression}
 import com.googlecode.aviator.lexer.token.OperatorType
 import com.googlecode.aviator.runtime.`type`.AviatorFunction
+import com.oceanum.common.Environment
 import com.oceanum.common.Implicits.EnvHelper
 
 /**
@@ -20,10 +21,17 @@ object Evaluator {
 
   def rawExecute(expr: String, env: JavaMap[String, AnyRef]): Any = {
     if (env.isEmpty) AviatorEvaluator.execute(expr)
-    else AviatorEvaluator.execute(expr, env)
+    else AviatorEvaluator.execute(expr, env, Environment.AVIATOR_CACHE_ENABLED)
+  }
+
+  def compile(expr: String, cache: Boolean = Environment.AVIATOR_CACHE_ENABLED): Expression = {
+    AviatorEvaluator.compile(expr, cache)
   }
 
   def init(): Unit = {
+    if (Environment.AVIATOR_CACHE_ENABLED) {
+      AviatorEvaluator.getInstance().useLRUExpressionCache(Environment.AVIATOR_CACHE_CAPACITY)
+    }
     addFunction(new DurationFunction)
     addFunction(new DurationMillisFunction)
     addFunction(new DurationMilliFunction)
@@ -59,9 +67,10 @@ object Evaluator {
     addFunction(new HDFSExistFunction)
     addFunction(new HDFSIsDirFunction)
     addFunction(new HDFSIsFileFunction)
-    addFunction(new HDFSAccessTimeFunction)
     addFunction(new HDFSSizeFunction)
+    addFunction(new HDFSBlockSizeFunction)
     addFunction(new HDFSModifiedTimeFunction)
+    addFunction(new HDFSAccessTimeFunction)
 
     addFunction(new TaskIdFunction)
     addFunction(new TaskUserFunction)
@@ -89,12 +98,12 @@ object Evaluator {
     addOpFunction(OperatorType.NEG, new OpNegFunction)
     addOpFunction(OperatorType.DIV, new OpDivFunction)
     addOpFunction(OperatorType.MULT, new OpMulFunction)
-    addOpFunction(OperatorType.GT, new OpGtFunction)
-    addOpFunction(OperatorType.GE, new OpGeFunction)
-    addOpFunction(OperatorType.LT, new OpLtFunction)
-    addOpFunction(OperatorType.LE, new OpLeFunction)
-    addOpFunction(OperatorType.EQ, new OpEqFunction)
-    addOpFunction(OperatorType.NEQ, new OpNEqFunction)
+//    addOpFunction(OperatorType.GT, new OpGtFunction)
+//    addOpFunction(OperatorType.GE, new OpGeFunction)
+//    addOpFunction(OperatorType.LT, new OpLtFunction)
+//    addOpFunction(OperatorType.LE, new OpLeFunction)
+//    addOpFunction(OperatorType.EQ, new OpEqFunction)
+//    addOpFunction(OperatorType.NEQ, new OpNEqFunction)
   }
 
   def main(args: Array[String]): Unit = {
@@ -108,7 +117,7 @@ object Evaluator {
     println(Evaluator.execute("duration.days(1) < duration.days(2)", Map.empty))
     println(Evaluator.execute("duration.days(1) >= duration.days(2)", Map.empty))
     println(Evaluator.execute("duration.days(1) <= duration.days(2)", Map.empty))
-    println(Evaluator.execute("duration.days(1) == duration.hours(24)", Map.empty))
+    println(Evaluator.execute("duration.days(1) / duration.hours(1)", Map.empty))
 
 //    println(Evaluator.execute("date.now() + date.now()", Map.empty))
 //    println(DateUtil.format("yyyy-MM-dd HH:mm:ss").format(new Date()))
@@ -122,6 +131,10 @@ object Evaluator {
 //    println(Evaluator.execute("fs.listFiles('C:/Users/chenmingkun/work/idea/work/task-scheduler-core/task-scheduler-executor')", Map.empty).asInstanceOf[Array[String]].toSeq)
 //    println(Evaluator.execute("fs.parent('C:/Users/chenmingkun/work/idea/work/task-scheduler-core/task-scheduler-executor')", Map.empty))
 //    println(Evaluator.execute("test.name", Map("test" -> Map("name" -> 1))))
-////    println(Evaluator.execute("test.name", Map("test" -> new Test("name", 1))))
+//    println(Evaluator.execute("test.name", Map("test" -> new Test("name", 1))))
   }
+
+}
+class Test(val name: String) {
+  def andThen(test: Test): Test = new Test(name + ":" + test.name)
 }

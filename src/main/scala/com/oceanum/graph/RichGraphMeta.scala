@@ -19,7 +19,7 @@ class RichGraphMeta(map: Map[String, Any]) extends Meta[RichGraphMeta](map) with
     this.get("operators").getOrElse(Map.empty[Int, TaskMeta[_]])
   }
 
-  def operators_+(state: State): RichGraphMeta = {
+  def addOperators(state: State): RichGraphMeta = {
     val graphStatus = state match {
       case _: SUCCESS => GraphStatus.RUNNING
       case _: FAILED => GraphStatus.EXCEPTION

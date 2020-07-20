@@ -1,7 +1,7 @@
 package com.oceanum.common
 
 import java.io.{File, FileInputStream}
-import java.util.{Locale, Properties}
+import java.util.{Locale, Properties, TimeZone}
 import java.util.concurrent.atomic.AtomicBoolean
 
 import akka.actor.{ActorRef, ActorSystem}
@@ -29,6 +29,7 @@ object Environment {
 
   private val properties = new Properties()
   lazy val LOCALE: Locale = Locale.ENGLISH
+  lazy val TIME_ZONE: TimeZone = TimeZone.getTimeZone(getProperty("timezone", TimeZone.getDefault.getDisplayName))
   lazy val AKKA_CONF: String = parsePath(getProperty(Key.AKKA_CONF, BASE_PATH/"conf"/"application.conf"))
   lazy val BASE_PATH: String = getBasePath(getProperty(Key.BASE_PATH, SystemProp.userDir))
   lazy val EXEC_PYTHON: String = getProperty(Key.EXEC_PYTHON, "python")
@@ -118,6 +119,8 @@ object Environment {
   lazy val DEV_MODE: Boolean = getProperty(Key.DEV_MODE, "false").toBoolean
   lazy val logger = "akka.event.slf4j.Slf4jLogger"
   lazy val SCHEDULE_EXECUTION_CONTEXT: ExecutionContext = ExecutionContext.global
+  lazy val AVIATOR_CACHE_ENABLED: Boolean = true
+  lazy val AVIATOR_CACHE_CAPACITY: Int = 10000
 
   lazy val OS: OS = {
     val sys = scala.util.Properties

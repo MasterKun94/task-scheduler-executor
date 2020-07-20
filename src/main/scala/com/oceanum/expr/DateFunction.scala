@@ -26,6 +26,7 @@ class DateFormatFunction extends AbstractFunction {
       case AviatorType.JavaType => FunctionUtils.getJavaObject(date, env) match {
         case d: Date => d
         case d: Duration => new Date(System.currentTimeMillis() + d.toMillis)
+        case _ => throw new IllegalArgumentException("illegal argument type: " + date.getAviatorType)
       }
       case AviatorType.String =>
         val duration = Duration(FunctionUtils.getStringValue(date, env))
@@ -46,11 +47,12 @@ class DateFormatFunction extends AbstractFunction {
       case AviatorType.String =>
         Duration(FunctionUtils.getStringValue(shift, env))
       case _ =>
-        throw new IllegalArgumentException("illegal argument type: " + date.getAviatorType)
+        throw new IllegalArgumentException("illegal argument type: " + shift.getAviatorType)
     }
     val date0: Date = date.getAviatorType match {
       case AviatorType.JavaType => FunctionUtils.getJavaObject(date, env).asInstanceOf[Date]
       case AviatorType.Long => new Date(FunctionUtils.getNumberValue(date, env).longValue())
+      case _ => throw new IllegalArgumentException("illegal argument type: " + date.getAviatorType)
     }
     val date1: Date = new Date(date0.getTime + duration.toMillis)
     val str = FunctionUtils.getStringValue(format, env)

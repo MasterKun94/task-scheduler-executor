@@ -31,6 +31,7 @@ class DurationMillisFunction extends AbstractFunction {
         Duration(FunctionUtils.getNumberValue(num, env).doubleValue(), TimeUnit.MILLISECONDS)
       case AviatorType.String =>
         Duration(FunctionUtils.getStringValue(num, env).toDouble, TimeUnit.MILLISECONDS)
+      case _ => throw new IllegalArgumentException("illegal argument: " + num)
     }
     AviatorRuntimeJavaType.valueOf(duration)
   }
@@ -51,6 +52,7 @@ class DurationSecondsFunction extends AbstractFunction {
         Duration(FunctionUtils.getNumberValue(num, env).doubleValue(), TimeUnit.SECONDS)
       case AviatorType.String =>
         Duration(FunctionUtils.getStringValue(num, env).toDouble, TimeUnit.SECONDS)
+      case _ => throw new IllegalArgumentException("illegal argument: " + num)
     }
     AviatorRuntimeJavaType.valueOf(duration)
   }
@@ -71,6 +73,7 @@ class DurationMinutesFunction extends AbstractFunction {
         Duration(FunctionUtils.getNumberValue(num, env).doubleValue(), TimeUnit.MINUTES)
       case AviatorType.String =>
         Duration(FunctionUtils.getStringValue(num, env).toDouble, TimeUnit.MINUTES)
+      case _ => throw new IllegalArgumentException("illegal argument: " + num)
     }
     AviatorRuntimeJavaType.valueOf(duration)
   }
@@ -91,6 +94,7 @@ class DurationHoursFunction extends AbstractFunction {
         Duration(FunctionUtils.getNumberValue(num, env).doubleValue(), TimeUnit.HOURS)
       case AviatorType.String =>
         Duration(FunctionUtils.getStringValue(num, env).toDouble, TimeUnit.HOURS)
+      case _ => throw new IllegalArgumentException("illegal argument: " + num)
     }
     AviatorRuntimeJavaType.valueOf(duration)
   }
@@ -111,6 +115,7 @@ class DurationDaysFunction extends AbstractFunction {
         Duration(FunctionUtils.getNumberValue(num, env).doubleValue(), TimeUnit.DAYS)
       case AviatorType.String =>
         Duration(FunctionUtils.getStringValue(num, env).toDouble, TimeUnit.DAYS)
+      case _ => throw new IllegalArgumentException("illegal argument: " + num)
     }
     AviatorRuntimeJavaType.valueOf(duration)
   }
