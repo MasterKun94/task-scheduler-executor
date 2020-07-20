@@ -1,6 +1,5 @@
 package com.oceanum.expr
 
-import java.text.SimpleDateFormat
 import java.util.Date
 
 import com.googlecode.aviator.runtime.`type`.{AviatorObject, AviatorRuntimeJavaType, AviatorType}
@@ -13,6 +12,15 @@ import scala.concurrent.duration.Duration
  * @author chenmingkun
  * @date 2020/7/17
  */
+class DateFunction extends AbstractFunction {
+  override def getName: String = "date"
+
+  override def call(env: JavaMap[String, AnyRef], time: AviatorObject): AviatorObject = {
+    val num = FunctionUtils.getNumberValue(time, env)
+    AviatorRuntimeJavaType.valueOf(new Date(num.longValue()))
+  }
+}
+
 class DateFormatFunction extends AbstractFunction {
   override def getName: String = "date.format"
 
