@@ -43,7 +43,7 @@ object RunnerManager extends Log {
   }
 
   def submit(operatorProp: Prop): Hook = {
-    operatorProp.eventListener.prepare()
+    operatorProp.eventListener.prepare(operatorProp.metadata)
     priorityMailbox.send(operatorProp)
     operatorProp.hook
   }
@@ -54,19 +54,18 @@ object RunnerManager extends Log {
     log.info("execute manager closed")
   }
 
-  private def consume(prop: Prop): Unit = {
-    val operatorProp = prop
-    operatorProp.eventListener.start()
+  private def consume(operatorProp: Prop): Unit = {
+    val prop = operatorProp.copy(metadata = operatorProp.metadata.copy(startTime = new Date()))
+    prop.eventListener.start(prop.metadata)
     incRunning()
     TaskInfoTrigger.trigger()
-    val meta = RichTaskMeta()
     try {
-      run(operatorProp) match {
+      run(prop) match {
         case ExitCode.ERROR(msg) =>
-          if (operatorProp.retryCount > 1) {
-            val newOperatorProp = operatorProp.retry()
-            operatorProp.eventListener.retry(meta.message = msg)
-            log.info("task begin retry: " + operatorProp.name)
+          if (prop.retryCount > 1) {
+            val newOperatorProp = prop.retry()
+            prop.eventListener.retry(newOperatorProp.metadata.copy(message = msg))
+            log.info("task begin retry: " + newOperatorProp.name)
             incRetrying()
             val cancellable = scheduleOnce(newOperatorProp.retryInterval) {
               this.submit(newOperatorProp)
@@ -76,41 +75,41 @@ object RunnerManager extends Log {
             newOperatorProp.receive(Hook(cancellable))
           } else {
             scheduleOnce(10.second) {
-              operatorProp.prop.close()
+              prop.prop.close()
             }
-            operatorProp.eventListener.failed(meta.message = msg)
-            log.info("task failed: " + operatorProp.name)
+            prop.eventListener.failed(prop.metadata.copy(message = msg, endTime = new Date()))
+            log.info("task failed: " + prop.name)
             incFailed()
           }
 
         case ExitCode.OK =>
           scheduleOnce(10.second) {
-            operatorProp.prop.close()
+            prop.prop.close()
           }
-          operatorProp.eventListener.success()
-          log.info("task success: " + operatorProp.name)
+          prop.eventListener.success(prop.metadata.copy(endTime = new Date()))
+          log.info("task success: " + prop.name)
           incSuccess()
 
         case ExitCode.KILL =>
           scheduleOnce(10.second) {
-            operatorProp.prop.close()
+            prop.prop.close()
           }
-          operatorProp.eventListener.kill()
-          log.info("task kill: " + operatorProp.name)
+          prop.eventListener.kill(prop.metadata.copy(endTime = new Date()))
+          log.info("task kill: " + prop.name)
           incKilled()
 
         case unSupport: ExitCode.UN_SUPPORT =>
-          log.error(s"no executable executor exists for prop ${operatorProp.prop.getClass}")
-          operatorProp.eventListener.failed(meta.message = s"task type not support: ${unSupport.taskType}")
-          operatorProp.prop.close()
+          log.error(s"no executable executor exists for prop ${prop.prop.getClass}")
+          prop.eventListener.failed(prop.metadata.copy(message = s"task type not support: ${unSupport.taskType}", endTime = new Date()))
+          prop.prop.close()
           incFailed()
       }
     } catch {
       case e: Throwable =>
         val message = "this should never happen, or here is a bug"
         log.error(e, message)
-        operatorProp.eventListener.failed(meta.message = message)
-        operatorProp.prop.close()
+        prop.eventListener.failed(prop.metadata.copy(message = message, error = e))
+        prop.prop.close()
         incFailed()
     } finally {
       decRunning()

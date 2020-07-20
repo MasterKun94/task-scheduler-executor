@@ -29,7 +29,7 @@ object FlowFactory {
       val promise = Promise[RichGraphMeta]()
       func(meta).onComplete {
         case Success(value) => promise.success(value)
-        case Failure(e) => promise.success(meta.error = e)
+        case Failure(e) => promise.success(meta.copy(error = e))
       } (taskClient.system.dispatcher)
       promise.future
     }
@@ -37,10 +37,11 @@ object FlowFactory {
   }
 
   def createFlow(task: Task, parallelism: Int = 1)(implicit taskClient: TaskClient, builder: GraphBuilder): TaskFlow = {
+    task.validate()
     createFlow(parallelism)(_ => task)
   }
 
-  def createFlow(parallelism: Int)(taskFunc: GraphMeta[_] => Task)(implicit taskClient: TaskClient, builder: GraphBuilder): TaskFlow = {
+  def createFlow(parallelism: Int)(taskFunc: GraphMeta => Task)(implicit taskClient: TaskClient, builder: GraphBuilder): TaskFlow = {
     val idValue = builder.idValue
     mapAsync(parallelism) { implicit graphMeta =>
       val initialTask = taskFunc(graphMeta)
@@ -52,7 +53,7 @@ object FlowFactory {
           case FallbackStrategy.SHUTDOWN => Future.successful(graphMeta.updateGraphStatus(GraphStatus.FAILED))
         }
         case GraphStatus.FAILED | GraphStatus.KILLED => Future.successful(graphMeta)
-        case other: GraphStatus.value => Future.successful(graphMeta.error = new IllegalArgumentException("this should never happen, unexpected graph state: " + other))
+        case other: GraphStatus.value => Future.successful(graphMeta.copy(error = new IllegalArgumentException("this should never happen, unexpected graph state: " + other)))
       }
     }
   }
@@ -65,13 +66,13 @@ object FlowFactory {
     Join(builder.dslBuilder.add(ZipWithN[RichGraphMeta, RichGraphMeta](_.reduce(_ merge _))(parallel)))
   }
 
-  def createDecision(parallel: Int)(decide: GraphMeta[_] => Int)(implicit builder: GraphBuilder): Decision = {
+  def createDecision(parallel: Int)(decide: GraphMeta => Int)(implicit builder: GraphBuilder): Decision = {
     Decision(builder.dslBuilder.add(Partition(parallel, decide)))
   }
 
-  def createDecision(decide: Array[GraphMeta[_] => Boolean])(implicit builder: GraphBuilder): Decision = {
+  def createDecision(decide: Array[GraphMeta => Boolean])(implicit builder: GraphBuilder): Decision = {
     val parallel = decide.length + 1
-    val func: GraphMeta[_] => Int = meta => decide.zipWithIndex.find(_._1(meta)).map(_._2) match {
+    val func: GraphMeta => Int = meta => decide.zipWithIndex.find(_._1(meta)).map(_._2) match {
       case Some(int) => int
       case None => parallel - 1
     }
@@ -79,10 +80,10 @@ object FlowFactory {
   }
 
   def createDecision(expr: Array[String])(implicit builder: GraphBuilder): Decision = {
-    val meta2env = (meta: GraphMeta[_]) => meta.env.combineGraph(meta.asInstanceOf[RichGraphMeta]).toJava
+    val meta2env = (meta: GraphMeta) => meta.env.combineGraph(meta.asInstanceOf[RichGraphMeta]).toJava
     val decide = expr
       .map(Evaluator.compile(_, cache = false))
-      .map(expr => (meta: GraphMeta[_]) => expr.execute(meta2env(meta)).asInstanceOf[Boolean])
+      .map(expr => (meta: GraphMeta) => expr.execute(meta2env(meta)).asInstanceOf[Boolean])
     createDecision(decide)
   }
 
@@ -93,11 +94,11 @@ object FlowFactory {
   def createGraph(builder: GraphBuilder => Unit)(implicit taskClient: TaskClient, graphMetaHandler: GraphMetaHandler): WorkflowRunner = {
     val metaHandler: GraphMetaHandler = new GraphMetaHandler {
       private val actor = taskClient.system.actorOf(Props(classOf[GraphMetaHandlerActor], graphMetaHandler))
-      override def onRunning(richGraphMeta: RichGraphMeta, taskState: State): Unit = actor ! OnRunning(richGraphMeta, taskState)
+      override def onRunning(richGraphMeta: GraphMeta, taskState: State): Unit = actor ! OnRunning(richGraphMeta, taskState)
 
-      override def onComplete(richGraphMeta: RichGraphMeta): Unit = actor ! OnComplete(richGraphMeta)
+      override def onComplete(richGraphMeta: GraphMeta): Unit = actor ! OnComplete(richGraphMeta)
 
-      override def onStart(richGraphMeta: RichGraphMeta): Unit = actor ! OnStart(richGraphMeta)
+      override def onStart(richGraphMeta: GraphMeta): Unit = actor ! OnStart(richGraphMeta)
 
       override def close(): Unit = actor ! PoisonPill
     }
@@ -107,11 +108,11 @@ object FlowFactory {
       .queue[RichGraphMeta](Environment.GRAPH_SOURCE_QUEUE_BUFFER_SIZE, Environment.GRAPH_SOURCE_QUEUE_OVERFLOW_STRATEGY)
       .map { meta =>
         val start = meta.copy(
-          _.createTime = date,
-          _.startTime = new Date(),
-          _.graphStatus = GraphStatus.RUNNING,
-          _.id = atomicInteger.getAndIncrement(),
-          _.reRunFlag = false
+          createTime = date,
+          startTime = new Date(),
+          graphStatus = GraphStatus.RUNNING,
+          id = atomicInteger.getAndIncrement(),
+          reRunFlag = false
         )
         metaHandler.onStart(start)
         start
@@ -163,11 +164,11 @@ object FlowFactory {
     schedulerClient.execute(task, stateHandler)
       .completeState.onComplete {
       case Success(value) =>
-        val meta = metadata.addOperators(value).reRunFlag = true
+        val meta = metadata.addOperators(value).copy(reRunFlag = true)
         promise.success(meta)
       case Failure(e) =>
         e.printStackTrace()
-        val meta = metadata.addOperators(FAILED(RichTaskMeta().failure(task, e)))
+        val meta = metadata.addOperators(FAILED(task.env.getTask.failure(task, e)))
         promise.success(meta)
     }
     promise.future

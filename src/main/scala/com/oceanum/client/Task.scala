@@ -5,7 +5,7 @@ import java.util.Date
 import com.oceanum.cluster.exec.{EventListener, ExecutionTask, TaskConfig}
 import com.oceanum.common.Environment
 import com.oceanum.common.Implicits.EnvHelper
-import com.oceanum.graph.{GraphMeta, RichGraphMeta}
+import com.oceanum.graph.RichGraphMeta
 
 @SerialVersionUID(1L)
 case class Task(id: Int,
@@ -18,7 +18,7 @@ case class Task(id: Int,
                 prop: TaskProp,
                 parallelism: Int = Environment.GRAPH_FLOW_DEFAULT_PARALLELISM,
                 rawEnv: Map[String, Any] = Map.empty) {
-  def toExecutionTask(implicit listener: RichTaskMeta => EventListener): ExecutionTask[_ <: TaskConfig] = {
+  def toExecutionTask(implicit listener: EventListener): ExecutionTask[_ <: TaskConfig] = {
     val task = this
     val taskMeta = task.metadata
     ExecutionTask(
@@ -27,14 +27,14 @@ case class Task(id: Int,
       retryInterval = retryInterval,
       priority = priority,
       prop = prop.toTask(taskMeta),
-      eventListener = listener(taskMeta),
-      metadata = taskMeta.createTime = new Date(),
+      eventListener = listener,
+      metadata = taskMeta.copy(createTime = new Date()),
       env = env
     )
   }
 
-  def validate: Unit = {
-    prop.validate
+  def validate(): Unit = {
+    prop.validate()
   }
 
   def addGraphMeta(graphMeta: RichGraphMeta): Task = this.copy(rawEnv = rawEnv.combineGraph(graphMeta))

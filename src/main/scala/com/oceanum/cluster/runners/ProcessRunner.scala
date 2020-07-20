@@ -52,7 +52,7 @@ class ProcessRunner extends TypedRunner[ProcessTaskConfig]("SHELL", "SHELL_SCRIP
     streamOutput.send((error, prop.propStderrHandler))
     val hook = new ShellHook(process)
     task.receive(hook)
-    task.eventListener.running()
+    task.eventListener.running(task.metadata)
     val value: ExitCode =
       try {
         val maxWait = if (prop.propWaitForTimeout <= 0) Environment.EXEC_MAX_TIMEOUT.toMillis else prop.propWaitForTimeout

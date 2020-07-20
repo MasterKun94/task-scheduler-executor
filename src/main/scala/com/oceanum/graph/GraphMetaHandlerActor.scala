@@ -12,7 +12,7 @@ class GraphMetaHandlerActor(graphMetaHandler: GraphMetaHandler) extends Actor {
   override def receive: Receive = {
     case OnStart(meta) =>
       graphMetaHandler.onStart(meta)
-      map += (meta.id -> meta)
+      map += (meta.id -> meta.asInstanceOf[RichGraphMeta])
 
     case OnRunning(meta, state) =>
       val oldMeta = map(meta.id)

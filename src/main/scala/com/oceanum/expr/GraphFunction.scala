@@ -15,7 +15,7 @@ class GraphIdFunction extends AbstractFunction {
   override def getName: String = "graph.id"
 
   override def call(env: JavaMap[String, AnyRef]): AviatorObject = {
-    AviatorLong.valueOf(env.get(graphKey).asInstanceOf[GraphMeta[_]].id)
+    AviatorLong.valueOf(env.get(graphKey).asInstanceOf[GraphMeta].id)
   }
 }
 
@@ -23,7 +23,7 @@ class GraphNameFunction extends AbstractFunction {
   override def getName: String = "graph.name"
 
   override def call(env: JavaMap[String, AnyRef]): AviatorObject = {
-    new AviatorString(env.get(graphKey).asInstanceOf[GraphMeta[_]].name)
+    new AviatorString(env.get(graphKey).asInstanceOf[GraphMeta].name)
   }
 }
 
@@ -31,7 +31,7 @@ class GraphCreateTimeFunction extends AbstractFunction {
   override def getName: String = "graph.createTime"
 
   override def call(env: JavaMap[String, AnyRef]): AviatorObject = {
-    val date: Date = env.get(graphKey).asInstanceOf[GraphMeta[_]].createTime
+    val date: Date = env.get(graphKey).asInstanceOf[GraphMeta].createTime
     AviatorRuntimeJavaType.valueOf(date)
   }
 }
@@ -40,7 +40,7 @@ class GraphScheduleTimeFunction extends AbstractFunction {
   override def getName: String = "graph.scheduleTime"
 
   override def call(env: JavaMap[String, AnyRef]): AviatorObject = {
-    val date: Date = env.get(graphKey).asInstanceOf[GraphMeta[_]].scheduleTime
+    val date: Date = env.get(graphKey).asInstanceOf[GraphMeta].scheduleTime
     AviatorRuntimeJavaType.valueOf(date)
   }
 }
@@ -49,7 +49,7 @@ class GraphStartTimeFunction extends AbstractFunction {
   override def getName: String = "graph.startTime"
 
   override def call(env: JavaMap[String, AnyRef]): AviatorObject = {
-    val date: Date = env.get(graphKey).asInstanceOf[GraphMeta[_]].startTime
+    val date: Date = env.get(graphKey).asInstanceOf[GraphMeta].startTime
     AviatorRuntimeJavaType.valueOf(date)
   }
 }

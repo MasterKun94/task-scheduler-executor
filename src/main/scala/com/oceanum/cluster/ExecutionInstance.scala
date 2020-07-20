@@ -17,37 +17,37 @@ import scala.util.{Failure, Success}
  */
 class ExecutionInstance(task: Task, actor: ActorRef) extends Actor with ActorLogging {
 
-  implicit private val listenerGenerator: RichTaskMeta => EventListener = meta => new EventListener {
+  private def listener: EventListener = new EventListener {
     override def prepare(message: RichTaskMeta): Unit = {
-      self ! PrepareMessage(meta ++ message)
+      self ! PrepareMessage(message)
     }
 
     override def start(message: RichTaskMeta): Unit = {
-      self ! StartMessage(meta ++ message)
+      self ! StartMessage(message)
     }
 
     override def running(message: RichTaskMeta): Unit = {
-      self ! RunningMessage(meta ++ message)
+      self ! RunningMessage(message)
     }
 
     override def failed(message: RichTaskMeta): Unit = {
-      self ! FailedMessage(meta ++ message)
+      self ! FailedMessage(message)
     }
 
     override def success(message: RichTaskMeta): Unit = {
-      self ! SuccessMessage(meta ++ message)
+      self ! SuccessMessage(message)
     }
 
     override def retry(message: RichTaskMeta): Unit = {
-      self ! RetryMessage(meta ++ message)
+      self ! RetryMessage(message)
     }
 
     override def timeout(message: RichTaskMeta): Unit = {
-      self ! TimeoutMessage(meta ++ message)
+      self ! TimeoutMessage(message)
     }
 
     override def kill(message: RichTaskMeta): Unit = {
-      self ! KillMessage(meta ++ message)
+      self ! KillMessage(message)
     }
   }
 
@@ -56,7 +56,7 @@ class ExecutionInstance(task: Task, actor: ActorRef) extends Actor with ActorLog
 
   override def preStart(): Unit = {
     implicit val executor: ExecutionContext = Environment.CLUSTER_NODE_TASK_INIT_EXECUTOR
-    val operator = task.toExecutionTask(listenerGenerator)
+    val operator = task.toExecutionTask(listener)
     val interval = task.checkStateInterval
     val client = actor
     log.info("receive operator: [{}], receive schedule check state request from [{}], start schedule with duration [{}]", operator, sender, interval)
@@ -93,7 +93,7 @@ class ExecutionInstance(task: Task, actor: ActorRef) extends Actor with ActorLog
   }
 
   private def start(meta: RichTaskMeta)(implicit holder: Holder): Receive = {
-    implicit val metadata: RichTaskMeta = meta.startTime = new Date()
+    implicit val metadata: RichTaskMeta = meta
     caseCheckState(start_)
       .orElse(caseKillAction)
       .orElse(caseFailed)
@@ -113,7 +113,7 @@ class ExecutionInstance(task: Task, actor: ActorRef) extends Actor with ActorLog
   }
 
   private def retry(meta: RichTaskMeta)(implicit holder: Holder): Receive = {
-    implicit val metadata: RichTaskMeta = meta.incRetry()
+    implicit val metadata: RichTaskMeta = meta
     caseCheckState(retry_)
       .orElse(caseKillAction)
       .orElse(casePrepare)
@@ -130,19 +130,19 @@ class ExecutionInstance(task: Task, actor: ActorRef) extends Actor with ActorLog
   }
 
   private def success(meta: RichTaskMeta)(implicit holder: Holder): Receive = {
-    implicit val metadata: RichTaskMeta = meta.endTime = new Date()
+    implicit val metadata: RichTaskMeta = meta
     caseCheckState(success_)
       .orElse(caseTerminateAction)
   }
 
   private def failed(meta: RichTaskMeta)(implicit holder: Holder): Receive = {
-    implicit val metadata: RichTaskMeta = meta.endTime = new Date()
+    implicit val metadata: RichTaskMeta = meta
     caseCheckState(failed_)
       .orElse(caseTerminateAction)
   }
 
   private def kill(meta: RichTaskMeta)(implicit holder: Holder): Receive = {
-    implicit val metadata: RichTaskMeta = meta.endTime = new Date()
+    implicit val metadata: RichTaskMeta = meta
     caseCheckState(kill_)
       .orElse(caseTerminateAction)
       .orElse(caseFailed)
@@ -164,7 +164,7 @@ class ExecutionInstance(task: Task, actor: ActorRef) extends Actor with ActorLog
   private def caseKillAction(implicit holder: Holder): Receive = {
     case KillAction =>
       holder.hook.kill()
-      self ! KillMessage(RichTaskMeta.empty)
+      self ! KillMessage(new RichTaskMeta())
   }
 
   private def caseTerminateAction(implicit holder: Holder): Receive = {
@@ -182,56 +182,56 @@ class ExecutionInstance(task: Task, actor: ActorRef) extends Actor with ActorLog
 
   private def casePrepare(implicit meta: RichTaskMeta, holder: Holder): Receive = {
     case m: PrepareMessage =>
-      val metadata = m.metadata ++ meta
+      val metadata = meta update m.metadata
       log.info("receive status changing, status: PREPARE({})", metadata)
       context.become(prepare(metadata))
       checkState
   }
   private def caseStart(implicit meta: RichTaskMeta, holder: Holder): Receive = {
     case m: StartMessage =>
-      val metadata = m.metadata ++ meta
+      val metadata = meta update m.metadata
       log.info("receive status changing, status: START({})", metadata)
       context.become(start(metadata))
       checkState
   }
   private def caseRunning(implicit meta: RichTaskMeta, holder: Holder): Receive = {
     case m: RunningMessage =>
-      val metadata = m.metadata ++ meta
+      val metadata = meta update m.metadata
       log.info("receive status changing, status: RUNNING({})", metadata)
       context.become(running(metadata))
       checkState
   }
   private def caseSuccess(implicit meta: RichTaskMeta, holder: Holder): Receive = {
     case m: SuccessMessage =>
-      val metadata = m.metadata ++ meta
+      val metadata = meta update m.metadata
       log.info("receive status changing, status: SUCCESS({})", metadata)
       context.become(success(metadata))
       checkState
   }
   private def caseFailed(implicit meta: RichTaskMeta, holder: Holder): Receive = {
     case m: FailedMessage =>
-      val metadata = m.metadata ++ meta
+      val metadata = meta update m.metadata
       log.info("receive status changing, status: FAILED({})", metadata)
       context.become(failed(metadata))
       checkState
   }
   private def caseRetry(implicit meta: RichTaskMeta, holder: Holder): Receive = {
     case m: RetryMessage =>
-      val metadata = m.metadata ++ meta
+      val metadata = meta update m.metadata
       log.info("receive status changing, status: RETRY({})", metadata)
       context.become(retry(metadata))
       checkState
   }
   private def caseKill(implicit meta: RichTaskMeta, holder: Holder): Receive = {
     case m: KillMessage =>
-      val metadata = m.metadata ++ meta
+      val metadata = meta update m.metadata
       log.info("receive status changing, status: KILL({})", metadata)
       context.become(kill(metadata))
       checkState
   }
   private def caseTimeout(implicit meta: RichTaskMeta, holder: Holder): Receive = {
     case m: TimeoutMessage =>
-      val metadata = m.metadata ++ meta
+      val metadata = meta update m.metadata
       log.info("receive status changing, status: TIMEOUT({})", metadata)
       context.become(timeout(metadata))
       checkState

@@ -3,18 +3,16 @@ package com.oceanum.client
 import java.util.Date
 
 import com.oceanum.cluster.exec.State
-import com.oceanum.common.Meta
 
-trait TaskMeta[T<:TaskMeta[_]] extends Meta[T] {
-  def id: Int
-  def taskType: String
-  def user: String
-  def createTime: Date
-  def startTime: Date
-  def endTime: Date
-  def execDir: String
-  def message: String
-  def error: Throwable
-  def state: State.value
-  def retryNum: Int
-}
+@SerialVersionUID(1L)
+class TaskMeta(val id: Int,
+               val taskType: String,
+               val user: String,
+               val createTime: Date,
+               val startTime: Date,
+               val endTime: Date,
+               val execDir: String,
+               val message: String,
+               val error: Throwable,
+               val state: State.value,
+               val retryNum: Int) extends Serializable

@@ -11,5 +11,5 @@ import scala.concurrent.{ExecutionContext, Future}
 trait TaskConfig {
   def close()
 
-  def prepare(taskMeta: TaskMeta[_], env: Map[String, Any])(implicit ec: ExecutionContext): Future[_<:TaskConfig]
+  def prepare(taskMeta: TaskMeta, env: Map[String, Any])(implicit ec: ExecutionContext): Future[_<:TaskConfig]
 }

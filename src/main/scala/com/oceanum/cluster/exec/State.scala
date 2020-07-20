@@ -8,7 +8,7 @@ import com.oceanum.client.{RichTaskMeta, TaskMeta}
  */
 @SerialVersionUID(1L)
 class State(val name: State.value, meta: RichTaskMeta) extends Serializable {
-  def metadata: TaskMeta[_] = meta.state = name
+  def metadata: TaskMeta = meta.copy(state = name)
 }
 
 object State extends Enumeration {

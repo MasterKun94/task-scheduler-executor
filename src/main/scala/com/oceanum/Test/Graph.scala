@@ -7,7 +7,7 @@ import com.oceanum.Test.Graph.getSelfAddress
 import com.oceanum.client.TaskClient
 import com.oceanum.cluster.exec.State
 import com.oceanum.common.Environment.Arg
-import com.oceanum.graph.{GraphMetaHandler, ReRunStrategy, RichGraphMeta}
+import com.oceanum.graph.{GraphMetaHandler, GraphMeta, RichGraphMeta, ReRunStrategy}
 
 import scala.concurrent.Promise
 
@@ -28,19 +28,19 @@ object Graph {
   implicit val client: TaskClient = TaskClient(ip1, 5552, ip2, "src/main/resources/application.properties")
 
   implicit val metaHandler: GraphMetaHandler = new GraphMetaHandler {
-    override def onRunning(richGraphMeta: RichGraphMeta, taskState: State): Unit = {
+    override def onRunning(richGraphMeta: GraphMeta, taskState: State): Unit = {
       println("state: " + taskState)
       println("graphMeta: " + richGraphMeta)
     }
 
-    override def onComplete(richGraphMeta: RichGraphMeta): Unit = {
+    override def onComplete(richGraphMeta: GraphMeta): Unit = {
       println("graphMeta complete: " + richGraphMeta.graphStatus)
       println(richGraphMeta)
       richGraphMeta.operators.foreach(println)
-      if (!promise.isCompleted) promise.success(richGraphMeta)
+      if (!promise.isCompleted) promise.success(richGraphMeta.asInstanceOf[RichGraphMeta])
     }
 
-    override def onStart(richGraphMeta: RichGraphMeta): Unit = {
+    override def onStart(richGraphMeta: GraphMeta): Unit = {
       println("graphMeta start: " + richGraphMeta)
     }
 
@@ -73,12 +73,12 @@ object Graph {
     }.run()
 
 
-    instance.offer(RichGraphMeta() addEnv ("file_name" -> "python"))
+    instance.offer(new RichGraphMeta() addEnv ("file_name" -> "python"))
 
     import scala.concurrent.ExecutionContext.Implicits.global
     promise.future.onComplete(meta => {
       Thread.sleep(3000)
-      val m = meta.get.reRunStrategy = ReRunStrategy.RUN_ALL_AFTER_FAILED
+      val m = meta.get.copy(reRunStrategy = ReRunStrategy.RUN_ALL_AFTER_FAILED)
       println("retry: " + m)
       instance.offer(m)
     })

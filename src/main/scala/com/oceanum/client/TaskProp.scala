@@ -10,7 +10,7 @@ abstract class TaskProp(val taskType: String) extends Serializable {
 
   def toTask(metadata: RichTaskMeta): TaskConfig
 
-  def validate: Unit
+  def validate(): Unit
 }
 
 @SerialVersionUID(1L)
@@ -27,7 +27,7 @@ case class ShellTaskProp(cmd: Array[String] = Array.empty,
   override def toTask(metadata: RichTaskMeta): ProcessTaskConfig = ShellTaskConfig(
     cmd, env, directory, waitForTimeout, metadata.stdoutHandler, metadata.stderrHandler)
 
-  override def validate: Unit = {
+  override def validate(): Unit = {
     cmd.foreach(StringParser.validate)
     env.foreach(t => StringParser.validate(t._2))
     StringParser.validate(directory)
@@ -44,7 +44,7 @@ case class ShellScriptTaskProp(scriptFile: String = "",
   override def toTask(metadata: RichTaskMeta): ProcessTaskConfig = ShellScriptTaskConfig(
     scriptFile, args, env, directory, waitForTimeout, metadata.stdoutHandler, metadata.stderrHandler)
 
-  override def validate: Unit = {
+  override def validate(): Unit = {
     args.foreach(StringParser.validate)
     env.foreach(t => StringParser.validate(t._2))
     StringParser.validate(directory)
@@ -64,7 +64,7 @@ case class JavaTaskProp(jars: Array[String] = Array.empty,
   override def toTask(metadata: RichTaskMeta): ProcessTaskConfig = JavaTaskConfig(
     jars, mainClass, args, options, env, directory, waitForTimeout, metadata.stdoutHandler, metadata.stderrHandler)
 
-  override def validate: Unit = {
+  override def validate(): Unit = {
     options.foreach(StringParser.validate)
     args.foreach(StringParser.validate)
     jars.foreach(StringParser.validate)
@@ -86,7 +86,7 @@ case class ScalaTaskProp(jars: Array[String] = Array.empty,
   override def toTask(metadata: RichTaskMeta): ProcessTaskConfig = ScalaTaskConfig(
     jars, mainClass, args, options, env, directory, waitForTimeout, metadata.stdoutHandler, metadata.stderrHandler)
 
-  override def validate: Unit = {
+  override def validate(): Unit = {
     options.foreach(StringParser.validate)
     args.foreach(StringParser.validate)
     jars.foreach(StringParser.validate)
@@ -106,7 +106,7 @@ case class PythonTaskProp(pyFile: String = "",
   override def toTask(metadata: RichTaskMeta): ProcessTaskConfig = PythonTaskConfig(
     pyFile, args, env, directory, waitForTimeout, metadata.stdoutHandler, metadata.stderrHandler)
 
-  override def validate: Unit = {
+  override def validate(): Unit = {
     args.foreach(StringParser.validate)
     env.foreach(t => StringParser.validate(t._2))
     StringParser.validate(directory)
@@ -118,5 +118,5 @@ case class PythonTaskProp(pyFile: String = "",
 case class UserAdd(user: String) extends ProcessTaskProp("USER_ADD") {
   override def toTask(metadata: RichTaskMeta): ProcessTaskConfig = UserAddTaskConfig(user)
 
-  override def validate: Unit = StringParser.validate(user)
+  override def validate(): Unit = StringParser.validate(user)
 }

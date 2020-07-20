@@ -54,7 +54,7 @@ object Graph {
     }.run()
 
 
-    instance.offer(RichGraphMeta() addEnv ("file_name" -> "python"))
+    instance.offer(new RichGraphMeta() addEnv ("file_name" -> "python"))
 
   }
 
@@ -93,6 +93,6 @@ object Test1 extends App {
   for (e <- 1 to 5) {
     Thread.sleep(2000)
     println("start")
-    graph._1.offer(RichGraphMeta())
+    graph._1.offer(new RichGraphMeta())
   }
 }

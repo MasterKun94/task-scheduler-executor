@@ -81,7 +81,7 @@ object Implicits {
 
     def addTask(taskMeta: RichTaskMeta): Map[String, Any] = env + (EnvHelper.taskKey -> taskMeta)
 
-    def getTask: RichTaskMeta = env.get(EnvHelper.taskKey).map(_.asInstanceOf[RichTaskMeta]).getOrElse(RichTaskMeta.empty)
+    def getTask: RichTaskMeta = env.get(EnvHelper.taskKey).map(_.asInstanceOf[RichTaskMeta]).getOrElse(new RichTaskMeta()) // TODO
 
     def toJava: JavaMap[String, AnyRef] = evaluate(toJava(env).asInstanceOf[JavaMap[String, AnyRef]])
 

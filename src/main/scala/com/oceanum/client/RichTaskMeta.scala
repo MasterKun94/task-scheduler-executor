@@ -8,47 +8,58 @@ import com.oceanum.cluster.exec.{State, StdHandler}
 import com.oceanum.common.Implicits.PathHelper
 import com.oceanum.common.{Environment, Meta}
 
-
 @SerialVersionUID(1L)
-class RichTaskMeta(map: Map[String, Any]) extends Meta[RichTaskMeta](map) with TaskMeta[RichTaskMeta] {
+class RichTaskMeta(id: Int = 0,
+                   taskType: String = null,
+                   user: String = null,
+                   createTime: Date = null,
+                   startTime: Date = null,
+                   endTime: Date = null,
+                   execDir: String = "",
+                   message: String = "",
+                   error: Throwable = null,
+                   state: State.value = State.OFFLINE,
+                   retryNum: Int = 0) extends TaskMeta(
+  id = id,
+  taskType = taskType,
+  user = user,
+  createTime = createTime,
+  startTime = startTime,
+  endTime = endTime,
+  execDir = execDir,
+  message = message,
+  error = error,
+  state = state,
+  retryNum = retryNum
+) {
 
-  override def id: Int = this("id")
+  def copy(id: Int = id,
+           taskType: String = taskType,
+           user: String = user,
+           createTime: Date = createTime,
+           startTime: Date = startTime,
+           endTime: Date = endTime,
+           execDir: String = execDir,
+           message: String = message,
+           error: Throwable = error,
+           state: State.value = state,
+           retryNum: Int = retryNum): RichTaskMeta = {
+    new RichTaskMeta(
+      id = id,
+      taskType = taskType,
+      user = user,
+      createTime = createTime,
+      startTime = startTime,
+      endTime = endTime,
+      execDir = execDir,
+      message = message,
+      error = error,
+      state = state,
+      retryNum = retryNum
+    )
+  }
 
-  override def taskType: String = this("taskType")
-
-  override def user: String = this("user")
-
-  override def createTime: Date = this("createTime")
-
-  def createTime_=(date: Date): RichTaskMeta = this + ("createTime" -> date)
-
-  override def startTime: Date = this("startTime")
-
-  def startTime_=(date: Date): RichTaskMeta = this + ("startTime" -> date)
-
-  override def endTime: Date = this("endTime")
-
-  def endTime_=(date: Date): RichTaskMeta = this + ("endTime" -> date)
-
-  override def execDir: String = this("execDir")
-
-  def execDir_=(string: String): RichTaskMeta = this + ("execDir" -> string)
-
-  def message_=(message: String):RichTaskMeta = this + ("message" -> message)
-
-  override def message: String = this("message")
-
-  def error_=(e: Throwable): RichTaskMeta = this + ("error" -> e) + ("message" -> e.getMessage)
-
-  override def error: Throwable = this("error")
-
-  def state_=(state: State.value): RichTaskMeta = this + ("state" -> state)
-
-  override def state: State.value = this("state")
-
-  override def retryNum: Int = this.get("retryNum").getOrElse(0)
-
-  def incRetry(): RichTaskMeta = this + ("retryNum" -> (this.retryNum + 1))
+  def incRetry(): RichTaskMeta = this.copy(retryNum = this.retryNum + 1)
 
   def stdoutPath: String = outputPath/s"$id-stdout.out"
 
@@ -77,30 +88,27 @@ class RichTaskMeta(map: Map[String, Any]) extends Meta[RichTaskMeta](map) with T
     import com.oceanum.common.Implicits.EnvHelper
     val graphMeta = task.rawEnv.getGraph
     val dateFormat = new SimpleDateFormat("yyyyMMdd").format(graphMeta.startTime)
-    this ++ RichTaskMeta(
-      "id" -> task.id,
-      "taskType" -> task.prop.taskType,
-      "user" -> task.user,
-      "execDir" -> Environment.EXEC_WORK_DIR/dateFormat/graphMeta.name/graphMeta.id/task.id
+    this.copy(
+      id = task.id,
+      taskType = task.prop.taskType,
+      user = task.user,
+      execDir = Environment.EXEC_WORK_DIR/dateFormat/graphMeta.name/graphMeta.id/task.id
     )
   }
 
   def failure(task: Task, e: Throwable): RichTaskMeta = {
-    this ++ RichTaskMeta(
-      "id" -> task.id,
-      "taskType" -> task.prop.taskType,
-      "user" -> task.user,
-      "error" -> e,
-      "message" -> e.getMessage
+    this.copy(
+      id = task.id,
+      taskType = task.prop.taskType,
+      user = task.user,
+      error = e,
+      message = e.getMessage
     )
   }
 
-  override def toString: String = s"TaskMeta(${map.toArray.map(t => t._1 + ": " + t._2).mkString(", ")})"
+  def update(meta: RichTaskMeta): RichTaskMeta = meta
+
+  override def toString: String = s"TaskMeta(id=$id, taskType=$taskType, user=$user, createTime=$createTime, startTime=$startTime, endTime=$endTime, execDir=$execDir, message=$message, error=$error, state=$state, retryNum=$retryNum"
 }
 
-object RichTaskMeta {
 
-  def empty: RichTaskMeta = new RichTaskMeta(Map.empty)
-
-  def apply(kv: (String, Any)*): RichTaskMeta = new RichTaskMeta(Map(kv: _*))
-}

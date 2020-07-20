@@ -11,7 +11,7 @@ package object graph {
   type DslBuilder = GraphDSL.Builder[Mat]
   type Graph = RunnableGraph[Mat]
 
-  case class OnStart(graphMeta: RichGraphMeta)
-  case class  OnRunning(graphMeta: RichGraphMeta, taskState: State)
-  case class  OnComplete(graphMeta: RichGraphMeta)
+  case class OnStart(graphMeta: GraphMeta)
+  case class  OnRunning(graphMeta: GraphMeta, taskState: State)
+  case class  OnComplete(graphMeta: GraphMeta)
 }

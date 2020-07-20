@@ -7,7 +7,7 @@ import akka.stream.scaladsl.SourceQueueWithComplete
 import scala.concurrent.Future
 
 class Workflow(protected val queue: SourceQueueWithComplete[RichGraphMeta],
-                 protected val future: Future[Done]) {
+               protected val future: Future[Done]) {
     def complete(): Future[Done] = {
       queue.complete()
       queue.watchCompletion()
