@@ -8,8 +8,7 @@ import akka.stream.ClosedShape
 import akka.stream.scaladsl.{Broadcast, Flow, GraphDSL, Merge, Partition, RunnableGraph, Sink, Source, ZipWithN}
 import com.oceanum.client.{RichTaskMeta, StateHandler, Task, TaskClient}
 import com.oceanum.exec.{FAILED, State}
-import com.oceanum.common.Environment
-import com.oceanum.common.Implicits.EnvHelper
+import com.oceanum.common.{Environment, ExprContext}
 import com.oceanum.expr.{Evaluator, JavaMap}
 import com.oceanum.graph.Operator._
 
@@ -80,7 +79,7 @@ object FlowFactory {
   }
 
   def createDecision(expr: Array[String])(implicit builder: GraphBuilder): Decision = {
-    val meta2env = (meta: GraphMeta) => meta.env.combineGraph(meta.asInstanceOf[RichGraphMeta]).toJava
+    val meta2env = (meta: GraphMeta) => (ExprContext(meta.env) + meta.asInstanceOf[RichGraphMeta]).toJava
     val decide = expr
       .map(Evaluator.compile(_, cache = false))
       .map(expr => (meta: GraphMeta) => expr.execute(meta2env(meta)).asInstanceOf[Boolean])

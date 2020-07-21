@@ -3,7 +3,6 @@ package com.oceanum.common
 import java.util.Properties
 
 import com.oceanum.expr.{Evaluator, JavaMap}
-import Implicits.EnvHelper
 
 import scala.util.matching.Regex
 
@@ -29,7 +28,7 @@ object StringParser {
       }
   }
 
-  def parseExpr(expr: String)(implicit env: Map[String, Any]): String = {
+  def parseExpr(expr: String)(implicit env: ExprContext): String = {
     parseExprRaw(expr)(env.toJava)
   }
 

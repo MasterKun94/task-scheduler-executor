@@ -73,42 +73,4 @@ object Implicits {
       str.replaceAll("[/\\\\]", Matcher.quoteReplacement(separator))
     }
   }
-
-  implicit class EnvHelper(env: Map[String, Any]) {
-    def combineGraph(graphMeta: RichGraphMeta): Map[String, Any] = graphMeta.env ++ env + (EnvHelper.graphKey -> graphMeta)
-
-    def getGraph: RichGraphMeta = env(EnvHelper.graphKey).asInstanceOf[RichGraphMeta]
-
-    def addTask(taskMeta: RichTaskMeta): Map[String, Any] = env + (EnvHelper.taskKey -> taskMeta)
-
-    def getTask: RichTaskMeta = env.get(EnvHelper.taskKey).map(_.asInstanceOf[RichTaskMeta]).getOrElse(new RichTaskMeta()) // TODO
-
-    def toJava: JavaMap[String, AnyRef] = evaluate(toJava(env).asInstanceOf[JavaMap[String, AnyRef]])
-
-    private def toJava(ref: Any): AnyRef = ref.asInstanceOf[AnyRef] match {
-      case map: Map[_, _] => map.mapValues(_.asInstanceOf[AnyRef]).mapValues(toJava).asJava
-      case seq: Seq[_] => seq.map(_.asInstanceOf[AnyRef]).map(toJava).asJava
-      case set: Set[_] => set.map(_.asInstanceOf[AnyRef]).map(toJava).asJava
-      case itr: Iterable[_] => itr.map(_.asInstanceOf[AnyRef]).map(toJava).asJava
-      case itr: Iterator[_] => itr.map(_.asInstanceOf[AnyRef]).map(toJava).asJava
-      case default => default
-    }
-
-    def evaluate(ref: AnyRef, env: JavaMap[String, AnyRef]): AnyRef = ref match {
-      case str: String => StringParser.parseExprRaw(str)(env)
-      case map: java.util.Map[_, _] => map.asScala.mapValues(v => evaluate(v.asInstanceOf[AnyRef], env)).asJava
-      case seq: java.util.List[_] => seq.asScala.map(v => evaluate(v.asInstanceOf[AnyRef], env)).asJava
-      case set: java.util.Set[_] => set.asScala.map(v => evaluate(v.asInstanceOf[AnyRef], env)).asJava
-      case default => default
-    }
-
-    def evaluate(env: JavaMap[String, AnyRef]): JavaMap[String, AnyRef] = {
-      evaluate(env, env).asInstanceOf[JavaMap[String, AnyRef]]
-    }
-  }
-
-  object EnvHelper {
-    val taskKey = "task"
-    val graphKey = "graph"
-  }
 }

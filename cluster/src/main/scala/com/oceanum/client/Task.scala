@@ -4,7 +4,6 @@ import java.util.Date
 
 import com.oceanum.exec.{EventListener, ExecutionTask, TaskConfig}
 import com.oceanum.common.{Environment, ExprContext}
-import com.oceanum.common.Implicits.EnvHelper
 import com.oceanum.graph.RichGraphMeta
 
 @SerialVersionUID(1L)
@@ -39,7 +38,7 @@ case class Task(id: Int,
     this.copy(rawEnv = rawEnv + graphMeta)
   }
 
-  def env: ExprContext = rawEnv + (EnvHelper.taskKey -> metadata)
+  def env: ExprContext = rawEnv + (ExprContext.taskKey -> metadata)
 
   private def metadata: RichTaskMeta = rawEnv.taskMeta.withTask(this)
 }

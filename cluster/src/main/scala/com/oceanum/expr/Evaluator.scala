@@ -5,8 +5,7 @@ import java.util.Date
 import com.googlecode.aviator.{AviatorEvaluator, Expression}
 import com.googlecode.aviator.lexer.token.OperatorType
 import com.googlecode.aviator.runtime.`type`.AviatorFunction
-import com.oceanum.common.Environment
-import com.oceanum.common.Implicits.EnvHelper
+import com.oceanum.common.{Environment, ExprContext}
 
 /**
  * @author chenmingkun
@@ -17,7 +16,7 @@ object Evaluator {
 
   def addOpFunction(operatorType: OperatorType, function: AviatorFunction): Unit = AviatorEvaluator.addOpFunction(operatorType, function)
 
-  def execute(expr: String, env: Map[String, Any]): Any = rawExecute(expr, env.toJava)
+  def execute(expr: String, env: ExprContext): Any = rawExecute(expr, env.toJava)
 
   def rawExecute(expr: String, env: JavaMap[String, AnyRef]): Any = {
     if (env.isEmpty) AviatorEvaluator.execute(expr)
@@ -109,15 +108,15 @@ object Evaluator {
   def main(args: Array[String]): Unit = {
     init()
     println(new Date())
-    println(Evaluator.execute("(date.now() - duration.days(1)) > date.parse('yyyy-MM-dd HH:mm:ss', '2020-07-19 21:41:00')", Map.empty))
+    println(Evaluator.execute("(date.now() - duration.days(1)) > date.parse('yyyy-MM-dd HH:mm:ss', '2020-07-19 21:41:00')", ExprContext.empty))
     import com.googlecode.aviator.AviatorEvaluator
     println(AviatorEvaluator.execute("a=date.now(); b=duration.day(1); a+b"))
-    println(Evaluator.execute("d1=date.now(); d2=duration.day(1); d1 + d2", Map.empty))
-    println(Evaluator.execute("duration.days(1) > duration.days(2)", Map.empty))
-    println(Evaluator.execute("duration.days(1) < duration.days(2)", Map.empty))
-    println(Evaluator.execute("duration.days(1) >= duration.days(2)", Map.empty))
-    println(Evaluator.execute("duration.days(1) <= duration.days(2)", Map.empty))
-    println(Evaluator.execute("duration.days(1) / duration.hours(1)", Map.empty))
+    println(Evaluator.execute("d1=date.now(); d2=duration.day(1); d1 + d2", ExprContext.empty))
+    println(Evaluator.execute("duration.days(1) > duration.days(2)", ExprContext.empty))
+    println(Evaluator.execute("duration.days(1) < duration.days(2)", ExprContext.empty))
+    println(Evaluator.execute("duration.days(1) >= duration.days(2)", ExprContext.empty))
+    println(Evaluator.execute("duration.days(1) <= duration.days(2)", ExprContext.empty))
+    println(Evaluator.execute("duration.days(1) / duration.hours(1)", ExprContext.empty))
 
 //    println(Evaluator.execute("date.now() + date.now()", Map.empty))
 //    println(DateUtil.format("yyyy-MM-dd HH:mm:ss").format(new Date()))
