@@ -24,7 +24,11 @@ under the License.
 	<groupId>com.oceanum</groupId>
 	<artifactId>task-scheduler-executor</artifactId>
 	<version>1.0-SNAPSHOT</version>
-	<packaging>jar</packaging>
+	<modules>
+		<module>cluster</module>
+		<module>executor</module>
+	</modules>
+	<packaging>pom</packaging>
 
 	<name>Task Scheduler Executor</name>
 	<url>http://www.myorganization.org</url>
@@ -50,113 +54,27 @@ under the License.
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<scala.binary.version>2.11</scala.binary.version>
 		<scala.version>2.11.12</scala.version>
-		<akka.version>2.5.31</akka.version>
-		<akka.http.version>10.1.12</akka.http.version>
-		<hadoop.version>2.6.0</hadoop.version>
-		<aviator.version>5.0.1</aviator.version>
-		<output.dir>executor</output.dir>
+		<java.version>1.8</java.version>
 	</properties>
 
 	<dependencies>
-		<dependency>
-			<groupId>com.typesafe.akka</groupId>
-			<artifactId>akka-cluster_${scala.binary.version}</artifactId>
-			<version>${akka.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>com.typesafe.akka</groupId>
-			<artifactId>akka-cluster-metrics_${scala.binary.version}</artifactId>
-			<version>${akka.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>com.typesafe.akka</groupId>
-			<artifactId>akka-cluster-tools_${scala.binary.version}</artifactId>
-			<version>${akka.version}</version>
-		</dependency>
-		<!-- https://mvnrepository.com/artifact/com.typesafe.akka/akka-slf4j_2.11 -->
-		<dependency>
-			<groupId>com.typesafe.akka</groupId>
-			<artifactId>akka-slf4j_${scala.binary.version}</artifactId>
-			<version>${akka.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>com.typesafe.akka</groupId>
-			<artifactId>akka-http_2.11</artifactId>
-			<version>${akka.http.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>com.googlecode.aviator</groupId>
-			<artifactId>aviator</artifactId>
-			<version>${aviator.version}</version>
-		</dependency>
-<!--		<dependency>-->
-<!--			<groupId>org.json4s</groupId>-->
-<!--			<artifactId>json4s-jackson_2.11</artifactId>-->
-<!--			<version>3.2.11</version>-->
-<!--		</dependency>-->
-
-		<dependency>
-			<groupId>org.apache.hadoop</groupId>
-			<artifactId>hadoop-client</artifactId>
-			<version>${hadoop.version}</version>
-			<exclusions>
-				<exclusion>
-					<groupId>org.slf4j</groupId>
-					<artifactId>slf4j-log4j12</artifactId>
-				</exclusion>
-				<exclusion>
-					<groupId>org.slf4j</groupId>
-					<artifactId>log4j-over-slf4j</artifactId>
-				</exclusion>
-			</exclusions>
-		</dependency>
-		<dependency>
-			<groupId>io.kamon</groupId>
-			<artifactId>sigar-loader</artifactId>
-			<version>1.6.6-rev002</version>
-		</dependency>
-		<!-- https://mvnrepository.com/artifact/ch.qos.logback/logback-classic -->
-		<dependency>
-			<groupId>ch.qos.logback</groupId>
-			<artifactId>logback-classic</artifactId>
-			<version>1.1.7</version>
-		</dependency>
-		<!-- Scala Library -->
 		<dependency>
 			<groupId>org.scala-lang</groupId>
 			<artifactId>scala-library</artifactId>
 			<version>${scala.version}</version>
 		</dependency>
-
 	</dependencies>
 
 	<build>
 		<plugins>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-dependency-plugin</artifactId>
-				<version>2.10</version>
-				<executions>
-					<execution>
-						<id>copy-dependencies</id>
-						<phase>package</phase>
-						<goals>
-							<goal>copy-dependencies</goal>
-						</goals>
-						<configuration>
-							<outputDirectory>${project.build.directory}/${output.dir}/lib</outputDirectory>
-						</configuration>
-					</execution>
-				</executions>
-			</plugin>
 			<!-- Java Compiler -->
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
 				<version>3.1</version>
 				<configuration>
-					<source>1.8</source>
-					<target>1.8</target>
+					<source>${java.version}</source>
+					<target>${java.version}</target>
 				</configuration>
 			</plugin>
 
@@ -172,7 +90,7 @@ under the License.
 						<goals>
 							<goal>add-source</goal>
 							<goal>compile</goal>
-<!--							<goal>testCompile</goal>-->
+							<!--							<goal>testCompile</goal>-->
 						</goals>
 					</execution>
 				</executions>
@@ -214,79 +132,6 @@ under the License.
 				</configuration>
 			</plugin>
 			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-jar-plugin</artifactId>
-				<version>3.2.0</version>
-				<configuration>
-					<!-- 指定打包的jar包输出路径-->
-					<outputDirectory>
-						${project.build.directory}/${output.dir}/lib
-					</outputDirectory>
-					<!--不打入jar包的文件类型或者路径-->
-					<excludes>
-						<exclude>**/*.properties</exclude>
-						<exclude>**/*.xml</exclude>
-						<exclude>**/*.yml</exclude>
-						<exclude>static/**</exclude>
-						<exclude>templates/**</exclude>
-					</excludes>
-				</configuration>
-			</plugin>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-resources-plugin</artifactId>
-				<version>3.1.0</version>
-				<executions>
-					<execution>
-						<id>copy-resources</id>
-						<phase>package</phase>
-						<goals>
-							<goal>copy-resources</goal>
-						</goals>
-						<configuration>
-							<encoding>UTF-8</encoding>
-							<!--打成jar包后复制到的路径-->
-							<outputDirectory>
-								${project.build.directory}/${output.dir}/conf
-							</outputDirectory>
-							<resources>
-								<resource>
-									<!--项目中的路径-->
-									<directory>src/main/resources/</directory>
-									<includes>
-										<include>**/*.properties</include>
-										<include>**/logback.xml</include>
-									</includes>
-									<excludes>
-										<exclude>**/test/**</exclude>
-										<exclude>**/*.txt</exclude>
-									</excludes>
-								</resource>
-							</resources>
-						</configuration>
-					</execution>
-					<!--可配置多个提取复制路径只需要 “<id>”名字不一样即可-->
-					<execution>
-						<id>copy-bulid</id>
-						<phase>package</phase>
-						<goals>
-							<goal>copy-resources</goal>
-						</goals>
-						<configuration>
-							<encoding>UTF-8</encoding>
-							<outputDirectory>
-								${project.build.directory}/${output.dir}/bin
-							</outputDirectory>
-							<resources>
-								<resource>
-									<directory>build/</directory>
-								</resource>
-							</resources>
-						</configuration>
-					</execution>
-				</executions>
-			</plugin>
-			<plugin>
 				<groupId>org.codehaus.mojo</groupId>
 				<artifactId>build-helper-maven-plugin</artifactId>
 				<version>1.9.1</version>
@@ -300,7 +145,7 @@ under the License.
 						</goals>
 						<configuration>
 							<sources>
-								<source>src/main/scala</source>
+								<source>${project.artifactId}/src/main/scala</source>
 							</sources>
 						</configuration>
 					</execution>
@@ -313,27 +158,9 @@ under the License.
 						</goals>
 						<configuration>
 							<sources>
-								<source>src/test/scala</source>
+								<source>${project.artifactId}/src/test/scala</source>
 							</sources>
 						</configuration>
-					</execution>
-				</executions>
-			</plugin>
-			<plugin>
-				<artifactId>maven-assembly-plugin</artifactId>
-				<version>3.1.0</version>
-				<configuration>
-					<descriptors>
-						<descriptor>src/main/resources/assembly.xml</descriptor>
-					</descriptors>
-				</configuration>
-				<executions>
-					<execution>
-						<id>make-assembly</id>
-						<phase>package</phase>
-						<goals>
-							<goal>single</goal>
-						</goals>
 					</execution>
 				</executions>
 			</plugin>
