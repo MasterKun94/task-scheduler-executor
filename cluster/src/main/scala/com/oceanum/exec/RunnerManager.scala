@@ -7,7 +7,6 @@ import java.util.concurrent.atomic.AtomicInteger
 import com.oceanum.cluster.TaskInfoTrigger
 import com.oceanum.common.Scheduler.scheduleOnce
 import com.oceanum.common.{Environment, Log, NodeTaskInfo}
-import com.oceanum.common.Implicits.EnvHelper
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._

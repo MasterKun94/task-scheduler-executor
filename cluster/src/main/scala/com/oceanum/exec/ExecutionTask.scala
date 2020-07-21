@@ -4,7 +4,6 @@ import java.util.concurrent.atomic.{AtomicBoolean, AtomicReference}
 
 import com.oceanum.client.RichTaskMeta
 import com.oceanum.common.ExprContext
-import com.oceanum.common.Implicits.EnvHelper
 
 import scala.concurrent.{ExecutionContext, Future}
 

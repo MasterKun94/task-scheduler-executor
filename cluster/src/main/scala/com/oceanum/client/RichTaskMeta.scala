@@ -85,7 +85,6 @@ class RichTaskMeta(id: Int = 0,
     .asInstanceOf[StdHandler]
 
   def withTask(task: Task): RichTaskMeta = {
-    import com.oceanum.common.Implicits.EnvHelper
     val graphMeta = task.rawEnv.graphMeta
     val dateFormat = new SimpleDateFormat("yyyyMMdd").format(graphMeta.startTime)
     this.copy(
