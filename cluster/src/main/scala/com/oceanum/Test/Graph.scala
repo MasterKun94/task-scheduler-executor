@@ -7,7 +7,8 @@ import com.oceanum.Test.Graph.getSelfAddress
 import com.oceanum.client.TaskClient
 import com.oceanum.exec.State
 import com.oceanum.common.Environment.Arg
-import com.oceanum.graph.{GraphMetaHandler, GraphMeta, RichGraphMeta, ReRunStrategy}
+import com.oceanum.common.ExprContext
+import com.oceanum.graph.{GraphMeta, GraphMetaHandler, ReRunStrategy, RichGraphMeta}
 
 import scala.concurrent.Promise
 
@@ -52,7 +53,7 @@ object Graph {
 
     val instance = createGraph { implicit graph =>
 
-      val python1 = createFlow(Test.task().copy(rawEnv = Map("file_name" -> "${(graph.id() % 2 == 0) ? 'python-err' : 'python'}")))
+      val python1 = createFlow(Test.task().copy(rawEnv = ExprContext(Map("file_name" -> "${(graph.id() % 2 == 0) ? 'python-err' : 'python'}"))))
       val python2 = createFlow(Test.task())
       val python3 = createFlow(Test.task())
       val python4 = createFlow(Test.task())

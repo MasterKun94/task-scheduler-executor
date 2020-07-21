@@ -168,7 +168,7 @@ object FlowFactory {
         promise.success(meta)
       case Failure(e) =>
         e.printStackTrace()
-        val meta = metadata.addOperators(FAILED(task.env.getTask.failure(task, e)))
+        val meta = metadata.addOperators(FAILED(task.env.taskMeta.failure(task, e)))
         promise.success(meta)
     }
     promise.future

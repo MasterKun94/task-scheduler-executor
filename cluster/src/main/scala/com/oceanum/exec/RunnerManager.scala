@@ -43,7 +43,7 @@ object RunnerManager extends Log {
   }
 
   def submit(operatorProp: Prop): ExecutionHook = {
-    operatorProp.eventListener.prepare(operatorProp.env.getTask)
+    operatorProp.eventListener.prepare(operatorProp.env.taskMeta)
     priorityMailbox.send(operatorProp)
     operatorProp.hook
   }

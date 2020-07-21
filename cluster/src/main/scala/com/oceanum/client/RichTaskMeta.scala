@@ -4,9 +4,9 @@ import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
 
-import com.oceanum.exec.{State, StdHandler}
+import com.oceanum.common.Environment
 import com.oceanum.common.Implicits.PathHelper
-import com.oceanum.common.{Environment, Meta}
+import com.oceanum.exec.{State, StdHandler}
 
 @SerialVersionUID(1L)
 class RichTaskMeta(id: Int = 0,
@@ -86,7 +86,7 @@ class RichTaskMeta(id: Int = 0,
 
   def withTask(task: Task): RichTaskMeta = {
     import com.oceanum.common.Implicits.EnvHelper
-    val graphMeta = task.rawEnv.getGraph
+    val graphMeta = task.rawEnv.graphMeta
     val dateFormat = new SimpleDateFormat("yyyyMMdd").format(graphMeta.startTime)
     this.copy(
       id = task.id,

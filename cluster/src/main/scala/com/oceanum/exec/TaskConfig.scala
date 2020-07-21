@@ -1,6 +1,6 @@
 package com.oceanum.exec
 
-import com.oceanum.client.TaskMeta
+import com.oceanum.common.ExprContext
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -11,5 +11,5 @@ import scala.concurrent.{ExecutionContext, Future}
 trait TaskConfig {
   def close()
 
-  def prepare(env: Map[String, Any])(implicit ec: ExecutionContext): Future[_<:TaskConfig]
+  def prepare(env: ExprContext)(implicit ec: ExecutionContext): Future[_<:TaskConfig]
 }

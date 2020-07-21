@@ -3,7 +3,7 @@ package com.oceanum.client
 import java.util.Date
 
 import com.oceanum.exec.{EventListener, ExecutionTask, TaskConfig}
-import com.oceanum.common.Environment
+import com.oceanum.common.{Environment, ExprContext}
 import com.oceanum.common.Implicits.EnvHelper
 import com.oceanum.graph.RichGraphMeta
 
@@ -17,10 +17,9 @@ case class Task(id: Int,
                 checkStateInterval: String = Environment.EXEC_STATE_UPDATE_INTERVAL,
                 prop: TaskProp,
                 parallelism: Int = Environment.GRAPH_FLOW_DEFAULT_PARALLELISM,
-                rawEnv: Map[String, Any] = Map.empty) {
+                rawEnv: ExprContext = ExprContext.empty) {
   def toExecutionTask(implicit listener: EventListener): ExecutionTask[_ <: TaskConfig] = {
-    val task = this
-    val taskMeta = task.metadata.copy(createTime = new Date())
+    val taskMeta = this.metadata.copy(createTime = new Date())
     ExecutionTask(
       name = "task" + id,
       retryCount = retryCount,
@@ -28,8 +27,7 @@ case class Task(id: Int,
       priority = priority,
       prop = prop.toTask(taskMeta),
       eventListener = listener,
-      metadata = taskMeta,
-      env = env.addTask(taskMeta)
+      env = env + taskMeta
     )
   }
 
@@ -37,11 +35,13 @@ case class Task(id: Int,
     prop.validate()
   }
 
-  def addGraphMeta(graphMeta: RichGraphMeta): Task = this.copy(rawEnv = rawEnv.combineGraph(graphMeta))
+  def addGraphMeta(graphMeta: RichGraphMeta): Task = {
+    this.copy(rawEnv = rawEnv + graphMeta)
+  }
 
-  def env: Map[String, Any] = rawEnv + (EnvHelper.taskKey -> metadata)
+  def env: ExprContext = rawEnv + (EnvHelper.taskKey -> metadata)
 
-  private def metadata: RichTaskMeta = rawEnv.getTask.withTask(this)
+  private def metadata: RichTaskMeta = rawEnv.taskMeta.withTask(this)
 }
 
 object Task {
