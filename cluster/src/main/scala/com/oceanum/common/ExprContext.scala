@@ -1,10 +1,9 @@
 package com.oceanum.common
 
-import com.oceanum.client.RichTaskMeta
+import com.oceanum.exec.RichGraphMeta
 
 import scala.collection.JavaConverters._
 import com.oceanum.expr.JavaMap
-import com.oceanum.graph.RichGraphMeta
 
 @SerialVersionUID(1L)
 case class ExprContext(env: Map[String, Any]) {

@@ -3,7 +3,7 @@ package com.oceanum.exec
 import java.io._
 import java.nio.charset.StandardCharsets
 
-import com.oceanum.client.RichTaskMeta
+import com.oceanum.common.RichTaskMeta
 
 import scala.util.Properties
 

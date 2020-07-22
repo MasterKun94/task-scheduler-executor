@@ -6,8 +6,8 @@ import java.util.concurrent.atomic.AtomicInteger
 import akka.actor.{PoisonPill, Props}
 import akka.stream.ClosedShape
 import akka.stream.scaladsl.{Broadcast, Flow, GraphDSL, Merge, Partition, RunnableGraph, Sink, Source, ZipWithN}
-import com.oceanum.client.{RichTaskMeta, StateHandler, Task, TaskClient}
-import com.oceanum.exec.{FAILED, State}
+import com.oceanum.client.{StateHandler, Task, TaskClient}
+import com.oceanum.exec.{FAILED, GraphMeta, RichGraphMeta, State}
 import com.oceanum.common.{Environment, ExprContext}
 import com.oceanum.expr.{Evaluator, JavaMap}
 import com.oceanum.graph.Operator._

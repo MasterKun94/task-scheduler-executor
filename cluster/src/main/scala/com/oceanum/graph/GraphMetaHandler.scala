@@ -1,6 +1,6 @@
 package com.oceanum.graph
 
-import com.oceanum.exec.State
+import com.oceanum.exec.{GraphMeta, State}
 
 trait GraphMetaHandler {
   def onStart(richGraphMeta: GraphMeta): Unit

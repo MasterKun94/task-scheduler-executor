@@ -1,6 +1,7 @@
 package com.oceanum.graph
 
 import akka.actor.Actor
+import com.oceanum.exec.RichGraphMeta
 
 import scala.collection.mutable
 

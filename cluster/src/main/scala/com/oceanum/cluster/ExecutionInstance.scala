@@ -1,7 +1,7 @@
 package com.oceanum.cluster
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Cancellable, PoisonPill}
-import com.oceanum.client.{RichTaskMeta, Task}
+import com.oceanum.client.Task
 import com.oceanum.exec._
 import com.oceanum.common.Scheduler.{schedule, scheduleOnce}
 import com.oceanum.common._

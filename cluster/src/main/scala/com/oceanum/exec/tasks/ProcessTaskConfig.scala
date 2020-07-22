@@ -2,9 +2,8 @@ package com.oceanum.exec.tasks
 
 import java.io.{File, IOException}
 
-import com.oceanum.client.TaskMeta
 import com.oceanum.exec.{StdHandler, TaskConfig}
-import com.oceanum.common.{Environment, ExprContext}
+import com.oceanum.common.{Environment, ExprContext, TaskMeta}
 import com.oceanum.common.Implicits.PathHelper
 import com.oceanum.expr.JavaMap
 import com.oceanum.file.FileClient

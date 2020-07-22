@@ -3,7 +3,7 @@ package com.oceanum.common
 import akka.actor.ActorRef
 import akka.cluster.ClusterEvent.CurrentClusterState
 import akka.cluster.metrics.NodeMetrics
-import com.oceanum.client.{RichTaskMeta, StateHandler, Task}
+import com.oceanum.client.{StateHandler, Task}
 
 @SerialVersionUID(1L)
 trait Message {}

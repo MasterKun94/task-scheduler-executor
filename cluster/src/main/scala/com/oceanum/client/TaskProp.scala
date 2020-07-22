@@ -3,7 +3,7 @@ package com.oceanum.client
 import com.oceanum.exec.TaskConfig
 import com.oceanum.exec.tasks.SysTasks.UserAddTaskConfig
 import com.oceanum.exec.tasks._
-import com.oceanum.common.StringParser
+import com.oceanum.common.{RichTaskMeta, StringParser}
 
 @SerialVersionUID(1L)
 abstract class TaskProp(val taskType: String) extends Serializable {

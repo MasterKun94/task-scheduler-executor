@@ -2,7 +2,7 @@ package com.oceanum
 
 import akka.Done
 import akka.stream.scaladsl.{GraphDSL, RunnableGraph, SourceQueueWithComplete}
-import com.oceanum.exec.State
+import com.oceanum.exec.{GraphMeta, RichGraphMeta, State}
 
 import scala.concurrent.Future
 

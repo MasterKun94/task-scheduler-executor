@@ -1,6 +1,7 @@
 package com.oceanum.exec
 
-import com.oceanum.client.{RichTaskMeta, TaskMeta}
+import com.oceanum.client.TaskMeta
+import com.oceanum.common.{RichTaskMeta, TaskMeta}
 
 /**
  * @author chenmingkun

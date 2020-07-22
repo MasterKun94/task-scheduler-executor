@@ -3,6 +3,7 @@ package com.oceanum.graph
 import akka.Done
 import akka.stream.QueueOfferResult
 import akka.stream.scaladsl.SourceQueueWithComplete
+import com.oceanum.exec.RichGraphMeta
 
 import scala.concurrent.Future
 

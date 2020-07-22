@@ -1,4 +1,4 @@
-package com.oceanum.client
+package com.oceanum.common
 
 import java.util.Date
 

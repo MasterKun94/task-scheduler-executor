@@ -1,9 +1,9 @@
-package com.oceanum.graph
+package com.oceanum.exec
 
 import java.util.{Date, UUID}
 
-import com.oceanum.client.{RichTaskMeta, TaskMeta}
-import com.oceanum.exec.{FAILED, KILL, SUCCESS, State}
+import com.oceanum.common.{RichTaskMeta, TaskMeta}
+import com.oceanum.graph.{FallbackStrategy, GraphStatus, ReRunStrategy}
 
 @SerialVersionUID(1L)
 class RichGraphMeta(id: Int = 0,

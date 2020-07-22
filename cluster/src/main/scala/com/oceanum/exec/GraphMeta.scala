@@ -1,8 +1,9 @@
-package com.oceanum.graph
+package com.oceanum.exec
 
 import java.util.Date
 
-import com.oceanum.client.TaskMeta
+import com.oceanum.common.TaskMeta
+import com.oceanum.graph.{FallbackStrategy, GraphStatus, ReRunStrategy}
 
 @SerialVersionUID(1L)
 class GraphMeta(val id: Int,
