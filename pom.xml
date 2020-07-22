@@ -27,7 +27,6 @@ under the License.
 	<modules>
 		<module>cluster</module>
 		<module>executor</module>
-		<module>flink-client</module>
 	</modules>
 	<packaging>pom</packaging>
 
