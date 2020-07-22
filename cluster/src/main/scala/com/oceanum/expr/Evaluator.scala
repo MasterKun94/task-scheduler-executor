@@ -43,6 +43,7 @@ object Evaluator {
     addFunction(new DurationDaysFunction)
     addFunction(new DurationDayFunction)
 
+    addFunction(new DateFunction)
     addFunction(new DateFormatFunction)
     addFunction(new DateParseFunction)
     addFunction(new DateShiftFunction)

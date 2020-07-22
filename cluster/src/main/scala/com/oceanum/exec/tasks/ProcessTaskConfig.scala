@@ -27,7 +27,6 @@ abstract class ProcessTaskConfig(val propCmd: Array[String] = Array.empty,
   }
 
   override def prepare(env: ExprContext)(implicit ec: ExecutionContext): Future[ProcessTaskConfig] = {
-    import com.oceanum.common.Implicits.EnvHelper
     val rawEnv = env.toJava
     val taskMeta = env.taskMeta
     val taskConfig = SuUserTaskConfig(taskMeta.user, this).parseFunction(rawEnv)
