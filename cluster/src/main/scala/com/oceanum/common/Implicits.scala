@@ -3,7 +3,6 @@ package com.oceanum.common
 import java.io.File
 import java.util.regex.Matcher
 
-import com.oceanum.exec.RichGraphMeta
 import com.oceanum.expr.JavaMap
 
 import scala.collection.JavaConverters._

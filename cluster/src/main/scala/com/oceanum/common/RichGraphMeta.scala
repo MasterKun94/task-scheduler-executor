@@ -1,8 +1,8 @@
-package com.oceanum.exec
+package com.oceanum.common
 
 import java.util.{Date, UUID}
 
-import com.oceanum.common.{RichTaskMeta, TaskMeta}
+import com.oceanum.exec.{FAILED, KILL, SUCCESS, State}
 import com.oceanum.graph.{FallbackStrategy, GraphStatus, ReRunStrategy}
 
 @SerialVersionUID(1L)

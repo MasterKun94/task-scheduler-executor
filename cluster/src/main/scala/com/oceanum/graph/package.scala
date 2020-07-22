@@ -2,7 +2,8 @@ package com.oceanum
 
 import akka.Done
 import akka.stream.scaladsl.{GraphDSL, RunnableGraph, SourceQueueWithComplete}
-import com.oceanum.exec.{GraphMeta, RichGraphMeta, State}
+import com.oceanum.common.{GraphMeta, RichGraphMeta}
+import com.oceanum.exec.State
 
 import scala.concurrent.Future
 
@@ -12,6 +13,6 @@ package object graph {
   type Graph = RunnableGraph[Mat]
 
   case class OnStart(graphMeta: GraphMeta)
-  case class  OnRunning(graphMeta: GraphMeta, taskState: State)
-  case class  OnComplete(graphMeta: GraphMeta)
+  case class OnRunning(graphMeta: GraphMeta, taskState: State)
+  case class OnComplete(graphMeta: GraphMeta)
 }

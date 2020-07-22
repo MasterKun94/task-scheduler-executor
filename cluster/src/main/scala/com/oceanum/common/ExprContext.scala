@@ -1,6 +1,5 @@
 package com.oceanum.common
 
-import com.oceanum.exec.RichGraphMeta
 
 import scala.collection.JavaConverters._
 import com.oceanum.expr.JavaMap

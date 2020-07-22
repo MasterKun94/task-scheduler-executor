@@ -5,7 +5,7 @@ import akka.actor.ActorRef
 import akka.stream.scaladsl.GraphDSL.Implicits._
 import akka.stream.scaladsl.{Flow, Source}
 import akka.stream.{Outlet, SinkShape, UniformFanInShape, UniformFanOutShape}
-import com.oceanum.exec.RichGraphMeta
+import com.oceanum.common.RichGraphMeta
 
 trait Operator {
 

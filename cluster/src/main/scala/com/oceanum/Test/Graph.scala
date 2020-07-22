@@ -5,9 +5,9 @@ import java.net.{InetAddress, UnknownHostException}
 import com.oceanum.ClusterStarter
 import com.oceanum.Test.Graph.getSelfAddress
 import com.oceanum.client.TaskClient
-import com.oceanum.exec.{GraphMeta, RichGraphMeta, State}
+import com.oceanum.exec.State
 import com.oceanum.common.Environment.Arg
-import com.oceanum.common.ExprContext
+import com.oceanum.common.{ExprContext, GraphMeta, RichGraphMeta}
 import com.oceanum.graph.{GraphMetaHandler, ReRunStrategy}
 
 import scala.concurrent.Promise

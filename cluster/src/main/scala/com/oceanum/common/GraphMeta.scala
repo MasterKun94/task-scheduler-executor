@@ -1,8 +1,7 @@
-package com.oceanum.exec
+package com.oceanum.common
 
 import java.util.Date
 
-import com.oceanum.common.TaskMeta
 import com.oceanum.graph.{FallbackStrategy, GraphStatus, ReRunStrategy}
 
 @SerialVersionUID(1L)
