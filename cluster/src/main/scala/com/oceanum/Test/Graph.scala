@@ -2,15 +2,10 @@ package com.oceanum.Test
 
 import java.net.{InetAddress, UnknownHostException}
 
-import com.oceanum.ClusterStarter
-import com.oceanum.Test.Graph.getSelfAddress
 import com.oceanum.client.TaskClient
-import com.oceanum.exec.State
-import com.oceanum.common.Environment.Arg
 import com.oceanum.common.{ExprContext, GraphMeta, RichGraphMeta}
-import com.oceanum.graph.Operators.{End, Operator, Ops, Start, TaskOperator}
-import com.oceanum.graph.StreamFlows.StreamFlow
-import com.oceanum.graph.{GraphMetaHandler, ReRunStrategy}
+import com.oceanum.exec.State
+import com.oceanum.graph.{FlowFactory, GraphMetaHandler, ReRunStrategy, WorkflowRunner}
 
 import scala.concurrent.Promise
 
@@ -51,9 +46,8 @@ object Graph {
   }
 
   def main(args: Array[String]): Unit = {
-    import com.oceanum.graph.FlowFactory._
 
-    val instance = createGraph { implicit graph =>
+    val instance = WorkflowRunner.createGraph { implicit graph => import graph.flowFactory._
 
       val python1 = createFlow(Test.task().copy(rawEnv = ExprContext(Map("file_name" -> "${(graph.id() % 2 == 0) ? 'python-err' : 'python'}"))))
       val python2 = createFlow(Test.task())
@@ -65,13 +59,13 @@ object Graph {
       val decision = createDecision(Array("false"))
       val converge = createConverge(2)
 
-      graph.start --> fork
+      createStart --> fork
       fork --> python1 --> join
       fork --> python2 --> decision
       decision --> python3 --> converge
       decision --> python4 --> converge
       converge --> join
-      join --> python5 --> graph.end
+      join --> python5 --> createEnd
 
     }.run()
 
@@ -127,29 +121,33 @@ object Graph2 {
   }
 
   def main(args: Array[String]): Unit = {
-    import com.oceanum.graph.FlowFactory._
 
-    val instance = createGraph { implicit graph =>
+    val instance = WorkflowRunner.createGraph { implicit graph => import graph._
 
-      val map: Map[Int, Operator[_]] = Map(
-        0 -> Start(),
-        1 -> End(),
-        2 -> TaskOperator(Test.task()),
-        3 -> TaskOperator(Test.task())
-      )
+      val python1 = createFlow(Test.task().copy(rawEnv = ExprContext(Map("file_name" -> "${(graph.id() % 2 == 0) ? 'python-err' : 'python'}"))))
+      val python2 = createFlow(Test.task())
+      val python3 = createFlow(Test.task())
+      val python4 = createFlow(Test.task())
+      val python5 = createFlow(Test.task())
+      val fork = createFork(2)
+      val join = createJoin(2)
+      val decision = createDecision(Array("false"))
+      val converge = createConverge(2)
+      val start = createStart
+      val end = createEnd
 
-      val ref: Map[Int, Array[Int]] = Map(
-        0 -> Array(2),
-        2 -> Array(3),
-        3 -> Array(1)
-      )
+      buildEdges(start, fork)
+      buildEdges(fork, python1, python2)
+      buildEdges(python1, join)
+      buildEdges(python2, decision)
+      buildEdges(decision, python3, python4)
+      buildEdges(python3, converge)
+      buildEdges(python4, converge)
+      buildEdges(converge, join)
+      buildEdges(join, python5)
+      buildEdges(python5, end)
 
-      val start: Start = map(0).asInstanceOf[Start]
-      val startRef: Array[(Int, Operator[_])] = ref(0).map(i => (i, map(i)))
-      for ((idx, operator) <- startRef) {
-
-      }
-
+      createGraph()
     }.run()
 
 
