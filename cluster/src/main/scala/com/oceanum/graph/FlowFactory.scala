@@ -57,6 +57,10 @@ object FlowFactory {
     }
   }
 
+  def createStart(implicit builder: GraphBuilder): StartFlow = builder.start
+
+  def createEnd(implicit builder: GraphBuilder): EndFlow = builder.end
+
   def createFork(parallel: Int)(implicit builder: GraphBuilder): ForkFlow = {
     ForkFlow(builder.dslBuilder.add(Broadcast(parallel)))
   }
