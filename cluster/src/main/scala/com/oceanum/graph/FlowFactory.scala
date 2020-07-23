@@ -9,8 +9,8 @@ import akka.stream.scaladsl.{Broadcast, Flow, GraphDSL, Merge, Partition, Runnab
 import com.oceanum.client.{StateHandler, Task, TaskClient}
 import com.oceanum.exec.{FAILED, State}
 import com.oceanum.common.{Environment, ExprContext, GraphMeta, RichGraphMeta}
-import com.oceanum.expr.{Evaluator, JavaMap}
-import com.oceanum.graph.Operator._
+import com.oceanum.expr.Evaluator
+import com.oceanum.graph.StreamFlows._
 
 import scala.concurrent.{Future, Promise}
 import scala.language.implicitConversions
@@ -18,12 +18,12 @@ import scala.util.{Failure, Success}
 
 object FlowFactory {
 
-  def map(func: RichGraphMeta => RichGraphMeta): TaskFlow = {
+  def map(id: Int)(func: RichGraphMeta => RichGraphMeta): TaskFlow = {
     val flow = Flow[RichGraphMeta].map(func)
-    TaskFlow(flow)
+    TaskFlow(flow, id)
   }
 
-  def mapAsync(parallelism: Int = 1)(func: RichGraphMeta => Future[RichGraphMeta])(implicit taskClient: TaskClient): TaskFlow = {
+  def mapAsync(parallelism: Int = 1, id: Int)(func: RichGraphMeta => Future[RichGraphMeta])(implicit taskClient: TaskClient): TaskFlow = {
     val flow = Flow[RichGraphMeta].mapAsync(parallelism) { meta =>
       val promise = Promise[RichGraphMeta]()
       func(meta).onComplete {
@@ -32,7 +32,7 @@ object FlowFactory {
       } (taskClient.system.dispatcher)
       promise.future
     }
-    TaskFlow(flow)
+    TaskFlow(flow, id)
   }
 
   def createFlow(task: Task, parallelism: Int = 1)(implicit taskClient: TaskClient, builder: GraphBuilder): TaskFlow = {
@@ -42,7 +42,7 @@ object FlowFactory {
 
   def createFlow(parallelism: Int)(taskFunc: GraphMeta => Task)(implicit taskClient: TaskClient, builder: GraphBuilder): TaskFlow = {
     val idValue = builder.idValue
-    mapAsync(parallelism) { implicit graphMeta =>
+    mapAsync(parallelism, idValue) { implicit graphMeta =>
       val initialTask = taskFunc(graphMeta)
       val task = initialTask.addGraphMeta(graphMeta).copy(id = idValue)
       graphMeta.graphStatus match {
@@ -57,19 +57,19 @@ object FlowFactory {
     }
   }
 
-  def createFork(parallel: Int)(implicit builder: GraphBuilder): Fork = {
-    Fork(builder.dslBuilder.add(Broadcast(parallel)))
+  def createFork(parallel: Int)(implicit builder: GraphBuilder): ForkFlow = {
+    ForkFlow(builder.dslBuilder.add(Broadcast(parallel)))
   }
 
-  def createJoin(parallel: Int)(implicit builder: GraphBuilder): Join = {
-    Join(builder.dslBuilder.add(ZipWithN[RichGraphMeta, RichGraphMeta](_.reduce(_ merge _))(parallel)))
+  def createJoin(parallel: Int)(implicit builder: GraphBuilder): JoinFlow = {
+    JoinFlow(builder.dslBuilder.add(ZipWithN[RichGraphMeta, RichGraphMeta](_.reduce(_ merge _))(parallel)))
   }
 
-  def createDecision(parallel: Int)(decide: GraphMeta => Int)(implicit builder: GraphBuilder): Decision = {
-    Decision(builder.dslBuilder.add(Partition(parallel, decide)))
+  def createDecision(parallel: Int)(decide: GraphMeta => Int)(implicit builder: GraphBuilder): DecisionFlow = {
+    DecisionFlow(builder.dslBuilder.add(Partition(parallel, decide)))
   }
 
-  def createDecision(decide: Array[GraphMeta => Boolean])(implicit builder: GraphBuilder): Decision = {
+  def createDecision(decide: Array[GraphMeta => Boolean])(implicit builder: GraphBuilder): DecisionFlow = {
     val parallel = decide.length + 1
     val func: GraphMeta => Int = meta => decide.zipWithIndex.find(_._1(meta)).map(_._2) match {
       case Some(int) => int
@@ -78,7 +78,7 @@ object FlowFactory {
     createDecision(parallel)(func)
   }
 
-  def createDecision(expr: Array[String])(implicit builder: GraphBuilder): Decision = {
+  def createDecision(expr: Array[String])(implicit builder: GraphBuilder): DecisionFlow = {
     val meta2env = (meta: GraphMeta) => (ExprContext(meta.env) + meta.asInstanceOf[RichGraphMeta]).toJava
     val decide = expr
       .map(Evaluator.compile(_, cache = false))
@@ -86,8 +86,8 @@ object FlowFactory {
     createDecision(decide)
   }
 
-  def createConverge(parallel: Int)(implicit builder: GraphBuilder): Converge = {
-    Converge(builder.dslBuilder.add(Merge(parallel)))
+  def createConverge(parallel: Int)(implicit builder: GraphBuilder): ConvergeFlow = {
+    ConvergeFlow(builder.dslBuilder.add(Merge(parallel)))
   }
 
   def createGraph(builder: GraphBuilder => Unit)(implicit taskClient: TaskClient, graphMetaHandler: GraphMetaHandler): WorkflowRunner = {
@@ -119,8 +119,8 @@ object FlowFactory {
 
     val sink0 = Sink.foreach[RichGraphMeta](graphMetaHandler.onComplete)
     val graph = GraphDSL.create(source0, sink0)(_ -> _) { implicit b => (source, sink) =>
-      val start = Start(source)
-      val end = End(sink)
+      val start = StartFlow(source)
+      val end = EndFlow(sink)
       builder(GraphBuilder(start, end, b, metaHandler))
       ClosedShape
     }

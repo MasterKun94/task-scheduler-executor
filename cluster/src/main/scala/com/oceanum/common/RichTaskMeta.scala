@@ -9,7 +9,7 @@ import com.oceanum.common.Implicits.PathHelper
 import com.oceanum.exec.{State, StdHandler}
 
 @SerialVersionUID(1L)
-class RichTaskMeta(id: Int = 0,
+class RichTaskMeta(id: Int = -1,
                    taskType: String = null,
                    user: String = null,
                    createTime: Date = null,
@@ -86,7 +86,7 @@ class RichTaskMeta(id: Int = 0,
 
   def withTask(task: Task): RichTaskMeta = {
     val graphMeta = task.rawEnv.graphMeta
-    val dateFormat = new SimpleDateFormat("yyyyMMdd").format(graphMeta.startTime)
+    val dateFormat = DateUtil.format("yyyyMMdd").format(graphMeta.startTime)
     this.copy(
       id = task.id,
       taskType = task.prop.taskType,

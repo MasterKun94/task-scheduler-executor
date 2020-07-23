@@ -8,6 +8,8 @@ import com.oceanum.client.TaskClient
 import com.oceanum.exec.State
 import com.oceanum.common.Environment.Arg
 import com.oceanum.common.{ExprContext, GraphMeta, RichGraphMeta}
+import com.oceanum.graph.Operators.{End, Operator, Ops, Start, TaskOperator}
+import com.oceanum.graph.StreamFlows.StreamFlow
 import com.oceanum.graph.{GraphMetaHandler, ReRunStrategy}
 
 import scala.concurrent.Promise
@@ -87,8 +89,79 @@ object Graph {
   }
 }
 
-object Test1 extends App {
-  val configFile = "arc/main/resources/application.properties"
-  val ip2 = getSelfAddress
-  ClusterStarter.main(Array(s"${Arg.CONF}=$configFile", s"${Arg.HOST}=$ip2"))
+
+object Graph2 {
+  val ip2 = "192.168.10.131"
+  val ip1 = getSelfAddress
+  def getSelfAddress: String = {
+    try {
+      InetAddress.getLocalHost.getHostAddress
+    } catch {
+      case _: UnknownHostException => "127.0.0.1"
+      case e: Throwable => throw e
+    }
+  }
+
+  val promise = Promise[RichGraphMeta]()
+
+  implicit val client: TaskClient = TaskClient(ip1, 5552, ip2, "src/main/resources/application.properties")
+
+  implicit val metaHandler: GraphMetaHandler = new GraphMetaHandler {
+    override def onRunning(richGraphMeta: GraphMeta, taskState: State): Unit = {
+      println("state: " + taskState)
+      println("graphMeta: " + richGraphMeta)
+    }
+
+    override def onComplete(richGraphMeta: GraphMeta): Unit = {
+      println("graphMeta complete: " + richGraphMeta.graphStatus)
+      println(richGraphMeta)
+      richGraphMeta.operators.foreach(println)
+      if (!promise.isCompleted) promise.success(richGraphMeta.asInstanceOf[RichGraphMeta])
+    }
+
+    override def onStart(richGraphMeta: GraphMeta): Unit = {
+      println("graphMeta start: " + richGraphMeta)
+    }
+
+    override def close(): Unit = println("handler closed")
+  }
+
+  def main(args: Array[String]): Unit = {
+    import com.oceanum.graph.FlowFactory._
+
+    val instance = createGraph { implicit graph =>
+
+      val map: Map[Int, Operator[_]] = Map(
+        0 -> Start(),
+        1 -> End(),
+        2 -> TaskOperator(Test.task()),
+        3 -> TaskOperator(Test.task())
+      )
+
+      val ref: Map[Int, Array[Int]] = Map(
+        0 -> Array(2),
+        2 -> Array(3),
+        3 -> Array(1)
+      )
+
+      val start: Start = map(0).asInstanceOf[Start]
+      val startRef: Array[(Int, Operator[_])] = ref(0).map(i => (i, map(i)))
+      for ((idx, operator) <- startRef) {
+
+      }
+
+    }.run()
+
+
+    instance.offer(new RichGraphMeta() addEnv ("file_name" -> "python"))
+
+    import scala.concurrent.ExecutionContext.Implicits.global
+    promise.future.onComplete(meta => {
+      Thread.sleep(3000)
+      val m = meta.get.copy(reRunStrategy = ReRunStrategy.RUN_ALL_AFTER_FAILED)
+      println("retry: " + m)
+      instance.offer(m)
+    })
+
+  }
 }

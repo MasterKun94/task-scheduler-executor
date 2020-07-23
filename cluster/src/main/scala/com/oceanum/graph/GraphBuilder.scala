@@ -2,10 +2,10 @@ package com.oceanum.graph
 
 import java.util.concurrent.atomic.AtomicInteger
 
-import com.oceanum.graph.Operator.{End, Start}
+import com.oceanum.graph.StreamFlows.{EndFlow, StartFlow}
 
-class GraphBuilder(val start: Start,
-                   val end: End,
+class GraphBuilder(val start: StartFlow,
+                   val end: EndFlow,
                    implicit protected[graph] val dslBuilder: DslBuilder,
                    val handler: GraphMetaHandler) {
 
@@ -15,7 +15,7 @@ class GraphBuilder(val start: Start,
 }
 
 object GraphBuilder {
-  def apply(start: Start, end: End, dslBuilder: DslBuilder, handler: GraphMetaHandler): GraphBuilder = {
+  def apply(start: StartFlow, end: EndFlow, dslBuilder: DslBuilder, handler: GraphMetaHandler): GraphBuilder = {
     new GraphBuilder(start, end, dslBuilder, handler)
   }
 }
