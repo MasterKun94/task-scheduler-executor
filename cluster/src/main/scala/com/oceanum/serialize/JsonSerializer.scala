@@ -33,7 +33,7 @@ class JsonSerializer {
 
   def register[T<:AnyRef](clazz: Class[T]): Unit = register(clazz.getName, clazz)
 
-  def unRegister(clazz: Class[_]): Unit = {
+  def unRegister(clazz: Class[_<:AnyRef]): Unit = {
     names.remove(clazz).foreach {
       serializers.remove
     }
