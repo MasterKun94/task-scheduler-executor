@@ -1,6 +1,7 @@
 package com.oceanum.exec
 
 import com.oceanum.common.{RichTaskMeta, TaskMeta}
+import com.oceanum.exec
 
 /**
  * @author chenmingkun
@@ -13,7 +14,15 @@ class State(val name: State.value, meta: RichTaskMeta) extends Serializable {
 
 object State extends Enumeration {
   type value = Value
-  val OFFLINE, PREPARE, START, RUNNING, FAILED, SUCCESS, RETRY, TIMEOUT, KILL = Value
+  val OFFLINE: value = Value(0)
+  val PREPARE: value = Value(1)
+  val START: value = Value(2)
+  val RUNNING: value = Value(3)
+  val FAILED: value = Value(4)
+  val SUCCESS: value = Value(5)
+  val RETRY: value = Value(6)
+  val TIMEOUT: value = Value(7)
+  val KILL: value = Value(8)
 
 }
 

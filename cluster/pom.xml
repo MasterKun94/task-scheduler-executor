@@ -52,11 +52,16 @@
             <artifactId>aviator</artifactId>
             <version>${aviator.version}</version>
         </dependency>
-        <!--		<dependency>-->
-        <!--			<groupId>org.json4s</groupId>-->
-        <!--			<artifactId>json4s-jackson_2.11</artifactId>-->
-        <!--			<version>3.2.11</version>-->
-        <!--		</dependency>-->
+        <dependency>
+            <groupId>org.json4s</groupId>
+            <artifactId>json4s-jackson_2.11</artifactId>
+            <version>3.6.9</version>
+        </dependency>
+        <dependency>
+            <groupId>org.json4s</groupId>
+            <artifactId>json4s-ext_2.11</artifactId>
+            <version>3.6.9</version>
+        </dependency>
 
         <dependency>
             <groupId>org.apache.hadoop</groupId>

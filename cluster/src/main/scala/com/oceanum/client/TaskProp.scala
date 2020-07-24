@@ -23,7 +23,7 @@ abstract class ProcessTaskProp(taskType: String) extends TaskProp(taskType) with
 case class ShellTaskProp(cmd: Array[String] = Array.empty,
                          env: Map[String, String] = Map.empty,
                          directory: String = "",
-                         waitForTimeout: Long = -1) extends ProcessTaskProp("SHELL") {
+                         waitForTimeout: String = "24h") extends ProcessTaskProp("SHELL") {
   override def toTask(metadata: RichTaskMeta): ProcessTaskConfig = ShellTaskConfig(
     cmd, env, directory, waitForTimeout, metadata.stdoutHandler, metadata.stderrHandler)
 
@@ -39,7 +39,7 @@ case class ShellScriptTaskProp(scriptFile: String = "",
                                args: Array[String] = Array.empty,
                                env: Map[String, String] = Map.empty,
                                directory: String = "",
-                               waitForTimeout: Long = -1) extends ProcessTaskProp("SHELL_SCRIPT") {
+                               waitForTimeout: String = "24h") extends ProcessTaskProp("SHELL_SCRIPT") {
 
   override def toTask(metadata: RichTaskMeta): ProcessTaskConfig = ShellScriptTaskConfig(
     scriptFile, args, env, directory, waitForTimeout, metadata.stdoutHandler, metadata.stderrHandler)
@@ -59,7 +59,7 @@ case class JavaTaskProp(jars: Array[String] = Array.empty,
                         options: Array[String] = Array.empty,
                         env: Map[String, String] = Map.empty,
                         directory: String = "",
-                        waitForTimeout: Long = -1) extends ProcessTaskProp("JAVA") {
+                        waitForTimeout: String = "24h") extends ProcessTaskProp("JAVA") {
 
   override def toTask(metadata: RichTaskMeta): ProcessTaskConfig = JavaTaskConfig(
     jars, mainClass, args, options, env, directory, waitForTimeout, metadata.stdoutHandler, metadata.stderrHandler)
@@ -81,7 +81,7 @@ case class ScalaTaskProp(jars: Array[String] = Array.empty,
                          options: Array[String] = Array.empty,
                          env: Map[String, String] = Map.empty,
                          directory: String = "",
-                         waitForTimeout: Long = -1) extends ProcessTaskProp("SCALA") {
+                         waitForTimeout: String = "24h") extends ProcessTaskProp("SCALA") {
 
   override def toTask(metadata: RichTaskMeta): ProcessTaskConfig = ScalaTaskConfig(
     jars, mainClass, args, options, env, directory, waitForTimeout, metadata.stdoutHandler, metadata.stderrHandler)
@@ -101,7 +101,7 @@ case class PythonTaskProp(pyFile: String = "",
                           args: Array[String] = Array.empty,
                           env: Map[String, String] = Map.empty,
                           directory: String = "",
-                          waitForTimeout: Long = -1) extends ProcessTaskProp("PYTHON") {
+                          waitForTimeout: String = "24h") extends ProcessTaskProp("PYTHON") {
 
   override def toTask(metadata: RichTaskMeta): ProcessTaskConfig = PythonTaskConfig(
     pyFile, args, env, directory, waitForTimeout, metadata.stdoutHandler, metadata.stderrHandler)

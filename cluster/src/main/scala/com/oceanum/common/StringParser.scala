@@ -29,7 +29,7 @@ object StringParser {
   }
 
   def parseExpr(expr: String)(implicit env: ExprContext): String = {
-    parseExprRaw(expr)(env.toJava)
+    parseExprRaw(expr)(env.javaExprEnv)
   }
 
   def parseExprRaw(expr: String)(implicit env: JavaMap[String, AnyRef]): String = {

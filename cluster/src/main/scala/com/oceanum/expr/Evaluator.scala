@@ -16,7 +16,7 @@ object Evaluator {
 
   def addOpFunction(operatorType: OperatorType, function: AviatorFunction): Unit = AviatorEvaluator.addOpFunction(operatorType, function)
 
-  def execute(expr: String, env: ExprContext): Any = rawExecute(expr, env.toJava)
+  def execute(expr: String, env: ExprContext): Any = rawExecute(expr, env.javaExprEnv)
 
   def rawExecute(expr: String, env: JavaMap[String, AnyRef]): Any = {
     if (env.isEmpty) AviatorEvaluator.execute(expr)

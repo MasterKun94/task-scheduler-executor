@@ -8,7 +8,7 @@ import com.oceanum.graph.{FallbackStrategy, GraphStatus, ReRunStrategy}
 @SerialVersionUID(1L)
 class RichGraphMeta(id: Int = 0,
                     name: String = UUID.randomUUID().toString,
-                    operators: Map[Int, TaskMeta] = Map.empty,
+                    operators: Map[Int, RichTaskMeta] = Map.empty,
                     fallbackStrategy: FallbackStrategy.value = FallbackStrategy.CONTINUE,
                     reRunStrategy: ReRunStrategy.value = ReRunStrategy.NONE,
                     graphStatus: GraphStatus.value = GraphStatus.OFFLINE,
@@ -36,7 +36,7 @@ class RichGraphMeta(id: Int = 0,
 
   def copy(id: Int = id,
            name: String = name,
-           operators: Map[Int, TaskMeta] = operators,
+           operators: Map[Int, RichTaskMeta] = operators,
            fallbackStrategy: FallbackStrategy.value = fallbackStrategy,
            reRunStrategy: ReRunStrategy.value = reRunStrategy,
            graphStatus: GraphStatus.value = graphStatus,
@@ -81,7 +81,7 @@ class RichGraphMeta(id: Int = 0,
 
   def merge(meta: GraphMeta): RichGraphMeta = {
     val keys: Set[Int] = this.operators.keySet ++ meta.operators.keySet
-    val map: Map[Int, TaskMeta] = keys.map { key => {
+    val map: Map[Int, RichTaskMeta] = keys.map { key => {
       val task = (this.operators.get(key), meta.operators.get(key)) match {
         case (Some(o1), Some(o2)) =>
           if (o1.createTime.before(o2.createTime)) o2 else o1

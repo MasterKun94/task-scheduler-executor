@@ -13,7 +13,7 @@ import scala.concurrent.{ExecutionContext, Future}
 abstract class ProcessTaskConfig(val propCmd: Array[String] = Array.empty,
                         val propEnv: Map[String, String] = Map.empty,
                         val propDirectory: String = Environment.EXEC_WORK_DIR,
-                        val propWaitForTimeout: Long = -1,
+                        val propWaitForTimeout: String = "24h",
                         val propStdoutHandler: StdHandler,
                         val propStderrHandler: StdHandler) extends TaskConfig {
   override def close(): Unit = {
@@ -27,7 +27,7 @@ abstract class ProcessTaskConfig(val propCmd: Array[String] = Array.empty,
   }
 
   override def prepare(env: ExprContext)(implicit ec: ExecutionContext): Future[ProcessTaskConfig] = {
-    val rawEnv = env.toJava
+    val rawEnv = env.javaExprEnv
     val taskMeta = env.taskMeta
     val taskConfig = SuUserTaskConfig(taskMeta.user, this).parseFunction(rawEnv)
     val fileMap: Map[String, String] = taskConfig.files

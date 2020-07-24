@@ -61,7 +61,7 @@ object FlowFactory {
   }
 
   def createDecision(expr: Array[String])(implicit builder: GraphBuilder): DecisionFlow = {
-    val meta2env = (meta: GraphMeta) => (ExprContext(meta.env) + meta.asInstanceOf[RichGraphMeta]).toJava
+    val meta2env = (meta: GraphMeta) => (ExprContext(meta.env, graphMeta = meta.asInstanceOf[RichGraphMeta])).javaExprEnv
     val decide = expr
       .map(Evaluator.compile(_, cache = false))
       .map(expr => (meta: GraphMeta) => expr.execute(meta2env(meta)).asInstanceOf[Boolean])

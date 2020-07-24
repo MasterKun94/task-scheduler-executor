@@ -1,7 +1,6 @@
 package com.oceanum.common
 
 import java.io.File
-import java.text.SimpleDateFormat
 import java.util.Date
 
 import com.oceanum.client.Task

@@ -5,7 +5,8 @@ import java.net.{InetAddress, UnknownHostException}
 import com.oceanum.client.TaskClient
 import com.oceanum.common.{ExprContext, GraphMeta, RichGraphMeta}
 import com.oceanum.exec.State
-import com.oceanum.graph.{FlowFactory, GraphMetaHandler, ReRunStrategy, WorkflowRunner}
+import com.oceanum.graph.{FlowFactory, GraphMetaHandler, ReRunStrategy, Workflow}
+import com.oceanum.serialize.JsonUtil
 
 import scala.concurrent.Promise
 
@@ -35,7 +36,8 @@ object Graph {
       println("graphMeta complete: " + richGraphMeta.graphStatus)
       println(richGraphMeta)
       richGraphMeta.operators.foreach(println)
-      if (!promise.isCompleted) promise.success(richGraphMeta.asInstanceOf[RichGraphMeta])
+      if (!promise.isCompleted)
+        promise.success(richGraphMeta.asInstanceOf[RichGraphMeta])
     }
 
     override def onStart(richGraphMeta: GraphMeta): Unit = {
@@ -47,7 +49,7 @@ object Graph {
 
   def main(args: Array[String]): Unit = {
 
-    val instance = WorkflowRunner.createGraph { implicit graph => import graph.flowFactory._
+    val instance = Workflow.create { implicit graph => import graph.flowFactory._
 
       val python1 = createFlow(Test.task().copy(rawEnv = ExprContext(Map("file_name" -> "${(graph.id() % 2 == 0) ? 'python-err' : 'python'}"))))
       val python2 = createFlow(Test.task())
@@ -58,14 +60,12 @@ object Graph {
       val join = createJoin(2)
       val decision = createDecision(Array("false"))
       val converge = createConverge(2)
+      val start = createStart
+      val end = createEnd
 
-      createStart --> fork
-      fork --> python1 --> join
-      fork --> python2 --> decision
-      decision --> python3 --> converge
+      start --> fork --> python1 --> join --> python5 --> end
+      fork --> python2 --> decision --> python3 --> converge --> join
       decision --> python4 --> converge
-      converge --> join
-      join --> python5 --> createEnd
 
     }.run()
 
@@ -75,6 +75,14 @@ object Graph {
     import scala.concurrent.ExecutionContext.Implicits.global
     promise.future.onComplete(meta => {
       Thread.sleep(3000)
+
+      val ctx = new ExprContext(Map.empty).copy(graphMeta = meta.get)
+      val str = JsonUtil.toString(ctx)
+      println(str)
+      val c = JsonUtil.json2context(str)
+      println(c)
+      println(c.graphMeta)
+
       val m = meta.get.copy(reRunStrategy = ReRunStrategy.RUN_ALL_AFTER_FAILED)
       println("retry: " + m)
       instance.offer(m)
@@ -122,7 +130,7 @@ object Graph2 {
 
   def main(args: Array[String]): Unit = {
 
-    val instance = WorkflowRunner.createGraph { implicit graph => import graph._
+    val instance = Workflow.create { implicit graph => import graph._
 
       val python1 = createFlow(Test.task().copy(rawEnv = ExprContext(Map("file_name" -> "${(graph.id() % 2 == 0) ? 'python-err' : 'python'}"))))
       val python2 = createFlow(Test.task())

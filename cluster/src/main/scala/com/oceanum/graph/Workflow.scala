@@ -1,28 +1,75 @@
 package com.oceanum.graph
 
-import akka.Done
-import akka.stream.QueueOfferResult
-import akka.stream.scaladsl.SourceQueueWithComplete
-import com.oceanum.common.RichGraphMeta
+import java.util.Date
+import java.util.concurrent.atomic.AtomicInteger
 
-import scala.concurrent.Future
+import akka.actor.{ActorSystem, PoisonPill, Props}
+import akka.stream.ClosedShape
+import akka.stream.scaladsl.{GraphDSL, RunnableGraph, Sink, Source}
+import com.oceanum.client.{Task, TaskClient}
+import com.oceanum.common.{Environment, GraphMeta, RichGraphMeta}
+import com.oceanum.exec.State
+import com.oceanum.graph.StreamFlows.{EndFlow, StartFlow}
+import org.json4s.jackson.JsonMethods
 
-class Workflow(protected val queue: SourceQueueWithComplete[RichGraphMeta],
-               protected val future: Future[Done]) {
-    def complete(): Future[Done] = {
-      queue.complete()
-      queue.watchCompletion()
+import scala.util.{Failure, Success}
+class Workflow(runnableGraph: Graph, graphMetaHandler: GraphMetaHandler) {
+  def run()(implicit client: TaskClient): WorkflowInstance = {
+    implicit val system: ActorSystem = client.system
+    val (queue, future) = runnableGraph.run()
+    val future0 = future.andThen {
+      case Success(_) =>
+        graphMetaHandler.close()
+      case Failure(exception) =>
+        exception.printStackTrace()
+        graphMetaHandler.close()
+
+    } (client.system.dispatcher)
+    WorkflowInstance(queue, future0)
+  }
+}
+
+object Workflow {
+  def create(builder: GraphBuilder => Unit)(implicit taskClient: TaskClient, graphMetaHandler: GraphMetaHandler): Workflow = {
+    val metaHandler: GraphMetaHandler = new GraphMetaHandler {
+      private val actor = taskClient.system.actorOf(Props(classOf[GraphMetaHandlerActor], graphMetaHandler))
+      override def onRunning(richGraphMeta: GraphMeta, taskState: State): Unit = actor ! OnRunning(richGraphMeta, taskState)
+
+      override def onComplete(richGraphMeta: GraphMeta): Unit = actor ! OnComplete(richGraphMeta)
+
+      override def onStart(richGraphMeta: GraphMeta): Unit = actor ! OnStart(richGraphMeta)
+
+      override def close(): Unit = actor ! PoisonPill
     }
+    val atomicInteger = new AtomicInteger(0)
+    val date = new Date()
+    val source0 = Source
+      .queue[RichGraphMeta](Environment.GRAPH_SOURCE_QUEUE_BUFFER_SIZE, Environment.GRAPH_SOURCE_QUEUE_OVERFLOW_STRATEGY)
+      .map { meta =>
+        val start = meta.copy(
+          createTime = date,
+          startTime = new Date(),
+          graphStatus = GraphStatus.RUNNING,
+          id = atomicInteger.getAndIncrement(),
+          reRunFlag = false
+        )
+        metaHandler.onStart(start)
+        start
+      }
 
-    def fail(e: Throwable): Unit = queue.fail(e)
-
-    def offer(meta: RichGraphMeta): Future[QueueOfferResult] = queue.offer(meta)
-
-    def listenComplete: Future[Done] = future
+    val sink0 = Sink.foreach[RichGraphMeta](graphMetaHandler.onComplete)
+    val graph = GraphDSL.create(source0, sink0)(_ -> _) { implicit b => (source, sink) =>
+      val start = StartFlow(source)
+      val end = EndFlow(sink)
+      builder(GraphBuilder(start, end, metaHandler, b))
+      ClosedShape
+    }
+    new Workflow(RunnableGraph.fromGraph(graph), metaHandler)
   }
 
-  object Workflow {
-    def apply(queue: SourceQueueWithComplete[RichGraphMeta], future: Future[Done]): Workflow = new Workflow(queue, future)
-
-    def unapply(arg: Workflow): Option[(SourceQueueWithComplete[RichGraphMeta], Future[Done])] = Some((arg.queue, arg.future))
-  }
+//  def fromJson(json: String): Workflow = {
+//    import org.json4s._
+//    implicit val formats: Formats = DefaultFormats
+//    JsonMethods.parse(json).extract[Task]
+//  }
+}

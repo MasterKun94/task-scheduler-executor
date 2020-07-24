@@ -5,35 +5,29 @@ import scala.collection.JavaConverters._
 import com.oceanum.expr.JavaMap
 
 @SerialVersionUID(1L)
-case class ExprContext(env: Map[String, Any]) {
+case class ExprContext(env: Map[String, Any], graphMeta: RichGraphMeta = null, taskMeta: RichTaskMeta = null) {
 
-  def taskMeta: RichTaskMeta = env.get(ExprContext.taskKey).map(_.asInstanceOf[RichTaskMeta]).getOrElse(new RichTaskMeta())
+  def exprEnv: Map[String, Any] = graphMeta.env ++ env + (ExprContext.graphKey -> graphMeta) + (ExprContext.taskKey -> taskMeta)
 
-  def graphMeta: RichGraphMeta = env(ExprContext.graphKey).asInstanceOf[RichGraphMeta]
+  def javaExprEnv: JavaMap[String, AnyRef] = evaluate(toJava(exprEnv).asInstanceOf[JavaMap[String, AnyRef]])
 
-  def toJava: JavaMap[String, AnyRef] = evaluate(toJava(env).asInstanceOf[JavaMap[String, AnyRef]])
+  def +(kv: (String, Any)): ExprContext = this.copy(env = env + (kv._1 -> kv._2))
 
-  def +(taskMeta: RichTaskMeta): ExprContext = this.copy(env + (ExprContext.taskKey -> taskMeta))
-
-  def +(graphMeta: RichGraphMeta): ExprContext = this.copy(graphMeta.env ++ env + (ExprContext.graphKey -> graphMeta))
-
-  def +(kv: (String, Any)): ExprContext = ExprContext(env + (kv._1 -> kv._2))
-
-  def get[V](key: String): Option[V] = env.get(key).map(_.asInstanceOf[V])
+  def get[V](key: String): Option[V] = exprEnv.get(key).map(_.asInstanceOf[V])
 
   def iterator: Iterator[(String, Any)] = env.iterator
 
-  def -(key: String): ExprContext = ExprContext(env - key)
+  def -(key: String): ExprContext = this.copy(env = env - key)
 
   def ++(right: ExprContext): ExprContext = this ++ right.env
 
-  def ++(right: Map[String, Any]): ExprContext = ExprContext(env ++ right)
+  def ++(right: Map[String, Any]): ExprContext = this.copy(env = env ++ right)
 
   def put(key: String, value: Any): ExprContext = this + (key -> value)
 
   def remove(key: String): ExprContext = this - key
 
-  def apply[OUT](key: String): OUT = env(key).asInstanceOf[OUT]
+  def apply[OUT](key: String): OUT = exprEnv(key).asInstanceOf[OUT]
 
   private def toJava(ref: Any): AnyRef = ref.asInstanceOf[AnyRef] match {
     case map: Map[_, _] => map.mapValues(_.asInstanceOf[AnyRef]).mapValues(toJava).asJava
@@ -61,5 +55,5 @@ object ExprContext {
   val taskKey = "task"
   val graphKey = "graph"
 
-  def empty: ExprContext = ExprContext(Map.empty)
+  def empty: ExprContext = ExprContext(Map.empty, null, null)
 }

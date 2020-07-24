@@ -76,7 +76,7 @@ class ShellTaskBuilder(task: Task) extends TaskBuilder[ShellTaskBuilder, ShellTa
 
   def directory(dir: String): ShellTaskBuilder = typedBuilder(prop.copy(directory = dir))
 
-  def waitForTimeout(timeout: String): ShellTaskBuilder = typedBuilder(prop.copy(waitForTimeout = Duration(timeout).toMillis))
+  def waitForTimeout(timeout: String): ShellTaskBuilder = typedBuilder(prop.copy(waitForTimeout = timeout))
 
 }
 
@@ -93,7 +93,7 @@ class ShellScriptTaskBuilder(task: Task) extends TaskBuilder[ShellScriptTaskBuil
 
   def directory(dir: String): ShellScriptTaskBuilder = typedBuilder(prop.copy(directory = dir))
 
-  def waitForTimeout(timeout: String): ShellScriptTaskBuilder = typedBuilder(prop.copy(waitForTimeout = Duration(timeout).toMillis))
+  def waitForTimeout(timeout: String): ShellScriptTaskBuilder = typedBuilder(prop.copy(waitForTimeout = timeout))
 }
 
 @SerialVersionUID(1L)
@@ -117,7 +117,7 @@ class JavaTaskBuilder(task: Task) extends TaskBuilder[JavaTaskBuilder, JavaTaskP
 
   def directory(dir: String): JavaTaskBuilder = typedBuilder(prop.copy(directory = dir))
 
-  def waitForTimeout(timeout: String): JavaTaskBuilder = typedBuilder(prop.copy(waitForTimeout = Duration(timeout).toMillis))
+  def waitForTimeout(timeout: String): JavaTaskBuilder = typedBuilder(prop.copy(waitForTimeout = timeout))
 }
 
 @SerialVersionUID(1L)
@@ -140,7 +140,7 @@ class ScalaTaskBuilder(task: Task) extends TaskBuilder[ScalaTaskBuilder, ScalaTa
 
   def directory(dir: String): ScalaTaskBuilder = typedBuilder(prop.copy(directory = dir))
 
-  def waitForTimeout(timeout: String): ScalaTaskBuilder = typedBuilder(prop.copy(waitForTimeout = Duration(timeout).toMillis))
+  def waitForTimeout(timeout: String): ScalaTaskBuilder = typedBuilder(prop.copy(waitForTimeout = timeout))
 }
 
 @SerialVersionUID(1L)
@@ -155,7 +155,7 @@ class PythonTaskBuilder(task: Task) extends TaskBuilder[PythonTaskBuilder, Pytho
 
   def directory(dir: String): PythonTaskBuilder = typedBuilder(prop.copy(directory = dir))
 
-  def waitForTimeout(timeout: String): PythonTaskBuilder = typedBuilder(prop.copy(waitForTimeout = Duration(timeout).toMillis))
+  def waitForTimeout(timeout: String): PythonTaskBuilder = typedBuilder(prop.copy(waitForTimeout = timeout))
 }
 
 @SerialVersionUID(1L)

@@ -9,6 +9,7 @@ import akka.cluster.pubsub.DistributedPubSub
 import akka.stream.OverflowStrategy
 import ch.qos.logback.classic.LoggerContext
 import ch.qos.logback.classic.joran.JoranConfigurator
+import com.oceanum.client.TaskProp
 import com.oceanum.exec.{TaskConfig, TypedRunner}
 import com.oceanum.exec.runners.ProcessRunner
 import com.oceanum.common.Implicits.{DurationHelper, PathHelper}

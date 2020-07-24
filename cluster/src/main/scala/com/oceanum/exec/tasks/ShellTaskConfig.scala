@@ -12,7 +12,7 @@ import com.oceanum.expr.JavaMap
 case class ShellTaskConfig(cmd: Array[String] = Array.empty,
                            env: Map[String, String] = Map.empty,
                            directory: String = Environment.EXEC_WORK_DIR,
-                           waitForTimeout: Long = -1,
+                           waitForTimeout: String = "24h",
                            stdoutHandler: StdHandler,
                            stderrHandler: StdHandler)
 extends ProcessTaskConfig(cmd, env, directory, waitForTimeout, stdoutHandler, stderrHandler) {

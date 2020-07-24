@@ -6,14 +6,14 @@ import com.oceanum.exec.{EventListener, ExecutionTask, TaskConfig}
 import com.oceanum.common.{Environment, ExprContext, RichGraphMeta, RichTaskMeta}
 
 @SerialVersionUID(1L)
-case class Task(id: Int,
+case class Task(id: Int = -1,
                 topic: String = Environment.EXEC_DEFAULT_TOPIC,
                 user: String = Environment.EXEC_DEFAULT_USER,
                 retryCount: Int = Environment.EXEC_DEFAULT_RETRY_MAX,
                 retryInterval: String = Environment.EXEC_DEFAULT_RETRY_INTERVAL,
                 priority: Int = Environment.EXEC_DEFAULT_PRIORITY,
                 checkStateInterval: String = Environment.EXEC_STATE_UPDATE_INTERVAL,
-                prop: TaskProp,
+                prop: TaskProp = null,
                 parallelism: Int = Environment.GRAPH_FLOW_DEFAULT_PARALLELISM,
                 rawEnv: ExprContext = ExprContext.empty) {
   def toExecutionTask(implicit listener: EventListener): ExecutionTask[_ <: TaskConfig] = {
@@ -25,7 +25,7 @@ case class Task(id: Int,
       priority = priority,
       prop = prop.toTask(taskMeta),
       eventListener = listener,
-      env = env + taskMeta
+      env = env.copy(taskMeta = taskMeta)
     )
   }
 
@@ -34,12 +34,15 @@ case class Task(id: Int,
   }
 
   def addGraphMeta(graphMeta: RichGraphMeta): Task = {
-    this.copy(rawEnv = rawEnv + graphMeta)
+    this.copy(rawEnv = rawEnv.copy(graphMeta = graphMeta))
   }
 
   def env: ExprContext = rawEnv + (ExprContext.taskKey -> metadata)
 
-  private def metadata: RichTaskMeta = rawEnv.taskMeta.withTask(this)
+  private def metadata: RichTaskMeta = {
+    if (rawEnv.taskMeta == null) new RichTaskMeta().withTask(this)
+    else rawEnv.taskMeta
+  }
 }
 
 object Task {

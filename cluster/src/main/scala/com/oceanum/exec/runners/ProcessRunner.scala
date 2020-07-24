@@ -10,6 +10,7 @@ import com.oceanum.exec.tasks._
 import com.oceanum.common.Environment
 
 import scala.collection.JavaConversions.{mapAsJavaMap, seqAsJavaList}
+import scala.concurrent.duration.Duration
 
 /**
  * @author chenmingkun
@@ -53,11 +54,12 @@ class ProcessRunner extends TypedRunner[ProcessTaskConfig]("SHELL", "SHELL_SCRIP
     sendRunEvent(task, new ShellExecutionHook(process))
     val value: ExitCode =
       try {
+        val timeout = Duration(prop.propWaitForTimeout).toMillis
         val maxWait =
-          if (prop.propWaitForTimeout <= 0)
+          if (timeout <= 0)
             Environment.EXEC_MAX_TIMEOUT.toMillis
           else
-            prop.propWaitForTimeout
+            timeout
         val exited = process.waitFor(maxWait, TimeUnit.MILLISECONDS)
         if (exited) {
           ExitCode(process.exitValue())

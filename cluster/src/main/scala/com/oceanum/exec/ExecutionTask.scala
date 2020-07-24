@@ -50,6 +50,6 @@ case class ExecutionTask[T <: TaskConfig](name: String,
   }
 
   def updateMeta(meta: RichTaskMeta): ExecutionTask[T] = {
-    this.copy(env = env + meta)
+    this.copy(env = env.copy(taskMeta = meta))
   }
 }

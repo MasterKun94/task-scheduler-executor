@@ -15,7 +15,7 @@ case class JavaTaskConfig(jars: Array[String],
                           options: Array[String] = Array.empty,
                           env: Map[String, String] = Map.empty,
                           directory: String = Environment.EXEC_WORK_DIR,
-                          waitForTimeout: Long = -1,
+                          waitForTimeout: String = "24h",
                           stdoutHandler: StdHandler,
                           stderrHandler: StdHandler)
   extends ProcessTaskConfig(
