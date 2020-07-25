@@ -31,7 +31,7 @@ class MailBox[T](queue: BlockingQueue[T], listener: T => Unit, listenerNum: Int)
 
   def queueSize: Int = queue.size()
 
-  def close: Unit = running.set(false)
+  def close(): Unit = running.set(false)
 }
 
 object MailBox {

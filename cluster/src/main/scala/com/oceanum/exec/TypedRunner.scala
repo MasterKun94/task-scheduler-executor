@@ -14,7 +14,7 @@ abstract class TypedRunner[T <: TaskConfig](types: String*) extends TaskRunner(t
       } catch {
         case e: Throwable =>
           e.printStackTrace()
-          ExitCode.ERROR(e.getMessage)
+          ExitCode.ERROR(e)
       }
     } else {
       ExitCode.UN_SUPPORT(task.metadata.taskType)

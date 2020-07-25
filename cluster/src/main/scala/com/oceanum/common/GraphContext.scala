@@ -5,27 +5,27 @@ import scala.collection.JavaConverters._
 import com.oceanum.expr.JavaMap
 
 @SerialVersionUID(1L)
-case class ExprContext(env: Map[String, Any], graphMeta: RichGraphMeta = null, taskMeta: RichTaskMeta = null) {
+case class GraphContext(env: Map[String, Any], graphMeta: RichGraphMeta = null, taskMeta: RichTaskMeta = null) {
 
-  def exprEnv: Map[String, Any] = graphMeta.env ++ env + (ExprContext.graphKey -> graphMeta) + (ExprContext.taskKey -> taskMeta)
+  def exprEnv: Map[String, Any] = graphMeta.env ++ env + (GraphContext.graphKey -> graphMeta) + (GraphContext.taskKey -> taskMeta)
 
   def javaExprEnv: JavaMap[String, AnyRef] = evaluate(toJava(exprEnv).asInstanceOf[JavaMap[String, AnyRef]])
 
-  def +(kv: (String, Any)): ExprContext = this.copy(env = env + (kv._1 -> kv._2))
+  def +(kv: (String, Any)): GraphContext = this.copy(env = env + (kv._1 -> kv._2))
 
   def get[V](key: String): Option[V] = exprEnv.get(key).map(_.asInstanceOf[V])
 
   def iterator: Iterator[(String, Any)] = env.iterator
 
-  def -(key: String): ExprContext = this.copy(env = env - key)
+  def -(key: String): GraphContext = this.copy(env = env - key)
 
-  def ++(right: ExprContext): ExprContext = this ++ right.env
+  def ++(right: GraphContext): GraphContext = this ++ right.env
 
-  def ++(right: Map[String, Any]): ExprContext = this.copy(env = env ++ right)
+  def ++(right: Map[String, Any]): GraphContext = this.copy(env = env ++ right)
 
-  def put(key: String, value: Any): ExprContext = this + (key -> value)
+  def put(key: String, value: Any): GraphContext = this + (key -> value)
 
-  def remove(key: String): ExprContext = this - key
+  def remove(key: String): GraphContext = this - key
 
   def apply[OUT](key: String): OUT = exprEnv(key).asInstanceOf[OUT]
 
@@ -51,9 +51,9 @@ case class ExprContext(env: Map[String, Any], graphMeta: RichGraphMeta = null, t
   }
 }
 
-object ExprContext {
+object GraphContext {
   val taskKey = "task"
   val graphKey = "graph"
 
-  def empty: ExprContext = ExprContext(Map.empty, null, null)
+  def empty: GraphContext = GraphContext(Map.empty, null, null)
 }

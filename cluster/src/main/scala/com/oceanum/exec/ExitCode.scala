@@ -10,11 +10,11 @@ object ExitCode {
 
   def apply(code: Int): ExitCode = {
     if (code == 0) OK
-    else ERROR("exit with code " + code)
+    else ERROR(new Exception("exit with code " + code))
   }
 
   case object OK extends ExitCode
   case object KILL extends ExitCode
-  case class ERROR(message: String) extends ExitCode
+  case class ERROR(e: Throwable) extends ExitCode
   case class UN_SUPPORT(taskType: String) extends ExitCode
 }

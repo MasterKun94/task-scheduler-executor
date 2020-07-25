@@ -57,7 +57,9 @@ case object ClusterStateRequest extends ClusterMessage
 @SerialVersionUID(1L)
 case class ClusterStateRequest(initialDelay: String, interval: String) extends ClusterMessage
 @SerialVersionUID(1L)
-case class ClusterStateStopRequest(handler: ActorRef) extends ClusterMessage
+case class ClusterStateStopRequest(handler: ActorRef) extends ClusterMessage {
+  handler.path
+}
 @SerialVersionUID(1L)
 case class ClusterState(clusterState: CurrentClusterState) extends ClusterMessage
 @SerialVersionUID(1L)

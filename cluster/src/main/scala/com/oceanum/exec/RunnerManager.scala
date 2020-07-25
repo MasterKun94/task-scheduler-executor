@@ -48,7 +48,7 @@ object RunnerManager extends Log {
   }
 
   def close(): Unit = {
-    priorityMailbox.close
+    priorityMailbox.close()
     runners.foreach(_.close())
     log.info("execute manager closed")
   }
@@ -63,7 +63,7 @@ object RunnerManager extends Log {
         case ExitCode.ERROR(msg) =>
           if (prop.retryCount > 1) {
             val newOperatorProp = prop.retry()
-            prop.eventListener.retry(newOperatorProp.metadata.copy(message = msg))
+            prop.eventListener.retry(newOperatorProp.metadata.copy(message = msg.getMessage, error = msg))
             log.info("task begin retry: " + newOperatorProp.name)
             incRetrying()
             val cancellable = scheduleOnce(newOperatorProp.retryInterval) {
@@ -76,7 +76,7 @@ object RunnerManager extends Log {
             scheduleOnce(10.second) {
               prop.prop.close()
             }
-            prop.eventListener.failed(prop.metadata.copy(message = msg, endTime = new Date()))
+            prop.eventListener.failed(prop.metadata.copy(message = msg.getMessage, error = msg, endTime = new Date()))
             log.info("task failed: " + prop.name)
             incFailed()
           }
@@ -105,9 +105,8 @@ object RunnerManager extends Log {
       }
     } catch {
       case e: Throwable =>
-        val message = "this should never happen, or here is a bug"
-        log.error(e, message)
-        prop.eventListener.failed(prop.metadata.copy(message = message, error = e))
+        log.error(e, e.getMessage)
+        prop.eventListener.failed(prop.metadata.copy(message = e.getMessage, error = e))
         prop.prop.close()
         incFailed()
     } finally {
@@ -134,7 +133,7 @@ object RunnerManager extends Log {
       }
       case Failure(exception) =>
         exception.printStackTrace()
-        ExitCode.ERROR(exception.getMessage)
+        ExitCode.ERROR(exception)
     }
   }
 

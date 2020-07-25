@@ -10,6 +10,7 @@ import com.oceanum.client.{Task, TaskClient}
 import com.oceanum.common.{Environment, GraphMeta, RichGraphMeta}
 import com.oceanum.exec.State
 import com.oceanum.graph.StreamFlows.{EndFlow, StartFlow}
+import com.oceanum.serialize.JsonSerialization
 import org.json4s.jackson.JsonMethods
 
 import scala.util.{Failure, Success}
@@ -30,7 +31,7 @@ class Workflow(runnableGraph: Graph, graphMetaHandler: GraphMetaHandler) {
 }
 
 object Workflow {
-  def create(builder: GraphBuilder => Unit)(implicit taskClient: TaskClient, graphMetaHandler: GraphMetaHandler): Workflow = {
+  def create(env: Map[String, Any], builder: GraphBuilder => Unit)(implicit taskClient: TaskClient, graphMetaHandler: GraphMetaHandler): Workflow = {
     val metaHandler: GraphMetaHandler = new GraphMetaHandler {
       private val actor = taskClient.system.actorOf(Props(classOf[GraphMetaHandlerActor], graphMetaHandler))
       override def onRunning(richGraphMeta: GraphMeta, taskState: State): Unit = actor ! OnRunning(richGraphMeta, taskState)
@@ -51,7 +52,9 @@ object Workflow {
           startTime = new Date(),
           graphStatus = GraphStatus.RUNNING,
           id = atomicInteger.getAndIncrement(),
-          reRunFlag = false
+          reRunFlag = false,
+          env = env ++ meta.env,
+          latestTaskId = -1
         )
         metaHandler.onStart(start)
         start
@@ -67,9 +70,23 @@ object Workflow {
     new Workflow(RunnableGraph.fromGraph(graph), metaHandler)
   }
 
-//  def fromJson(json: String): Workflow = {
-//    import org.json4s._
-//    implicit val formats: Formats = DefaultFormats
-//    JsonMethods.parse(json).extract[Task]
-//  }
+  def create(builder: GraphBuilder => Unit)(implicit taskClient: TaskClient, graphMetaHandler: GraphMetaHandler): Workflow = {
+    create(Map.empty, builder)(taskClient, graphMetaHandler)
+  }
+
+  def fromGraph(graphDefine: GraphDefine)(implicit taskClient: TaskClient, graphMetaHandler: GraphMetaHandler): Workflow = {
+    create(graphDefine.env, implicit builder => {
+      for ((prim, subs) <- graphDefine.edges) {
+        val parent = graphDefine.nodes(prim)
+        val children = subs.map(graphDefine.nodes)
+        builder.buildEdges(parent, children:_*)
+      }
+      builder.createGraph()
+    }
+    )
+  }
+
+  def fromJson(json: String)(implicit taskClient: TaskClient, graphMetaHandler: GraphMetaHandler): Workflow = {
+    fromGraph(JsonSerialization.deSerialize(json).asInstanceOf[GraphDefine])
+  }
 }

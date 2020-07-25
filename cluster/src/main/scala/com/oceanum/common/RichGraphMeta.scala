@@ -8,7 +8,8 @@ import com.oceanum.graph.{FallbackStrategy, GraphStatus, ReRunStrategy}
 @SerialVersionUID(1L)
 class RichGraphMeta(id: Int = 0,
                     name: String = UUID.randomUUID().toString,
-                    operators: Map[Int, RichTaskMeta] = Map.empty,
+                    tasks: Map[Int, RichTaskMeta] = Map.empty,
+                    latestTaskId: Int = -1,
                     fallbackStrategy: FallbackStrategy.value = FallbackStrategy.CONTINUE,
                     reRunStrategy: ReRunStrategy.value = ReRunStrategy.NONE,
                     graphStatus: GraphStatus.value = GraphStatus.OFFLINE,
@@ -23,7 +24,8 @@ class RichGraphMeta(id: Int = 0,
   extends GraphMeta(
     id = id,
     name = name,
-    operators = operators,
+    tasks = tasks,
+    latestTaskId = latestTaskId,
     fallbackStrategy = fallbackStrategy,
     reRunStrategy = reRunStrategy,
     graphStatus = graphStatus,
@@ -36,7 +38,8 @@ class RichGraphMeta(id: Int = 0,
 
   def copy(id: Int = id,
            name: String = name,
-           operators: Map[Int, RichTaskMeta] = operators,
+           tasks: Map[Int, RichTaskMeta] = tasks,
+           latestTaskId: Int = latestTaskId,
            fallbackStrategy: FallbackStrategy.value = fallbackStrategy,
            reRunStrategy: ReRunStrategy.value = reRunStrategy,
            graphStatus: GraphStatus.value = graphStatus,
@@ -50,7 +53,8 @@ class RichGraphMeta(id: Int = 0,
     new RichGraphMeta(
       id = id,
       name = name,
-      operators = operators,
+      tasks = tasks,
+      latestTaskId = latestTaskId,
       fallbackStrategy = fallbackStrategy,
       reRunStrategy = reRunStrategy,
       graphStatus = graphStatus,
@@ -63,16 +67,21 @@ class RichGraphMeta(id: Int = 0,
       reRunFlag = reRunFlag)
   }
 
-  def addOperators(state: State): RichGraphMeta = {
+  def latestTask: TaskMeta = if (latestTaskId < 0) null else tasks(latestTaskId)
+
+  def addTask(state: State, isComplete: Boolean = false): RichGraphMeta = {
     val graphStatus = state match {
       case _: SUCCESS => GraphStatus.RUNNING
       case _: FAILED => GraphStatus.EXCEPTION
       case _: KILL => GraphStatus.KILLED
       case _ => GraphStatus.RUNNING
     }
-    val metadata = state.metadata.asInstanceOf[RichTaskMeta]
-    val tuple = metadata.id -> metadata
-    updateGraphStatus(graphStatus).copy(operators = this.operators + tuple)
+    val taskMeta = state.metadata.asInstanceOf[RichTaskMeta]
+    val tuple = taskMeta.id -> taskMeta
+    if (isComplete)
+      updateGraphStatus(graphStatus).copy(tasks = this.tasks + tuple, latestTaskId = taskMeta.id)
+    else
+      updateGraphStatus(graphStatus).copy(tasks = this.tasks + tuple)
   }
 
   def updateGraphStatus(status: GraphStatus.value): RichGraphMeta = {
@@ -80,9 +89,9 @@ class RichGraphMeta(id: Int = 0,
   }
 
   def merge(meta: GraphMeta): RichGraphMeta = {
-    val keys: Set[Int] = this.operators.keySet ++ meta.operators.keySet
+    val keys: Set[Int] = this.tasks.keySet ++ meta.tasks.keySet
     val map: Map[Int, RichTaskMeta] = keys.map { key => {
-      val task = (this.operators.get(key), meta.operators.get(key)) match {
+      val task = (this.tasks.get(key), meta.tasks.get(key)) match {
         case (Some(o1), Some(o2)) =>
           if (o1.createTime.before(o2.createTime)) o2 else o1
         case (None, Some(o2)) => o2
@@ -91,7 +100,14 @@ class RichGraphMeta(id: Int = 0,
       }
       (key, task.asInstanceOf[RichTaskMeta])
     }}.toMap
-    updateGraphStatus(meta.graphStatus).copy(operators = map)
+    val latest = Array(latestTask, meta.asInstanceOf[RichGraphMeta].latestTask)
+      .map( t => {
+        if (t == null) 0L -> -1
+        else if (t.startTime == null) 0L -> t.id
+        else t.startTime.getTime -> t.id
+      })
+        .maxBy(_._1)._2
+    updateGraphStatus(meta.graphStatus).copy(tasks = map, latestTaskId = latest)
   }
 
   def end: RichGraphMeta = {

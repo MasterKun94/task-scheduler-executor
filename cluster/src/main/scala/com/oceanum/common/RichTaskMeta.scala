@@ -9,6 +9,7 @@ import com.oceanum.exec.{State, StdHandler}
 
 @SerialVersionUID(1L)
 class RichTaskMeta(id: Int = -1,
+                   name: String = null,
                    taskType: String = null,
                    user: String = null,
                    createTime: Date = null,
@@ -20,6 +21,7 @@ class RichTaskMeta(id: Int = -1,
                    state: State.value = State.OFFLINE,
                    retryNum: Int = 0) extends TaskMeta(
   id = id,
+  name = name,
   taskType = taskType,
   user = user,
   createTime = createTime,
@@ -33,6 +35,7 @@ class RichTaskMeta(id: Int = -1,
 ) {
 
   def copy(id: Int = id,
+           name: String = name,
            taskType: String = taskType,
            user: String = user,
            createTime: Date = createTime,
@@ -45,6 +48,7 @@ class RichTaskMeta(id: Int = -1,
            retryNum: Int = retryNum): RichTaskMeta = {
     new RichTaskMeta(
       id = id,
+      name = name,
       taskType = taskType,
       user = user,
       createTime = createTime,
@@ -88,6 +92,7 @@ class RichTaskMeta(id: Int = -1,
     val dateFormat = DateUtil.format("yyyyMMdd").format(graphMeta.startTime)
     this.copy(
       id = task.id,
+      name = task.name,
       taskType = task.prop.taskType,
       user = task.user,
       execDir = Environment.EXEC_WORK_DIR/dateFormat/graphMeta.name/graphMeta.id/task.id
@@ -97,6 +102,7 @@ class RichTaskMeta(id: Int = -1,
   def failure(task: Task, e: Throwable): RichTaskMeta = {
     this.copy(
       id = task.id,
+      name = task.name,
       taskType = task.prop.taskType,
       user = task.user,
       error = e,

@@ -1,12 +1,13 @@
 package com.oceanum.client
 
-import java.util.Date
+import java.util.{Date, UUID}
 
 import com.oceanum.exec.{EventListener, ExecutionTask, TaskConfig}
-import com.oceanum.common.{Environment, ExprContext, RichGraphMeta, RichTaskMeta}
+import com.oceanum.common.{Environment, GraphContext, RichGraphMeta, RichTaskMeta}
 
 @SerialVersionUID(1L)
 case class Task(id: Int = -1,
+                name: String = UUID.randomUUID().toString,
                 topic: String = Environment.EXEC_DEFAULT_TOPIC,
                 user: String = Environment.EXEC_DEFAULT_USER,
                 retryCount: Int = Environment.EXEC_DEFAULT_RETRY_MAX,
@@ -15,11 +16,11 @@ case class Task(id: Int = -1,
                 checkStateInterval: String = Environment.EXEC_STATE_UPDATE_INTERVAL,
                 prop: TaskProp = null,
                 parallelism: Int = Environment.GRAPH_FLOW_DEFAULT_PARALLELISM,
-                rawEnv: ExprContext = ExprContext.empty) {
+                rawEnv: GraphContext = GraphContext.empty) {
   def toExecutionTask(implicit listener: EventListener): ExecutionTask[_ <: TaskConfig] = {
     val taskMeta = this.metadata.copy(createTime = new Date())
     ExecutionTask(
-      name = "task" + id,
+      name = name,
       retryCount = retryCount,
       retryInterval = retryInterval,
       priority = priority,
@@ -37,7 +38,7 @@ case class Task(id: Int = -1,
     this.copy(rawEnv = rawEnv.copy(graphMeta = graphMeta))
   }
 
-  def env: ExprContext = rawEnv + (ExprContext.taskKey -> metadata)
+  def env: GraphContext = rawEnv + (GraphContext.taskKey -> metadata)
 
   private def metadata: RichTaskMeta = {
     if (rawEnv.taskMeta == null) new RichTaskMeta().withTask(this)

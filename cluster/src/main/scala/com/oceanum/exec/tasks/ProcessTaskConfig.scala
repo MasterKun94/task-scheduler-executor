@@ -3,7 +3,7 @@ package com.oceanum.exec.tasks
 import java.io.{File, IOException}
 
 import com.oceanum.exec.{StdHandler, TaskConfig}
-import com.oceanum.common.{Environment, ExprContext, TaskMeta}
+import com.oceanum.common.{Environment, GraphContext, TaskMeta}
 import com.oceanum.common.Implicits.PathHelper
 import com.oceanum.expr.JavaMap
 import com.oceanum.file.FileClient
@@ -26,17 +26,21 @@ abstract class ProcessTaskConfig(val propCmd: Array[String] = Array.empty,
     }
   }
 
-  override def prepare(env: ExprContext)(implicit ec: ExecutionContext): Future[ProcessTaskConfig] = {
-    val rawEnv = env.javaExprEnv
-    val taskMeta = env.taskMeta
-    val taskConfig = SuUserTaskConfig(taskMeta.user, this).parseFunction(rawEnv)
-    val fileMap: Map[String, String] = taskConfig.files
-      .map(src => (src, taskMeta.execDir/new File(src).getName))
-      .toMap
-    val newConfig = taskConfig.convert(fileMap)
-    fileMap.map(kv => FileClient.download(kv._1, kv._2))
-      .reduce((f1, f2) => f1.flatMap(_ => f2))
-      .map(_ => newConfig)
+  override def prepare(env: GraphContext)(implicit ec: ExecutionContext): Future[ProcessTaskConfig] = {
+    Future {
+      val rawEnv = env.javaExprEnv
+      val taskMeta = env.taskMeta
+      val taskConfig = SuUserTaskConfig(taskMeta.user, this).parseFunction(rawEnv)
+      val fileMap: Map[String, String] = taskConfig.files
+        .map(src => (src, taskMeta.execDir/new File(src).getName))
+        .toMap
+      val newConfig = taskConfig.convert(fileMap)
+      fileMap.map(kv => FileClient.download(kv._1, kv._2))
+        .reduce((f1, f2) => f1.flatMap(_ => f2))
+        .map(_ => newConfig)
+    } flatMap {
+      future => future
+    }
   }
 
   def parseFunction(implicit exprEnv: JavaMap[String, AnyRef]): ProcessTaskConfig

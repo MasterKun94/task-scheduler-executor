@@ -3,9 +3,8 @@ package com.oceanum.graph
 import java.util.concurrent.atomic.AtomicInteger
 
 import com.oceanum.client.{Task, TaskClient}
-import com.oceanum.common.GraphMeta
-import com.oceanum.graph.Operators.{Converge, Decision, End, Fork, Join, Operator, Start, TaskOperator}
-import com.oceanum.graph.StreamFlows.{ConvergeFlow, DecisionFlow, EndFlow, ForkFlow, JoinFlow, StartFlow, StreamFlow, TaskFlow}
+import com.oceanum.graph.Operators._
+import com.oceanum.graph.StreamFlows.{EndFlow, StartFlow, StreamFlow}
 
 import scala.collection.mutable
 
@@ -19,26 +18,35 @@ class GraphBuilder(protected[graph] val startFlow: StartFlow,
   private val operators: mutable.Map[Int, Operator[_<:StreamFlow]] = mutable.Map()
   private val edges: mutable.Map[Int, Array[Int]] = mutable.Map()
   private implicit val builder: GraphBuilder = this
+  private val env: mutable.Map[String, Any] = mutable.Map.empty
 
   implicit val flowFactory: FlowFactory.type = FlowFactory
 
-  def createStart(implicit taskClient: TaskClient): Start = OperatorFactory.createStart
+  def addEnv(kv: (String, Any)): GraphBuilder = {
+    env += kv
+    this
+  }
 
-  def createEnd(implicit taskClient: TaskClient): End = OperatorFactory.createEnd
+  def addEnv(map: Map[String, Any]): GraphBuilder = {
+    env ++= map
+    this
+  }
 
-  def createFlow(task: Task, parallelism: Int = 1)(implicit taskClient: TaskClient): TaskOperator = OperatorFactory.createFlow(task, parallelism)
+  def getEnv: Map[String, Any] = Map() ++ env
 
-  def createFork(parallel: Int)(implicit taskClient: TaskClient): Fork = OperatorFactory.createFork(parallel)
+  def createStart(implicit taskClient: TaskClient): Start = Start()
 
-  def createJoin(parallel: Int)(implicit taskClient: TaskClient): Join = OperatorFactory.createJoin(parallel)
+  def createEnd(implicit taskClient: TaskClient): End = End()
 
-  def createDecision(parallel: Int)(decide: GraphMeta => Int)(implicit taskClient: TaskClient): Decision = OperatorFactory.createDecision(parallel)(decide)
+  def createFlow(task: Task, parallelism: Int = 1)(implicit taskClient: TaskClient): TaskOperator = TaskOperator(task, parallelism)
 
-  def createDecision(decide: Array[GraphMeta => Boolean])(implicit taskClient: TaskClient): Decision = OperatorFactory.createDecision(decide)
+  def createFork(parallel: Int)(implicit taskClient: TaskClient): Fork = Fork(parallel)
 
-  def createDecision(expr: Array[String])(implicit taskClient: TaskClient): Decision = OperatorFactory.createDecision(expr)
+  def createJoin(parallel: Int)(implicit taskClient: TaskClient): Join = Join(parallel)
 
-  def createConverge(parallel: Int)(implicit taskClient: TaskClient): Converge = OperatorFactory.createConverge(parallel)
+  def createDecision(expr: Array[String])(implicit taskClient: TaskClient): Decision = Decision(expr)
+
+  def createConverge(parallel: Int)(implicit taskClient: TaskClient): Converge = Converge(parallel)
 
   def buildEdges(from: BaseOperator, to: BaseOperator*): GraphBuilder = {
     def getIdAndSet(operator: BaseOperator): Int = operators.find(_._2 == operator) match {
@@ -55,15 +63,13 @@ class GraphBuilder(protected[graph] val startFlow: StartFlow,
     this
   }
 
-  def createGraph(): Unit = {
-    def build(id: Int, operator: BaseOperator): Unit = {
+  def createGraph()(implicit builder: GraphBuilder, taskClient: TaskClient): Unit = {
+    def build(id: Int, operator: BaseOperator)(implicit builder: GraphBuilder, taskClient: TaskClient): Unit = {
       edges.get(id).foreach { node =>
         val subArr = node
           .map(i => {
-            println(id + " " + operator + "\tconnect\t" + i + " " + operators(i))
             val to = operators(i)
             val subOperator: BaseOperator = operator.connect(to)
-            //            if (!to.isInstanceOf[Fork] && !to.isInstanceOf[Decision]) {
             if (to.isInstanceOf[TaskOperator]) {
               operators += (i -> subOperator)
               (i, subOperator)
@@ -78,8 +84,6 @@ class GraphBuilder(protected[graph] val startFlow: StartFlow,
         }
       }
     }
-    println(operators.mkString("\n"))
-    println(edges.mapValues(_.toSeq).mkString("\n"))
     taskIdValue.set(0)
     operators.find(_._2.isInstanceOf[Start]) match {
       case Some((id, start)) => build(id, start)

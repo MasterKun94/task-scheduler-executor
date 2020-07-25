@@ -28,7 +28,7 @@ object StringParser {
       }
   }
 
-  def parseExpr(expr: String)(implicit env: ExprContext): String = {
+  def parseExpr(expr: String)(implicit env: GraphContext): String = {
     parseExprRaw(expr)(env.javaExprEnv)
   }
 
@@ -39,7 +39,12 @@ object StringParser {
       expr match {
         case pattern(pre, reg, str) =>
           val regValue = Evaluator.rawExecute(reg, env)
-          val value = if (regValue == null) "" else regValue.toString
+          val value = {
+            if (regValue == null)
+              throw new NullPointerException("result of：[" + reg + "] is null")
+            else
+              regValue.toString
+          }
           parseExprRaw(pre) + value + parseExprRaw(str)
         case str: String => str
         case unknown =>
@@ -52,9 +57,7 @@ object StringParser {
     if (!(expr == null) && !expr.trim.isEmpty) {
       expr match {
         case pattern(pre, reg, str) =>
-          val regValue = Evaluator.compile(reg, cache = false)
-          val value = if (regValue == null) "" else regValue.toString
-          validate(pre) + value + validate(str)
+          Evaluator.compile(reg, cache = false)
         case str: String =>
         case unknown =>
           println(unknown)

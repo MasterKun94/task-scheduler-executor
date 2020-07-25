@@ -1,36 +1,42 @@
 package com.oceanum.graph
 
 import com.oceanum.client.{Task, TaskClient}
-import com.oceanum.common.GraphMeta
-import com.oceanum.graph.StreamFlows.{ConditionFlow, ConvergeFlow, DecisionFlow, EndFlow, ForkFlow, JoinFlow, OpsFlow, StartFlow, StreamFlow, TaskFlow}
+import com.oceanum.graph.StreamFlows._
 
 object Operators {
-  abstract class Operator[T<:StreamFlow](builder: GraphBuilder, taskClient: TaskClient) {
-    lazy val flow: T = toFlow(builder, taskClient)
+  abstract class Operator[T<:StreamFlow] {
+    private var builder: GraphBuilder = _
+    private var taskClient: TaskClient = _
+    private lazy val inner: T = createFlow(builder, taskClient)
+    protected[graph] def flow(implicit builder: GraphBuilder, taskClient: TaskClient): T = {
+      this.builder = builder
+      this.taskClient = taskClient
+      inner
+    }
 
-    protected def toFlow(implicit builder: GraphBuilder, taskClient: TaskClient): T = {
+    protected def createFlow(implicit builder: GraphBuilder, taskClient: TaskClient): T = {
       throw new IllegalArgumentException()
     }
 
-    def connect(operator: BaseOperator): BaseOperator = {
+    protected[graph] def connect(operator: BaseOperator)(implicit builder: GraphBuilder, taskClient: TaskClient): BaseOperator = {
       throw new IllegalArgumentException("不支持" + this.getClass + "和" + operator.getClass + "的关联")
     }
   }
 
-  case class TaskOperator(task: Task, parallelism: Int = 1)(implicit builder: GraphBuilder, taskClient: TaskClient)
-    extends Operator[TaskFlow](builder, taskClient) {
-    override protected def toFlow(implicit builder: GraphBuilder, taskClient: TaskClient): TaskFlow = {
+  case class TaskOperator(task: Task, parallelism: Int = 1)
+    extends Operator[TaskFlow] {
+    override protected def createFlow(implicit builder: GraphBuilder, taskClient: TaskClient): TaskFlow = {
       FlowFactory.createFlow(task, parallelism)
     }
   }
 
-  case class Fork(parallelism: Int)(implicit builder: GraphBuilder, taskClient: TaskClient)
-    extends Operator[ForkFlow](builder, taskClient)  {
-    override protected def toFlow(implicit builder: GraphBuilder, taskClient: TaskClient): ForkFlow = {
+  case class Fork(parallelism: Int)
+    extends Operator[ForkFlow]  {
+    override protected def createFlow(implicit builder: GraphBuilder, taskClient: TaskClient): ForkFlow = {
       FlowFactory.createFork(parallelism)
     }
 
-    override def connect(operator: BaseOperator): BaseOperator = operator match {
+    override protected[graph] def connect(operator: BaseOperator)(implicit builder: GraphBuilder, taskClient: TaskClient): BaseOperator = operator match {
         case o: TaskOperator => Ops(flow --> o.flow)
         case o: Fork => Ops(flow --> o.flow)
         case o: Join => Ops(flow --> o.flow)
@@ -39,13 +45,13 @@ object Operators {
     }
   }
 
-  case class Join(parallelism: Int)(implicit builder: GraphBuilder, taskClient: TaskClient)
-    extends Operator[JoinFlow](builder, taskClient)  {
-    override protected def toFlow(implicit builder: GraphBuilder, taskClient: TaskClient): JoinFlow = {
+  case class Join(parallelism: Int)
+    extends Operator[JoinFlow]  {
+    override protected def createFlow(implicit builder: GraphBuilder, taskClient: TaskClient): JoinFlow = {
       FlowFactory.createJoin(parallelism)
     }
 
-    override def connect(operator: BaseOperator): BaseOperator = operator match {
+    override protected[graph] def connect(operator: BaseOperator)(implicit builder: GraphBuilder, taskClient: TaskClient): BaseOperator = operator match {
       case o: TaskOperator => Ops(flow --> o.flow)
       case o: Fork => Ops(flow --> o.flow)
       case o: Join => Ops(flow --> o.flow)
@@ -55,13 +61,13 @@ object Operators {
     }
   }
 
-  case class Decision(parallelism: Int, graphMeta: GraphMeta => Int)(implicit builder: GraphBuilder, taskClient: TaskClient)
-    extends Operator[DecisionFlow](builder, taskClient)  {
-    override protected def toFlow(implicit builder: GraphBuilder, taskClient: TaskClient): DecisionFlow = {
-      FlowFactory.createDecision(parallelism)(graphMeta)
+  case class Decision(expr: Array[String])
+    extends Operator[DecisionFlow]  {
+    override protected def createFlow(implicit builder: GraphBuilder, taskClient: TaskClient): DecisionFlow = {
+      FlowFactory.createDecision(expr)
     }
 
-    override def connect(operator: BaseOperator): BaseOperator = operator match {
+    override protected[graph] def connect(operator: BaseOperator)(implicit builder: GraphBuilder, taskClient: TaskClient): BaseOperator = operator match {
       case o: TaskOperator => Ops(flow --> o.flow)
       case o: Fork => Ops(flow --> o.flow)
       case o: Join => Ops(flow --> o.flow)
@@ -70,13 +76,13 @@ object Operators {
     }
   }
 
-  case class DecisionOut(decision: Decision, condition: Int)(implicit builder: GraphBuilder, taskClient: TaskClient)
-    extends Operator[ConditionFlow](builder, taskClient)  {
-    override protected def toFlow(implicit builder: GraphBuilder, taskClient: TaskClient): ConditionFlow = {
+  case class DecisionOut(decision: Decision, condition: Int)
+    extends Operator[ConditionFlow]  {
+    override protected def createFlow(implicit builder: GraphBuilder, taskClient: TaskClient): ConditionFlow = {
       decision.flow.condition(condition)
     }
 
-    override def connect(operator: BaseOperator): BaseOperator = operator match {
+    override protected[graph] def connect(operator: BaseOperator)(implicit builder: GraphBuilder, taskClient: TaskClient): BaseOperator = operator match {
       case o: TaskOperator => Ops(flow --> o.flow)
       case o: Fork => Ops(flow --> o.flow)
       case o: Join => Ops(flow --> o.flow)
@@ -85,13 +91,13 @@ object Operators {
     }
   }
 
-  case class Converge(parallelism: Int)(implicit builder: GraphBuilder, taskClient: TaskClient)
-    extends Operator[ConvergeFlow](builder, taskClient)  {
-    override protected def toFlow(implicit builder: GraphBuilder, taskClient: TaskClient): ConvergeFlow = {
+  case class Converge(parallelism: Int)
+    extends Operator[ConvergeFlow]  {
+    override protected def createFlow(implicit builder: GraphBuilder, taskClient: TaskClient): ConvergeFlow = {
       FlowFactory.createConverge(parallelism)
     }
 
-    override def connect(operator: BaseOperator): BaseOperator = operator match {
+    override protected[graph] def connect(operator: BaseOperator)(implicit builder: GraphBuilder, taskClient: TaskClient): BaseOperator = operator match {
       case o: TaskOperator => Ops(flow --> o.flow)
       case o: Fork => Ops(flow --> o.flow)
       case o: Join => Ops(flow --> o.flow)
@@ -101,13 +107,13 @@ object Operators {
     }
   }
 
-  case class Start()(implicit builder: GraphBuilder, taskClient: TaskClient)
-    extends Operator[StartFlow](builder, taskClient)  {
-    override protected def toFlow(implicit builder: GraphBuilder, taskClient: TaskClient): StartFlow = {
+  case class Start()
+    extends Operator[StartFlow]  {
+    override protected def createFlow(implicit builder: GraphBuilder, taskClient: TaskClient): StartFlow = {
       builder.startFlow
     }
 
-    override def connect(operator: BaseOperator): BaseOperator = operator match {
+    override protected[graph] def connect(operator: BaseOperator)(implicit builder: GraphBuilder, taskClient: TaskClient): BaseOperator = operator match {
       case o: TaskOperator => Ops(flow --> o.flow)
       case o: Fork => Ops(flow --> o.flow)
       case o: Decision => Ops(flow --> o.flow)
@@ -115,18 +121,18 @@ object Operators {
     }
   }
 
-  case class End()(implicit builder: GraphBuilder, taskClient: TaskClient)
-    extends Operator[EndFlow](builder, taskClient)  {
-    override protected def toFlow(implicit builder: GraphBuilder, taskClient: TaskClient): EndFlow = {
+  case class End()
+    extends Operator[EndFlow]  {
+    override protected def createFlow(implicit builder: GraphBuilder, taskClient: TaskClient): EndFlow = {
       builder.endFlow
     }
   }
 
-  case class Ops(opsFlow: OpsFlow)(implicit builder: GraphBuilder, taskClient: TaskClient)
-    extends Operator[OpsFlow](builder, taskClient)  {
-    override protected def toFlow(implicit builder: GraphBuilder, taskClient: TaskClient): OpsFlow = opsFlow
+  case class Ops(opsFlow: OpsFlow)
+    extends Operator[OpsFlow]  {
+    override protected def createFlow(implicit builder: GraphBuilder, taskClient: TaskClient): OpsFlow = opsFlow
 
-    override def connect(operator: BaseOperator): BaseOperator = operator match {
+    override protected[graph] def connect(operator: BaseOperator)(implicit builder: GraphBuilder, taskClient: TaskClient): BaseOperator = operator match {
       case o: TaskOperator => Ops(flow --> o.flow)
       case o: Fork => Ops(flow --> o.flow)
       case o: Join => Ops(flow --> o.flow)
@@ -136,7 +142,7 @@ object Operators {
     }
   }
 
-  case class ReachEnd(unit: Unit)(implicit builder: GraphBuilder, taskClient: TaskClient)
-    extends Operator[Nothing](builder, taskClient)  {
+  case class ReachEnd(unit: Unit)
+    extends Operator[Nothing]  {
   }
 }
