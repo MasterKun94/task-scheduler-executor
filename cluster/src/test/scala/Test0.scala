@@ -1,10 +1,13 @@
-import com.oceanum.Test.Test
-import com.oceanum.common.GraphContext
-import com.oceanum.graph.GraphDefine
-import com.oceanum.graph.Operators.{Converge, Decision, DecisionOut, End, Fork, Join, Start, TaskOperator}
-import com.oceanum.serialize.{JsonSerialization, OperatorSerializer}
+import java.util
 
-import scala.util.matching.Regex
+import com.oceanum.serialize.ThrowableSerializer
+import org.codehaus.jackson.{JsonNode, JsonParser}
+import org.codehaus.jackson.map.ObjectMapper
+import org.codehaus.jackson.node.{JsonNodeFactory, ObjectNode}
+import org.json4s.JsonAST.JObject
+import org.json4s.{DefaultFormats, Extraction}
+import org.json4s.ext.JavaTypesSerializers
+import org.json4s.jackson.{JsonMethods, Serialization}
 
 /**
  * @author chenmingkun
@@ -12,7 +15,13 @@ import scala.util.matching.Regex
  */
 object Test0 {
   def main(args: Array[String]): Unit = {
-    val pattern: Regex = """(.*)\$\{(.*)}(.*)""".r
+    val mapper = new ObjectMapper()
+    val e = new Exception("this is a test")
 
+    implicit val formats = DefaultFormats
+    val str = mapper.writeValueAsString(mapper)
+    val jObject = Serialization.read[JObject](str)
+
+    val map = jObject.values
   }
 }

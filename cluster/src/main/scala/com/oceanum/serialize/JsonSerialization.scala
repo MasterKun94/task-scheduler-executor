@@ -80,12 +80,13 @@ class JsonSerialization(implicit val formats: Formats,
 
 object JsonSerialization extends JsonSerialization()(
   DefaultFormats +
-  new EnumNameSerializer(FallbackStrategy) +
-  new EnumNameSerializer(ReRunStrategy) +
-  new EnumNameSerializer(GraphStatus) +
-  new EnumNameSerializer(State) +
-  TaskSerializer.default() +
-  OperatorSerializer.default(),
+    new EnumNameSerializer(FallbackStrategy) +
+    new EnumNameSerializer(ReRunStrategy) +
+    new EnumNameSerializer(GraphStatus) +
+    new EnumNameSerializer(State) +
+    new ThrowableSerializer() +
+    TaskSerializer.default() +
+    OperatorSerializer.default(),
   mutable.Map.empty[String, JsonSerializable[_<:AnyRef]],
   mutable.Map.empty[Class[_<:AnyRef], String]) {
 

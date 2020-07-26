@@ -109,36 +109,4 @@ object Evaluator {
 //    addOpFunction(OperatorType.EQ, new OpEqFunction)
 //    addOpFunction(OperatorType.NEQ, new OpNEqFunction)
   }
-
-  def main(args: Array[String]): Unit = {
-    init()
-    println(new Date())
-    println(Evaluator.execute("(date.now() - duration.days(1)) > date.parse('yyyy-MM-dd HH:mm:ss', '2020-07-19 21:41:00')", GraphContext.empty))
-    import com.googlecode.aviator.AviatorEvaluator
-    println(AviatorEvaluator.execute("a=date.now(); b=duration.day(1); a+b"))
-    println(Evaluator.execute("d1=date.now(); d2=duration.day(1); d1 + d2", GraphContext.empty))
-    println(Evaluator.execute("duration.days(1) > duration.days(2)", GraphContext.empty))
-    println(Evaluator.execute("duration.days(1) < duration.days(2)", GraphContext.empty))
-    println(Evaluator.execute("duration.days(1) >= duration.days(2)", GraphContext.empty))
-    println(Evaluator.execute("duration.days(1) <= duration.days(2)", GraphContext.empty))
-    println(Evaluator.execute("duration.days(1) / duration.hours(1)", GraphContext.empty))
-
-//    println(Evaluator.execute("date.now() + date.now()", Map.empty))
-//    println(DateUtil.format("yyyy-MM-dd HH:mm:ss").format(new Date()))
-//    println(Evaluator.execute("date.format('yyyy-MM-dd HH:mm:ss', fs.modifiedTime('C:/Users/chenmingkun/work/idea/work/task-scheduler-core/task-scheduler-executor'))", Map.empty))
-//    println(StringParser.parseExpr("${name}")(Map("graph" -> (RichGraphMeta().id = 1), "name" -> "${(graph.id() % 2 == 0) ? 'python-err' : 'python'}")))
-//    println(Evaluator.execute("true", Map.empty))
-//    println(Evaluator.execute("duration.days(-1)", Map.empty))
-//    println(Evaluator.execute("date.format('yyyyMMdd', date.now())", Map.empty))
-//    println(Evaluator.execute("date.format('yyyyMMdd', '-1 day')", Map.empty))
-//    println(Evaluator.execute("date.format('yyyyMMdd', date.now(), duration('1 day'))", Map.empty))
-//    println(Evaluator.execute("fs.listFiles('C:/Users/chenmingkun/work/idea/work/task-scheduler-core/task-scheduler-executor')", Map.empty).asInstanceOf[Array[String]].toSeq)
-//    println(Evaluator.execute("fs.parent('C:/Users/chenmingkun/work/idea/work/task-scheduler-core/task-scheduler-executor')", Map.empty))
-//    println(Evaluator.execute("test.name", Map("test" -> Map("name" -> 1))))
-//    println(Evaluator.execute("test.name", Map("test" -> new Test("name", 1))))
-  }
-
-}
-class Test(val name: String) {
-  def andThen(test: Test): Test = new Test(name + ":" + test.name)
 }
