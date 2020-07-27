@@ -15,3 +15,7 @@ class OptionFunction extends AbstractFunction {
     else nullable
   }
 }
+
+class OptionalFunction extends AbstractFunction {
+  override def getName: String = "optional"
+}

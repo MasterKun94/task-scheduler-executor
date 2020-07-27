@@ -1,6 +1,7 @@
 import java.util
 
-import com.oceanum.serialize.ThrowableSerializer
+import com.oceanum.common.RichTaskMeta
+import com.oceanum.serialize.{JsonSerialization, ThrowableSerializer}
 import org.codehaus.jackson.{JsonNode, JsonParser}
 import org.codehaus.jackson.map.ObjectMapper
 import org.codehaus.jackson.node.{JsonNodeFactory, ObjectNode}
@@ -15,13 +16,14 @@ import org.json4s.jackson.{JsonMethods, Serialization}
  */
 object Test0 {
   def main(args: Array[String]): Unit = {
-    val mapper = new ObjectMapper()
     val e = new Exception("this is a test")
-
-    implicit val formats = DefaultFormats
-    val str = mapper.writeValueAsString(mapper)
-    val jObject = Serialization.read[JObject](str)
-
-    val map = jObject.values
+    val i = new IllegalArgumentException("test test", e)
+    JsonSerialization.init()
+    i.printStackTrace()
+    val taskMeta = new RichTaskMeta().copy(error = i)
+    JsonSerialization.register(classOf[IllegalArgumentException])
+    val str = JsonSerialization.serialize(taskMeta)
+    println(str)
+    JsonSerialization.deSerialize(str).asInstanceOf[RichTaskMeta].error.printStackTrace()
   }
 }

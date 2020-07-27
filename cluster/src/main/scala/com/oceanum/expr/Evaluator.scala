@@ -31,6 +31,9 @@ object Evaluator {
     if (Environment.AVIATOR_CACHE_ENABLED) {
       AviatorEvaluator.getInstance().useLRUExpressionCache(Environment.AVIATOR_CACHE_CAPACITY)
     }
+    addFunction(new OptionFunction)
+    addFunction(new OptionalFunction)
+
     addFunction(new DurationFunction)
     addFunction(new DurationMillisFunction)
     addFunction(new DurationMilliFunction)

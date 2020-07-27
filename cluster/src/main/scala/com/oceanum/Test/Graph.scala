@@ -25,7 +25,7 @@ object Graph {
 
   val promise = Promise[RichGraphMeta]()
 
-  implicit val client: TaskClient = TaskClient(ip1, 5552, ip2, "src/main/resources/application.properties")
+  implicit val client: TaskClient = TaskClient(ip1, 5552, ip2, "cluster/src/main/resources/application.properties")
 
   implicit val metaHandler: GraphMetaHandler = new GraphMetaHandler {
     override def onRunning(richGraphMeta: GraphMeta, taskState: State): Unit = {
@@ -157,11 +157,11 @@ object Graph3 {
 
     val instance = Workflow.fromGraph(GraphDefine(
       nodes = Map(
-        "python1" -> TaskOperator(Test.task().copy(rawEnv = GraphContext(Map("file_name" -> "${(graph.id() % 2 == 0) ? 'python-err' : 'python'}")))),
-        "python2" -> TaskOperator(Test.task()),
-        "python3" -> TaskOperator(Test.task()),
-        "python4" -> TaskOperator(Test.task()),
-        "python5" -> TaskOperator(Test.task()),
+        "python1" -> TaskOperator(Test.task("1").copy(rawEnv = GraphContext(Map("file_name" -> "${(graph.id() % 2 == 0) ? 'python-err' : 'python'}")))),
+        "python2" -> TaskOperator(Test.task("2")),
+        "python3" -> TaskOperator(Test.task("3")),
+        "python4" -> TaskOperator(Test.task("4")),
+        "python5" -> TaskOperator(Test.task("5")),
         "fork" -> Fork(2),
         "join" -> Join(2),
         "decision" -> Decision(Array("false")),

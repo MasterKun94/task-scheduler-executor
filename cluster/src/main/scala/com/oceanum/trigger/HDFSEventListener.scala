@@ -16,22 +16,36 @@ import org.apache.hadoop.hdfs.inotify.Event.{AppendEvent, CloseEvent, CreateEven
 class HDFSEventListener {
 
   private val running: AtomicBoolean = new AtomicBoolean(true)
-  private val admin: HdfsAdmin = new HdfsAdmin(URI.create(Environment.HADOOP_FS_URL), new Configuration())
+
+  private val admin: HdfsAdmin = {
+    println(Environment.HADOOP_HOME)
+    System.setProperty("hadoop.home.dir", Environment.HADOOP_HOME)
+    System.setProperty("HADOOP_USER_NAME", "hdfs")
+    val configuration = new Configuration()
+    new HdfsAdmin(URI.create("hdfs://192.168.10.136:8022"), configuration)
+  }
 
   def create(): Unit = {
     val eventStream = admin.getInotifyEventStream()
     while (running.get()) {
-      eventStream.poll(60, TimeUnit.SECONDS) match {
-        case event: CreateEvent =>
-        case event: CloseEvent =>
-        case event: AppendEvent =>
-        case event: RenameEvent =>
-        case event: MetadataUpdateEvent =>
-        case event: UnlinkEvent =>
-        case event =>
+      eventStream.take() match {
+//        case event: CreateEvent =>
+//        case event: CloseEvent =>
+//        case event: AppendEvent =>
+//        case event: RenameEvent =>
+//        case event: MetadataUpdateEvent =>
+//        case event: UnlinkEvent =>
+        case event => println(event)
       }
     }
   }
 
   def close(): Unit = running.set(false)
+}
+
+object HDFSEventListener {
+  def main(args: Array[String]): Unit = {
+    Environment.loadArgs(args :+ s"--conf=src/main/resources/application.properties")
+    new HDFSEventListener().create()
+  }
 }

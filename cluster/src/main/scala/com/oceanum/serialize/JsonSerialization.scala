@@ -74,8 +74,6 @@ class JsonSerialization(implicit val formats: Formats,
     val serializer = serializers(name)
     serializer.fromJson(jValue \ "value")
   }
-
-  override def toString: String = s"JsonSerializer(${serializers}, ${names})"
 }
 
 object JsonSerialization extends JsonSerialization()(
@@ -85,6 +83,7 @@ object JsonSerialization extends JsonSerialization()(
     new EnumNameSerializer(GraphStatus) +
     new EnumNameSerializer(State) +
     new ThrowableSerializer() +
+    new StackTraceElementSerializer() +
     TaskSerializer.default() +
     OperatorSerializer.default(),
   mutable.Map.empty[String, JsonSerializable[_<:AnyRef]],
@@ -108,24 +107,5 @@ object JsonSerialization extends JsonSerialization()(
     JsonSerialization.register("CONVERGE_OPERATOR", classOf[Converge])
     JsonSerialization.register("START_OPERATOR", classOf[Start])
     JsonSerialization.register("END_OPERATOR", classOf[End])
-  }
-
-  private def createTaskSerializable[T<:TaskProp](name: String)(kvs: (String, Class[_<:T])*): JsonSerializable[Task] = new JsonSerializable[Task] {
-    val propClasses: Map[String, Class[_<:T]] = Map(kvs: _*)
-
-    override def toJson(t: AnyRef): JValue = Extraction.decompose(t) merge JObject("taskType" -> JString(t.asInstanceOf[Task].prop.taskType))
-
-    override def fromJson(value: JValue): Task = {
-      val taskType = (value \ "taskType").extract[String]
-      val taskProp: TaskProp = (value \ "prop").extract(formats, Manifest.classType(propClasses(taskType)))
-      value
-        .removeField(_._1.equals("prop"))
-        .extract[Task]
-        .copy(prop = taskProp)
-    }
-
-    override def objIdentifier(): Class[Task] = classOf[Task]
-
-    override def objName(): String = "TASK_" + name
   }
 }

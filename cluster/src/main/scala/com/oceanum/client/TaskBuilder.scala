@@ -20,6 +20,10 @@ abstract class TaskBuilder[T <: TaskBuilder[_, _], P <: TaskProp](task: Task) ex
     typedBuilder(task.copy(id = id))
   }
 
+  def name(name: String): T = {
+    typedBuilder(task.copy(name = name))
+  }
+
   def topic(topic: String): T = {
     typedBuilder(task.copy(topic = topic))
   }

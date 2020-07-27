@@ -13,9 +13,9 @@ import scala.concurrent.{ExecutionContext, ExecutionContextExecutor}
  * @date 2020/6/18
  */
 object Test {
-//  val ip: String = getSelfAddress
+  val ip2: String = getSelfAddress
 //  val ip: String = "127.0.0.1"
-  val ip2 = "192.168.10.131"
+//  val ip2 = "192.168.10.131"
   val ip1 = getSelfAddress
 
 //  def task(): Task = Task.builder.python()
@@ -34,14 +34,15 @@ object Test {
 //    .parallelism(1)
 //    .build
 
-  def task(path: String = "/tmp/task-test/${file_name}.py"): Task = Task.builder.python()
+  def task(name: String = "name"): Task = Task.builder.python()
     .user("root")
+    .name(name)
     .topic("default")
     .retryCount(3)
     .retryInterval("5 second")
     .priority(5)
-    .pyFile(path)
-    .args("hello", "${task.id()}", "${task.startTime()}", "${task.name(graph.latestTask())}")
+    .pyFile("/tmp/task-test/${file_name}.py")
+    .args("hello", "${task.id()}", "${task.startTime()}", "${option(task.name(graph.findTask('2')), 'null')}")
     .waitForTimeout("100 second")
     .checkStateInterval("3s")
     .parallelism(1)
@@ -50,7 +51,7 @@ object Test {
   def client: TaskClient = TaskClient(ip1, 5555, ip2, "src/main/resources/application.properties")
 
   def startCluster(args: Array[String]): Unit = {
-    ClusterStarter.main(Array("--port=3551", "--topics=t1,a1", s"--host=$ip1", s"--seed-node=$ip1", "--conf=src"/"main"/"resources"/"application.properties,src"/"main"/"resources"/"application-env.properties"))
+    ClusterStarter.main(Array(s"--host=$ip1", s"--seed-node=$ip1", "--conf=cluster"/"src"/"main"/"resources"/"application.properties"))
   }
 
 
@@ -77,51 +78,51 @@ object Test {
   }
 
   def main(args: Array[String]): Unit = {
-//    startCluster(args)
-//    //    MetricsListener.start()
-//    import com.oceanum.common.Implicits._
-//    implicit val timeout: Timeout = fd"10 second"
-////
+    startCluster(args)
+////    //    MetricsListener.start()
+////    import com.oceanum.common.Implicits._
+////    implicit val timeout: Timeout = fd"10 second"
+//////
+////    scala.io.StdIn.readLine()
+//    val client = TaskClient(ip1, 5551, ip2, "src/main/resources/application.properties")
+////    ClusterFileServer.start().value
+//
+////    scala.io.StdIn.readLine()
+//    println("handle cluster metrics")
+//    val hook = client.handleClusterMetrics("2s") { m =>
+//      m.nodeMetrics.foreach(println)
+//    }
 //    scala.io.StdIn.readLine()
-    val client = TaskClient(ip1, 5551, ip2, "src/main/resources/application.properties")
-//    ClusterFileServer.start().value
-
+//    println("stop handle cluster metrics")
+//    hook.kill()
 //    scala.io.StdIn.readLine()
-    println("handle cluster metrics")
-    val hook = client.handleClusterMetrics("2s") { m =>
-      m.nodeMetrics.foreach(println)
-    }
-    scala.io.StdIn.readLine()
-    println("stop handle cluster metrics")
-    hook.kill()
-    scala.io.StdIn.readLine()
-    println("handle cluster info")
-    val hook1 = client.handleClusterInfo("2s")(println)
-    scala.io.StdIn.readLine()
-    println("stop handle cluster info")
-    hook1.kill()
-    scala.io.StdIn.readLine()
-    println("handle task info")
-    val hook2 = client.handleTaskInfo(println)
-    scala.io.StdIn.readLine()
-    startClient(args)
-    scala.io.StdIn.readLine()
-    println("stop handle task info")
-    hook2.kill()
-
-//    import ExecutionContext.Implicits.global
-//    val task = Task.builder.python()
-//      .id("test")
-//      .topic("t1")
-//      .retryCount(3)
-//      .retryInterval("5 second")
-//      .priority(5)
-//      .pyFile("cluster://"/Environment.BASE_PATH/"src"/"main"/"resources"/"python-err.py")
-//      .args("hello", "world")
-//      .waitForTimeout("100s")
-//      .build
-//    println(task)
-//      task
-//      .init(null).onComplete(println)
+//    println("handle cluster info")
+//    val hook1 = client.handleClusterInfo("2s")(println)
+//    scala.io.StdIn.readLine()
+//    println("stop handle cluster info")
+//    hook1.kill()
+//    scala.io.StdIn.readLine()
+//    println("handle task info")
+//    val hook2 = client.handleTaskInfo(println)
+//    scala.io.StdIn.readLine()
+//    startClient(args)
+//    scala.io.StdIn.readLine()
+//    println("stop handle task info")
+//    hook2.kill()
+//
+////    import ExecutionContext.Implicits.global
+////    val task = Task.builder.python()
+////      .id("test")
+////      .topic("t1")
+////      .retryCount(3)
+////      .retryInterval("5 second")
+////      .priority(5)
+////      .pyFile("cluster://"/Environment.BASE_PATH/"src"/"main"/"resources"/"python-err.py")
+////      .args("hello", "world")
+////      .waitForTimeout("100s")
+////      .build
+////    println(task)
+////      task
+////      .init(null).onComplete(println)
   }
 }
