@@ -2,7 +2,6 @@ package com.oceanum.serialize
 
 import com.oceanum.exec.State
 import com.oceanum.graph.{FallbackStrategy, GraphStatus, ReRunStrategy}
-import org.json4s.JsonAST.JValue
 import org.json4s.ext.EnumNameSerializer
 import org.json4s.jackson.{JsonMethods, Serialization}
 import org.json4s.{DefaultFormats, Extraction, Formats, JObject, JString, JValue}
