@@ -2,7 +2,7 @@ package com.oceanum.graph
 
 import akka.stream.scaladsl.{Broadcast, Flow, Merge, Partition, ZipWithN}
 import com.oceanum.client.{StateHandler, Task, TaskClient}
-import com.oceanum.common.{ExprContext, GraphMeta, RichGraphMeta}
+import com.oceanum.common.{GraphContext, GraphMeta, RichGraphMeta}
 import com.oceanum.exec.{FAILED, State}
 import com.oceanum.expr.Evaluator
 import com.oceanum.graph.StreamFlows._
@@ -61,7 +61,7 @@ object FlowFactory {
   }
 
   def createDecision(expr: Array[String])(implicit builder: GraphBuilder): DecisionFlow = {
-    val meta2env = (meta: GraphMeta) => (ExprContext(meta.env, graphMeta = meta.asInstanceOf[RichGraphMeta])).javaExprEnv
+    val meta2env = (meta: GraphMeta) => (GraphContext(meta.env, graphMeta = meta.asInstanceOf[RichGraphMeta])).javaExprEnv
     val decide = expr
       .map(Evaluator.compile(_, cache = false))
       .map(expr => (meta: GraphMeta) => expr.execute(meta2env(meta)).asInstanceOf[Boolean])
@@ -88,7 +88,7 @@ object FlowFactory {
   }
 
   private def runIfNotSuccess(task: Task)(implicit metadata: RichGraphMeta, schedulerClient: TaskClient, builder: GraphBuilder): Future[RichGraphMeta] = {
-    metadata.operators.get(task.id) match {
+    metadata.tasks.get(task.id) match {
       case Some(meta) =>
         meta.state match {
         case State.KILL | State.FAILED | State.OFFLINE => run(task)
@@ -102,17 +102,17 @@ object FlowFactory {
     import schedulerClient.system.dispatcher
     val promise = Promise[RichGraphMeta]()
     val stateHandler = StateHandler { state =>
-      val graphMeta = metadata.addOperators(state)
+      val graphMeta = metadata.addTask(state)
       builder.handler.onRunning(graphMeta, state)
     }
     schedulerClient.execute(task, stateHandler)
       .completeState.onComplete {
       case Success(value) =>
-        val meta = metadata.addOperators(value).copy(reRunFlag = true)
+        val meta = metadata.addTask(value, isComplete = true).copy(reRunFlag = true)
         promise.success(meta)
       case Failure(e) =>
         e.printStackTrace()
-        val meta = metadata.addOperators(FAILED(task.env.taskMeta.failure(task, e)))
+        val meta = metadata.addTask(FAILED(task.env.taskMeta.failure(task, e)), isComplete = true)
         promise.success(meta)
     }
     promise.future

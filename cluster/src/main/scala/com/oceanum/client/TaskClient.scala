@@ -1,6 +1,7 @@
 package com.oceanum.client
 
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
 
 import akka.pattern.ask
 import akka.actor.{Actor, ActorPaths, ActorRef, ActorSystem, PoisonPill, Props}
@@ -10,6 +11,7 @@ import akka.util.Timeout
 import com.oceanum.client.actors.{ClientEndpoint, ClientInstance, ClientListener, HandlerActor}
 import com.oceanum.exec.State
 import com.oceanum.common.{AvailableExecutorRequest, AvailableExecutorResponse, AvailableExecutorsRequest, ClusterInfoMessageHolder, ClusterMessage, ClusterMetrics, ClusterMetricsRequest, ClusterState, ClusterStateRequest, Environment, Message, NodeTaskInfo, NodeTaskInfoRequest, StopRequest}
+import com.oceanum.serialize.JsonSerialization
 
 import scala.collection.concurrent.TrieMap
 import scala.concurrent.{ExecutionContext, Future, Promise}
@@ -81,6 +83,7 @@ class TaskClient(endpoint: ActorRef, val system: ActorSystem)(implicit execution
 
 object TaskClient {
   private val clients: TrieMap[ActorSystem, TaskClient] = TrieMap()
+  val init: AtomicBoolean = new AtomicBoolean(true)
 
   def apply(host: String, port: Int, seedNodes: String, configFile: String)(implicit timeout: Timeout = Timeout(20, TimeUnit.SECONDS)): TaskClient = {
     import Environment.Arg
@@ -108,6 +111,7 @@ object TaskClient {
       }
       val client = new TaskClient(endpoint, system)(executionContext, timeout)
       clients.put(system, client)
+      JsonSerialization.init()
       client
     })
   }

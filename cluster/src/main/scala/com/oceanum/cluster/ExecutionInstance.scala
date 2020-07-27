@@ -95,6 +95,7 @@ class ExecutionInstance(task: Task, actor: ActorRef) extends Actor with ActorLog
       .orElse(caseKillAction)
       .orElse(caseFailed)
       .orElse(caseRunning)
+      .orElse(caseRetry)
       .orElse(caseKill)
   }
 

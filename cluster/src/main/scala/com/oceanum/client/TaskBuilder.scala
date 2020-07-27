@@ -166,38 +166,38 @@ class UserAddTaskBuilder(task: Task) extends TaskBuilder[UserAddTaskBuilder, Use
 object TaskBuilder {
   private val int = new AtomicInteger(0)
   private def dateFormat: String = new SimpleDateFormat("yyyyMMdd").format(new Date())
-  private def getId(prop: TaskProp): Int = int.getAndIncrement()
+  private def getName(prop: TaskProp): String = "task_" + int.getAndIncrement()
   val sys: SystemTaskBuilder.type = SystemTaskBuilder
 
   def shell(): ShellTaskBuilder = {
     val prop = ShellTaskProp()
-    new ShellTaskBuilder(Task(prop = prop, id = getId(prop)))
+    new ShellTaskBuilder(Task(prop = prop, name = getName(prop)))
   }
 
   def shellScript(): ShellScriptTaskBuilder = {
     val prop = ShellScriptTaskProp()
-    new  ShellScriptTaskBuilder(Task(prop = prop, id = getId(prop)))
+    new  ShellScriptTaskBuilder(Task(prop = prop, name = getName(prop)))
   }
 
   def java(): JavaTaskBuilder = {
     val prop = JavaTaskProp()
-    new JavaTaskBuilder(Task(prop = prop, id = getId(prop)))
+    new JavaTaskBuilder(Task(prop = prop, name = getName(prop)))
   }
 
   def scala(): ScalaTaskBuilder = {
     val prop = ScalaTaskProp()
-    new ScalaTaskBuilder(Task(prop = prop, id = getId(prop)))
+    new ScalaTaskBuilder(Task(prop = prop, name = getName(prop)))
   }
 
   def python(): PythonTaskBuilder = {
     val prop = PythonTaskProp()
-    new PythonTaskBuilder(Task(prop = prop, id = getId(prop)))
+    new PythonTaskBuilder(Task(prop = prop, name = getName(prop)))
   }
 
   object SystemTaskBuilder {
     def userAdd(): UserAddTaskBuilder = {
       val prop = UserAdd("")
-      new UserAddTaskBuilder(Task(prop = prop, id = getId(prop)))
+      new UserAddTaskBuilder(Task(prop = prop, name = getName(prop)))
     }
   }
 }

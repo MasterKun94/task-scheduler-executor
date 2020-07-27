@@ -2,9 +2,9 @@ package com.oceanum.expr
 
 import java.util.Date
 
-import com.googlecode.aviator.runtime.`type`.{AviatorLong, AviatorObject, AviatorRuntimeJavaType, AviatorString}
-import com.googlecode.aviator.runtime.function.AbstractFunction
-import com.oceanum.common.{ExprContext, TaskMeta}
+import com.googlecode.aviator.runtime.`type`.{AviatorLong, AviatorNil, AviatorObject, AviatorRuntimeJavaType, AviatorString}
+import com.googlecode.aviator.runtime.function.{AbstractFunction, FunctionUtils}
+import com.oceanum.common.{GraphContext, TaskMeta}
 
 /**
  * @author chenmingkun
@@ -14,7 +14,31 @@ class TaskIdFunction extends AbstractFunction {
   override def getName: String = "task.id"
 
   override def call(env: JavaMap[String, AnyRef]): AviatorObject = {
-    AviatorLong.valueOf(env.get(ExprContext.taskKey).asInstanceOf[TaskMeta].id)
+    AviatorLong.valueOf(env.get(GraphContext.taskKey).asInstanceOf[TaskMeta].id)
+  }
+
+  override def call(env: JavaMap[String, AnyRef], task: AviatorObject): AviatorObject = {
+    if (task.isNull(env))
+      AviatorNil.NIL
+    else {
+      AviatorLong.valueOf(FunctionUtils.getJavaObject(task, env).asInstanceOf[TaskMeta].id)
+    }
+  }
+}
+
+class TaskNameFunction extends AbstractFunction {
+  override def getName: String = "task.name"
+
+  override def call(env: JavaMap[String, AnyRef]): AviatorObject = {
+    new AviatorString(env.get(GraphContext.taskKey).asInstanceOf[TaskMeta].name)
+  }
+
+  override def call(env: JavaMap[String, AnyRef], task: AviatorObject): AviatorObject = {
+    if (task.isNull(env))
+      AviatorNil.NIL
+    else {
+      new AviatorString(FunctionUtils.getJavaObject(task, env).asInstanceOf[TaskMeta].name)
+    }
   }
 }
 
@@ -22,8 +46,16 @@ class TaskCreateTimeFunction extends AbstractFunction {
   override def getName: String = "task.createTime"
 
   override def call(env: JavaMap[String, AnyRef]): AviatorObject = {
-    val date: Date = env.get(ExprContext.taskKey).asInstanceOf[TaskMeta].createTime
+    val date: Date = env.get(GraphContext.taskKey).asInstanceOf[TaskMeta].createTime
     AviatorRuntimeJavaType.valueOf(date)
+  }
+
+  override def call(env: JavaMap[String, AnyRef], task: AviatorObject): AviatorObject = {
+    if (task.isNull(env))
+      AviatorNil.NIL
+    else {
+      AviatorRuntimeJavaType.valueOf((FunctionUtils.getJavaObject(task, env).asInstanceOf[TaskMeta].createTime))
+    }
   }
 }
 
@@ -31,8 +63,29 @@ class TaskStartTimeFunction extends AbstractFunction {
   override def getName: String = "task.startTime"
 
   override def call(env: JavaMap[String, AnyRef]): AviatorObject = {
-    val date: Date = env.get(ExprContext.taskKey).asInstanceOf[TaskMeta].startTime
+    val date: Date = env.get(GraphContext.taskKey).asInstanceOf[TaskMeta].startTime
     AviatorRuntimeJavaType.valueOf(date)
+  }
+
+  override def call(env: JavaMap[String, AnyRef], task: AviatorObject): AviatorObject = {
+    if (task.isNull(env))
+      AviatorNil.NIL
+    else {
+      AviatorRuntimeJavaType.valueOf((FunctionUtils.getJavaObject(task, env).asInstanceOf[TaskMeta].startTime))
+    }
+  }
+}
+
+
+class TaskEndTimeFunction extends AbstractFunction {
+  override def getName: String = "task.endTime"
+
+  override def call(env: JavaMap[String, AnyRef], task: AviatorObject): AviatorObject = {
+    if (task.isNull(env))
+      AviatorNil.NIL
+    else {
+      AviatorRuntimeJavaType.valueOf((FunctionUtils.getJavaObject(task, env).asInstanceOf[TaskMeta].endTime))
+    }
   }
 }
 
@@ -40,7 +93,15 @@ class TaskUserFunction extends AbstractFunction {
   override def getName: String = "task.user"
 
   override def call(env: JavaMap[String, AnyRef]): AviatorObject = {
-    new AviatorString(env.get(ExprContext.taskKey).asInstanceOf[TaskMeta].user)
+    new AviatorString(env.get(GraphContext.taskKey).asInstanceOf[TaskMeta].user)
+  }
+
+  override def call(env: JavaMap[String, AnyRef], task: AviatorObject): AviatorObject = {
+    if (task.isNull(env))
+      AviatorNil.NIL
+    else {
+      new AviatorString((FunctionUtils.getJavaObject(task, env).asInstanceOf[TaskMeta].user))
+    }
   }
 }
 
@@ -48,7 +109,15 @@ class TaskTypeFunction extends AbstractFunction {
   override def getName: String = "task.type"
 
   override def call(env: JavaMap[String, AnyRef]): AviatorObject = {
-    new AviatorString(env.get(ExprContext.taskKey).asInstanceOf[TaskMeta].taskType)
+    new AviatorString(env.get(GraphContext.taskKey).asInstanceOf[TaskMeta].taskType)
+  }
+
+  override def call(env: JavaMap[String, AnyRef], task: AviatorObject): AviatorObject = {
+    if (task.isNull(env))
+      AviatorNil.NIL
+    else {
+      new AviatorString((FunctionUtils.getJavaObject(task, env).asInstanceOf[TaskMeta].taskType))
+    }
   }
 }
 
@@ -56,6 +125,14 @@ class TaskExecDirFunction extends AbstractFunction {
   override def getName: String = "task.execDir"
 
   override def call(env: JavaMap[String, AnyRef]): AviatorObject = {
-    new AviatorString(env.get(ExprContext.taskKey).asInstanceOf[TaskMeta].execDir)
+    new AviatorString(env.get(GraphContext.taskKey).asInstanceOf[TaskMeta].execDir)
+  }
+
+  override def call(env: JavaMap[String, AnyRef], task: AviatorObject): AviatorObject = {
+    if (task.isNull(env))
+      AviatorNil.NIL
+    else {
+      new AviatorString((FunctionUtils.getJavaObject(task, env).asInstanceOf[TaskMeta].execDir))
+    }
   }
 }

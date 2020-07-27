@@ -45,7 +45,7 @@ class ProcessRunner extends TypedRunner[ProcessTaskConfig]("SHELL", "SHELL_SCRIP
     } catch {
       case e: IOException =>
         e.printStackTrace()
-        return ERROR(e.getMessage)
+        return ERROR(e)
     }
     val input = process.getInputStream
     val error = process.getErrorStream
@@ -74,7 +74,7 @@ class ProcessRunner extends TypedRunner[ProcessTaskConfig]("SHELL", "SHELL_SCRIP
           ExitCode(process.exitValue())
         case e: Exception =>
           e.printStackTrace()
-          ERROR(e.getMessage)
+          ERROR(e)
       }
     if (isKilled(task)) ExitCode.KILL else value
   }
@@ -90,7 +90,7 @@ class ProcessRunner extends TypedRunner[ProcessTaskConfig]("SHELL", "SHELL_SCRIP
     override def isKilled: Boolean = ref.get()
   }
 
-  override def close: Unit = {
-    streamOutput.close
+  override def close(): Unit = {
+    streamOutput.close()
   }
 }

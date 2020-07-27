@@ -384,6 +384,7 @@ object Environment {
          | actor {
          |   provider = remote
          |   warn-about-java-serializer-usage = false
+         |
          | }
          | loggers = ["$CLIENT_NODE_LOGGER"]
          | remote {

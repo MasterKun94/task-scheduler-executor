@@ -41,7 +41,7 @@ object Test {
     .retryInterval("5 second")
     .priority(5)
     .pyFile(path)
-    .args("hello", "${task.id()}", "${task.startTime()}")
+    .args("hello", "${task.id()}", "${task.startTime()}", "${task.name(graph.latestTask())}")
     .waitForTimeout("100 second")
     .checkStateInterval("3s")
     .parallelism(1)

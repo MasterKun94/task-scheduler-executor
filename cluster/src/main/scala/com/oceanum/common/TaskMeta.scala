@@ -6,6 +6,7 @@ import com.oceanum.exec.State
 
 @SerialVersionUID(1L)
 class TaskMeta(val id: Int,
+               val name: String = null,
                val taskType: String,
                val user: String,
                val createTime: Date,

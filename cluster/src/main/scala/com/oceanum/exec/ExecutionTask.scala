@@ -2,7 +2,7 @@ package com.oceanum.exec
 
 import java.util.concurrent.atomic.{AtomicBoolean, AtomicReference}
 
-import com.oceanum.common.{ExprContext, RichTaskMeta}
+import com.oceanum.common.{GraphContext, RichTaskMeta}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -16,7 +16,7 @@ case class ExecutionTask[T <: TaskConfig](name: String,
                                           priority: Int,
                                           prop: T,
                                           eventListener: EventListener,
-                                          env: ExprContext,
+                                          env: GraphContext,
                                           private val hookRef: AtomicReference[ExecutionHook] = new AtomicReference(),
                                           private val ref: AtomicBoolean = new AtomicBoolean(false)
                                        ) {

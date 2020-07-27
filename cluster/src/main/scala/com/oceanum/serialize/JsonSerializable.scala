@@ -1,11 +1,16 @@
 package com.oceanum.serialize
 
-import org.json4s.JsonAST.JValue
+import org.json4s.Formats
+import org.json4s.JValue
 
-trait JsonSerializable {
+abstract class JsonSerializable[T<:AnyRef] {
+  implicit protected val formats: Formats = JsonSerialization.formats
+
   def toJson(t: AnyRef): JValue
 
-  def fromJson(str: JValue): AnyRef
+  def fromJson(value: JValue): T
 
-  def objName(): String
+  def objName(): String = objIdentifier().getName
+
+  def objIdentifier(): Class[T]
 }

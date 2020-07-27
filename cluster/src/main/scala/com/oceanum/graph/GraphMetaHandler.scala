@@ -22,7 +22,7 @@ object GraphMetaHandler {
 
     override def onComplete(richGraphMeta: GraphMeta): Unit = {
       println("graphMeta complete: " + richGraphMeta.graphStatus)
-      richGraphMeta.operators.foreach(println)
+      richGraphMeta.tasks.foreach(println)
     }
 
     override def onStart(richGraphMeta: GraphMeta): Unit = {

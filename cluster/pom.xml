@@ -16,6 +16,7 @@
         <akka.http.version>10.1.12</akka.http.version>
         <hadoop.version>2.6.0</hadoop.version>
         <aviator.version>5.0.1</aviator.version>
+        <json4s.version>3.6.9</json4s.version>
         <output.dir>executor</output.dir>
         <pack.dir>${project.build.directory}/${output.dir}</pack.dir>
     </properties>
@@ -44,7 +45,7 @@
         </dependency>
         <dependency>
             <groupId>com.typesafe.akka</groupId>
-            <artifactId>akka-http_2.11</artifactId>
+            <artifactId>akka-http_${scala.binary.version}</artifactId>
             <version>${akka.http.version}</version>
         </dependency>
         <dependency>
@@ -54,13 +55,18 @@
         </dependency>
         <dependency>
             <groupId>org.json4s</groupId>
-            <artifactId>json4s-jackson_2.11</artifactId>
-            <version>3.6.9</version>
+            <artifactId>json4s-jackson_${scala.binary.version}</artifactId>
+            <version>${json4s.version}</version>
         </dependency>
         <dependency>
             <groupId>org.json4s</groupId>
-            <artifactId>json4s-ext_2.11</artifactId>
-            <version>3.6.9</version>
+            <artifactId>json4s-ext_${scala.binary.version}</artifactId>
+            <version>${json4s.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.enragedginger</groupId>
+            <artifactId>akka-quartz-scheduler_2.11</artifactId>
+            <version>1.8.1-akka-2.5.x</version>
         </dependency>
 
         <dependency>
