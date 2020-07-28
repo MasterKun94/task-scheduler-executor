@@ -4,8 +4,6 @@ import java.text.SimpleDateFormat
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.{Date, UUID}
 
-import com.oceanum.exec.State
-
 import scala.concurrent.duration.Duration
 
 /**

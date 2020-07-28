@@ -26,8 +26,7 @@ object RunnerManager extends Log {
   private val retryingNum: AtomicInteger = new AtomicInteger(0)
   private val killedNum: AtomicInteger = new AtomicInteger(0)
   private val completedNum: AtomicInteger = new AtomicInteger(0)
-  private val runners = Environment.CLUSTER_NODE_RUNNERS_CLASSES
-    .map(_.getConstructor().newInstance().asInstanceOf[TaskRunner])
+  private val runners = Environment.TASK_RUNNERS
 
   def getTaskInfo: NodeTaskInfo = {
     NodeTaskInfo(

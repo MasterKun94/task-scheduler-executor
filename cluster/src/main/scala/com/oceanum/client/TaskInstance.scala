@@ -1,9 +1,8 @@
 package com.oceanum.client
 
 import akka.actor.ActorRef
-import com.oceanum.exec.State
-import com.oceanum.exec.State.FAILED
 import com.oceanum.common.KillAction
+import com.oceanum.exec.State
 
 import scala.concurrent.Future
 

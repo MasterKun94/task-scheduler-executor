@@ -1,9 +1,9 @@
-package com.oceanum.exec;
+package com.oceanum.pluggable;
 
 import java.lang.reflect.Method;
 import java.util.Arrays;
 
-public class MainRunner {
+public class Main {
     public static void main(String[] args) throws Throwable {
         String mainClass = args[0];
         String[] argz = Arrays.copyOfRange(args, 1, args.length);

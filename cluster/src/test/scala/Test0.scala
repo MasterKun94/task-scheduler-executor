@@ -1,6 +1,8 @@
 import java.util
+import java.util.Date
 
-import com.oceanum.common.RichTaskMeta
+import com.oceanum.Test.Test
+import com.oceanum.common.{Environment, RichGraphMeta, RichTaskMeta}
 import com.oceanum.serialize.{JsonSerialization, ThrowableSerializer}
 import org.codehaus.jackson.{JsonNode, JsonParser}
 import org.codehaus.jackson.map.ObjectMapper
@@ -15,15 +17,19 @@ import org.json4s.jackson.{JsonMethods, Serialization}
  * @date 2020/7/25
  */
 object Test0 {
-  def main(args: Array[String]): Unit = {
+  def print(s: Int): Unit = {
     val e = new Exception("this is a test")
     val i = new IllegalArgumentException("test test", e)
-    JsonSerialization.init()
-    i.printStackTrace()
-    val taskMeta = new RichTaskMeta().copy(error = i)
-    JsonSerialization.register(classOf[IllegalArgumentException])
+    val taskMeta = new RichTaskMeta().withTask(Test.task().addGraphMeta(new RichGraphMeta().copy(startTime = new Date()))).copy(error = i)
     val str = JsonSerialization.serialize(taskMeta)
-    println(str)
-    JsonSerialization.deSerialize(str).asInstanceOf[RichTaskMeta].error.printStackTrace()
+    val meta = JsonSerialization.deSerialize(str).asInstanceOf[RichTaskMeta]
+//    println(str)
+    println(s + " -> " + meta)
+  }
+
+  def main(args: Array[String]): Unit = {
+    for (i <- 1 to 20) {
+      print(i)
+    }
   }
 }

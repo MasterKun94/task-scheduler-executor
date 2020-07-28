@@ -2,9 +2,8 @@ package com.oceanum.client.actors
 
 import akka.actor.{Actor, ActorLogging, ActorRef, PoisonPill}
 import com.oceanum.client.{StateHandler, Task}
-import com.oceanum.exec.State
-import com.oceanum.exec.{FAILED, KILL, SUCCESS}
 import com.oceanum.common._
+import com.oceanum.exec.{FAILED, KILL, SUCCESS, State}
 
 import scala.concurrent.Promise
 

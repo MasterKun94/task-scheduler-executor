@@ -10,9 +10,9 @@ import akka.stream.OverflowStrategy
 import ch.qos.logback.classic.LoggerContext
 import ch.qos.logback.classic.joran.JoranConfigurator
 import com.oceanum.client.TaskProp
+import com.oceanum.common.Implicits.{DurationHelper, PathHelper}
 import com.oceanum.exec.{TaskConfig, TypedRunner}
 import com.oceanum.exec.runners.ProcessRunner
-import com.oceanum.common.Implicits.{DurationHelper, PathHelper}
 import com.oceanum.expr.Evaluator
 import com.typesafe.config.ConfigFactory
 import org.slf4j.LoggerFactory
@@ -49,7 +49,7 @@ object Environment {
   lazy val EXEC_DEFAULT_RETRY_MAX: Int = getProperty(Key.EXEC_DEFAULT_RETRY_MAX, "1").toInt
   lazy val EXEC_DEFAULT_PRIORITY: Int = getProperty(Key.EXEC_DEFAULT_PRIORITY, "5").toInt
   lazy val EXEC_DEFAULT_TOPIC: String = getProperty(Key.EXEC_DEFAULT_TOPIC, "default")
-  lazy val EXEC_WORK_DIR: String = getProperty(Key.EXEC_WORK_DIR, BASE_PATH/"exec").toAbsolute()
+  lazy val EXEC_WORK_DIR: String = getProperty(Key.EXEC_WORK_DIR, BASE_PATH/ "com/oceanum/exec").toAbsolute()
   lazy val EXEC_THREAD_NUM: Int = getProperty(Key.EXEC_THREAD_NUM, "16").toInt
   lazy val EXEC_MAX_TIMEOUT: FiniteDuration = fd"${getProperty(Key.EXEC_MAX_TIMEOUT, "24h")}"
   lazy val EXEC_STATE_UPDATE_INTERVAL: String = "10s"
@@ -69,7 +69,7 @@ object Environment {
   lazy val CLUSTER_NODE_LOGGER: String = getProperty(Key.CLUSTER_NODE_LOGGER, logger)
   lazy val CLUSTER_NODE_RUNNER_STDOUT_HANDLER_CLASS: Class[_] = Class.forName(getProperty(Key.CLUSTER_NODE_RUNNER_STDOUT_HANDLER_CLASS, "com.oceanum.exec.StdoutFileHandler"))
   lazy val CLUSTER_NODE_RUNNER_STDERR_HANDLER_CLASS: Class[_] = Class.forName(getProperty(Key.CLUSTER_NODE_RUNNER_STDERR_HANDLER_CLASS, "com.oceanum.exec.StderrFileHandler"))
-  lazy val CLUSTER_NODE_RUNNERS_CLASSES: Set[Class[_]] = str2arr(getProperty(Key.CLUSTER_NODE_RUNNER_CLASSES, "com.oceanum.exec.runners.ProcessRunner")).map(Class.forName).toSet
+//  lazy val CLUSTER_NODE_RUNNERS_CLASSES: Set[Class[_]] = str2arr(getProperty(Key.CLUSTER_NODE_RUNNER_CLASSES, "com.oceanum.exec.runners.ProcessRunner")).map(Class.forName).toSet
   lazy val CLUSTER_NODE_SYSTEM: ActorSystem = clusterSystem()
   lazy val CLUSTER_NODE_MEDIATOR: ActorRef = DistributedPubSub(CLUSTER_NODE_SYSTEM).mediator
 
@@ -102,7 +102,7 @@ object Environment {
   lazy val FILE_SERVER_LOGGER: String = getProperty(Key.FILE_SERVER_LOGGER, logger)
   lazy val TASK_INFO_TRIGGER_INTERVAL: FiniteDuration = fd"${getProperty(Key.CLUSTER_NODE_TASK_INFO_TRIGGER_INTERVAL, "20s")}"
 
-  lazy val TASK_RUNNERS: Array[TypedRunner[_ <: TaskConfig]] = Array(new ProcessRunner())
+  lazy val TASK_RUNNERS: Array[TypedRunner[_ <: TaskConfig]] = Array(ProcessRunner)
   lazy val PATH_SEPARATOR: String = File.separator
   lazy val LOG_LOGBACK: String = getProperty(Key.LOG_LOGBACK, BASE_PATH/"conf"/"logback.xml").toAbsolute()
   lazy val LOG_FILE: String = logFile

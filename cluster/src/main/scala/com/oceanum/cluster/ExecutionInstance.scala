@@ -2,9 +2,9 @@ package com.oceanum.cluster
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Cancellable, PoisonPill}
 import com.oceanum.client.Task
-import com.oceanum.exec._
 import com.oceanum.common.Scheduler.{schedule, scheduleOnce}
 import com.oceanum.common._
+import com.oceanum.exec.{EventListener, ExecutionHook, FAILED, KILL, OFFLINE, PREPARE, RETRY, RUNNING, RunnerManager, START, SUCCESS, State, TIMEOUT}
 
 import scala.concurrent.ExecutionContext
 

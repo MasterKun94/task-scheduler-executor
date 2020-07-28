@@ -2,8 +2,8 @@ package com.oceanum.client
 
 import java.util.{Date, UUID}
 
-import com.oceanum.exec.{EventListener, ExecutionTask, TaskConfig}
 import com.oceanum.common.{Environment, GraphContext, RichGraphMeta, RichTaskMeta}
+import com.oceanum.exec.{EventListener, ExecutionTask, TaskConfig}
 
 @SerialVersionUID(1L)
 case class Task(id: Int = -1,

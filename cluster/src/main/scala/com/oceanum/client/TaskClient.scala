@@ -9,8 +9,8 @@ import akka.cluster.client.ClusterClient.Publish
 import akka.cluster.client.{ClusterClient, ClusterClientSettings}
 import akka.util.Timeout
 import com.oceanum.client.actors.{ClientEndpoint, ClientInstance, ClientListener, HandlerActor}
-import com.oceanum.exec.State
 import com.oceanum.common.{AvailableExecutorRequest, AvailableExecutorResponse, AvailableExecutorsRequest, ClusterInfoMessageHolder, ClusterMessage, ClusterMetrics, ClusterMetricsRequest, ClusterState, ClusterStateRequest, Environment, Message, NodeTaskInfo, NodeTaskInfoRequest, StopRequest}
+import com.oceanum.exec.State
 import com.oceanum.serialize.JsonSerialization
 
 import scala.collection.concurrent.TrieMap

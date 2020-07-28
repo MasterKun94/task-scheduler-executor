@@ -5,7 +5,6 @@ import java.util.Date
 import com.googlecode.aviator.runtime.`type`.{AviatorLong, AviatorNil, AviatorObject, AviatorRuntimeJavaType, AviatorString}
 import com.googlecode.aviator.runtime.function.{AbstractFunction, FunctionUtils}
 import com.oceanum.common.{GraphContext, GraphMeta, RichGraphMeta}
-import com.oceanum.exec.State
 
 /**
  * @author chenmingkun

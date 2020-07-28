@@ -1,8 +1,8 @@
 package com.oceanum.exec.tasks
 
-import com.oceanum.exec.{StdHandler, TaskConfig}
 import com.oceanum.common.Environment
 import com.oceanum.common.StringParser.parseExprRaw
+import com.oceanum.exec.StdHandler
 import com.oceanum.expr.JavaMap
 
 /**

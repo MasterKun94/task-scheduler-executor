@@ -2,9 +2,8 @@ package com.oceanum.cluster
 
 import akka.actor.{Actor, ActorRef, Props}
 import akka.cluster.pubsub.DistributedPubSubMediator.{Publish, Subscribe, Unsubscribe}
-import com.oceanum.exec.RunnerManager
-import com.oceanum.exec.RunnerManager.getTaskInfo
 import com.oceanum.common._
+import com.oceanum.exec.RunnerManager
 
 /**
  * @author chenmingkun
@@ -22,7 +21,7 @@ class ExecutionEndpoint extends Actor {
     }
     val duration = Environment.TASK_INFO_TRIGGER_INTERVAL
     Scheduler.schedule(duration, duration) {
-      mediator ! Publish(Environment.CLUSTER_NODE_METRICS_TOPIC, getTaskInfo)
+      mediator ! Publish(Environment.CLUSTER_NODE_METRICS_TOPIC, RunnerManager.getTaskInfo)
     }
   }
 

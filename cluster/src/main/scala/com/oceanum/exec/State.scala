@@ -1,7 +1,7 @@
 package com.oceanum.exec
 
 import com.oceanum.common.{RichTaskMeta, TaskMeta}
-import com.oceanum.exec
+import com.oceanum.pluggable
 
 /**
  * @author chenmingkun

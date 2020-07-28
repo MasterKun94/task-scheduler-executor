@@ -4,10 +4,10 @@ import java.io.{File, IOException, InputStream}
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 
-import com.oceanum.exec.ExitCode.ERROR
-import com.oceanum.exec._
-import com.oceanum.exec.tasks._
 import com.oceanum.common.Environment
+import com.oceanum.exec.ExitCode.ERROR
+import com.oceanum.exec.{ExecutionHook, ExecutionTask, ExitCode, MailBox, StdHandler, TypedRunner}
+import com.oceanum.exec.tasks.ProcessTaskConfig
 
 import scala.collection.JavaConversions.{mapAsJavaMap, seqAsJavaList}
 import scala.concurrent.duration.Duration
@@ -16,7 +16,7 @@ import scala.concurrent.duration.Duration
  * @author chenmingkun
  * @date 2020/4/28
  */
-class ProcessRunner extends TypedRunner[ProcessTaskConfig]("SHELL", "SHELL_SCRIPT", "JAVA", "SCALA", "PYTHON", "USER_ADD") {
+object ProcessRunner extends TypedRunner[ProcessTaskConfig]("SHELL", "SHELL_SCRIPT", "JAVA", "SCALA", "PYTHON", "USER_ADD") {
   private val streamOutput = MailBox[(InputStream, StdHandler)](Environment.EXEC_THREAD_NUM * 2) { r =>
     r._2.handle(r._1)
   }
