@@ -1,6 +1,5 @@
 package com.oceanum.exec.tasks
-import com.oceanum.common.StringParser
-import com.oceanum.expr.JavaMap
+import com.oceanum.expr.{ExprParser, JavaMap}
 
 /**
  * @author chenmingkun
@@ -16,7 +15,7 @@ case class SuUserTaskConfig(user: String, prop: ProcessTaskConfig)
     prop.propStderrHandler
   ) {
   override def parseFunction(implicit exprEnv: JavaMap[String, AnyRef]): SuUserTaskConfig = this.copy(
-    user = StringParser.parseExprRaw(user),
+    user = ExprParser.parse(user),
     prop = prop.parseFunction(exprEnv)
   )
 

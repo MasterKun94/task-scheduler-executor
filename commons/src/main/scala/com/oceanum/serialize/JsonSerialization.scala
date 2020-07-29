@@ -1,15 +1,7 @@
 package com.oceanum.serialize
 
-import java.util.concurrent.atomic.AtomicBoolean
-
-import com.oceanum.client._
-import com.oceanum.common.{GraphContext, RichGraphMeta, RichTaskMeta}
-import com.oceanum.exec.State
-import com.oceanum.graph.Operators._
-import com.oceanum.graph.{FallbackStrategy, GraphDefine, GraphStatus, ReRunStrategy}
-import org.json4s.ext.EnumNameSerializer
+import org.json4s._
 import org.json4s.jackson.{JsonMethods, Serialization}
-import org.json4s.{DefaultFormats, Extraction, Formats, JObject, JString, JValue, Serializer}
 
 import scala.collection.mutable
 
@@ -29,11 +21,11 @@ class JsonSerialization(implicit val formats: Formats,
   }
 
   def register[T<:AnyRef](name: String, clazz: Class[T]): JsonSerializable[T] = {
-    register(JsonSerializable(name, clazz))
+    register(JsonSerializable(name, clazz)(this))
   }
 
   def register[T<:AnyRef](clazz: Class[T]): JsonSerializable[T] = {
-    register(JsonSerializable(clazz))
+    register(JsonSerializable(clazz)(this))
   }
 
   def unRegister[T<:AnyRef](clazz: Class[T]): Unit = {
@@ -47,7 +39,7 @@ class JsonSerialization(implicit val formats: Formats,
     names.find(_._2.equals(name)).map(_._1).foreach(names.remove)
   }
 
-  def serialize(obj: AnyRef, pretty: Boolean = true): String = {
+  def serialize(obj: AnyRef, pretty: Boolean = false): String = {
     val name = names.getOrElse(obj.getClass, obj.getClass.getName)
     val serializer = serializableMap.get(name) match {
       case Some(serializer) =>
@@ -56,10 +48,7 @@ class JsonSerialization(implicit val formats: Formats,
         if (autoType) register(obj.getClass)
         else throw new IllegalArgumentException("can not serialize obj: " + obj.getClass)
     }
-    val jObj = JObject(
-      "@type" -> JString(serializer.objName()),
-      "value" -> serializer.toJson(obj)
-    )
+    val jObj = serializer.toJson(obj) merge JObject("@type" -> JString(serializer.objName()))
     if (pretty) {
       Serialization.writePretty(jObj)
     } else {
@@ -77,40 +66,10 @@ class JsonSerialization(implicit val formats: Formats,
         if (autoType) register(Class.forName(name).asInstanceOf[Class[_<:AnyRef]])
         else throw new IllegalArgumentException("can not serialize obj by type: " + name + ", json: " + str)
     }
-    serializer.fromJson(jValue \ "value")
+    serializer.fromJson(jValue)
   }
-}
 
-object JsonSerialization extends JsonSerialization()(
-  DefaultFormats +
-    new EnumNameSerializer(FallbackStrategy) +
-    new EnumNameSerializer(ReRunStrategy) +
-    new EnumNameSerializer(GraphStatus) +
-    new EnumNameSerializer(State) +
-    new ThrowableSerializer() +
-    new StackTraceElementSerializer() +
-    TaskSerializer.default() +
-    OperatorSerializer.default(),
-  mutable.Map.empty[String, JsonSerializable[_<:AnyRef]],
-  mutable.Map.empty[Class[_<:AnyRef], String]) {
-
-  private val isInit: AtomicBoolean = new AtomicBoolean(false)
-
-  def init(): Unit = {
-    if (isInit.getAndSet(true))
-      return
-
-    JsonSerialization.register("GRAPH_META", classOf[RichGraphMeta])
-    JsonSerialization.register("TASK_META", classOf[RichTaskMeta])
-    JsonSerialization.register("GRAPH_CONTEXT", classOf[GraphContext])
-    JsonSerialization.register("TASK", classOf[Task])
-    JsonSerialization.register("GRAPH_DEFINE", classOf[GraphDefine])
-    JsonSerialization.register("TASK_OPERATOR", classOf[TaskOperator])
-    JsonSerialization.register("FORK_OPERATOR", classOf[Fork])
-    JsonSerialization.register("JOIN_OPERATOR", classOf[Join])
-    JsonSerialization.register("DECISION_OPERATOR", classOf[Decision])
-    JsonSerialization.register("CONVERGE_OPERATOR", classOf[Converge])
-    JsonSerialization.register("START_OPERATOR", classOf[Start])
-    JsonSerialization.register("END_OPERATOR", classOf[End])
+  def deSerialize[T](str: String, clazz: Class[T]): T = {
+    Serialization.read(str)(formats, Manifest.classType(clazz))
   }
 }

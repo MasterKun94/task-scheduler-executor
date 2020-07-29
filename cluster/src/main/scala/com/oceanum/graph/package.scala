@@ -19,20 +19,5 @@ package object graph {
   case class OnRunning(graphMeta: GraphMeta, taskState: State)
   case class OnComplete(graphMeta: GraphMeta)
 
-  object ReRunStrategy extends Enumeration {
-    type value = Value
-    val NONE, RUN_ALL, RUN_ONLY_FAILED, RUN_ALL_AFTER_FAILED = Value
-  }
-
-  object FallbackStrategy extends Enumeration {
-    type value = Value
-    val CONTINUE, SHUTDOWN = Value
-  }
-
-  object GraphStatus extends Enumeration {
-    type value = Value
-    val OFFLINE, RUNNING, SUCCESS, EXCEPTION, FAILED, KILLED = Value
-  }
-
   case class GraphDefine(nodes: Map[String, Operator[_<:StreamFlow]], edges: Map[String, Array[String]], env: Map[String, Any])
 }

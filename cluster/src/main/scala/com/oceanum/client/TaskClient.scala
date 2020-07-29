@@ -9,9 +9,10 @@ import akka.cluster.client.ClusterClient.Publish
 import akka.cluster.client.{ClusterClient, ClusterClientSettings}
 import akka.util.Timeout
 import com.oceanum.client.actors.{ClientEndpoint, ClientInstance, ClientListener, HandlerActor}
-import com.oceanum.common.{AvailableExecutorRequest, AvailableExecutorResponse, AvailableExecutorsRequest, ClusterInfoMessageHolder, ClusterMessage, ClusterMetrics, ClusterMetricsRequest, ClusterState, ClusterStateRequest, Environment, Message, NodeTaskInfo, NodeTaskInfoRequest, StopRequest}
+import com.oceanum.common.{ActorSystems, AvailableExecutorRequest, AvailableExecutorResponse, AvailableExecutorsRequest, ClusterInfoMessageHolder, ClusterMessage, ClusterMetrics, ClusterMetricsRequest, ClusterState, ClusterStateRequest, Environment, Message, NodeTaskInfo, NodeTaskInfoRequest, StopRequest}
 import com.oceanum.exec.State
-import com.oceanum.serialize.JsonSerialization
+import com.oceanum.expr.Evaluator
+import com.oceanum.serialize.DefaultJsonSerialization
 
 import scala.collection.concurrent.TrieMap
 import scala.concurrent.{ExecutionContext, Future, Promise}
@@ -88,7 +89,7 @@ object TaskClient {
   def apply(host: String, port: Int, seedNodes: String, configFile: String)(implicit timeout: Timeout = Timeout(20, TimeUnit.SECONDS)): TaskClient = {
     import Environment.Arg
     Environment.loadArgs(Array(s"${Arg.CONF}=$configFile", s"${Arg.SEED_NODE}=$seedNodes", s"${Arg.HOST}=$host", s"${Arg.CLIENT_PORT}=$port"))
-    val system = Environment.CLIENT_SYSTEM
+    val system = ActorSystems.CLIENT_SYSTEM
     TaskClient.create(system, Environment.CLUSTER_NODE_SEEDS)
   }
 
@@ -111,7 +112,8 @@ object TaskClient {
       }
       val client = new TaskClient(endpoint, system)(executionContext, timeout)
       clients.put(system, client)
-      JsonSerialization.init()
+      DefaultJsonSerialization.init()
+      Evaluator.init()
       client
     })
   }

@@ -6,7 +6,8 @@ import java.util.concurrent.atomic.AtomicInteger
 
 import com.oceanum.cluster.TaskInfoTrigger
 import com.oceanum.common.Scheduler.scheduleOnce
-import com.oceanum.common.{Environment, Log, NodeTaskInfo}
+import com.oceanum.common.{Environment, Log, NodeTaskInfo, RichTaskMeta}
+import com.oceanum.exec.runners.ProcessRunner
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
@@ -26,7 +27,7 @@ object RunnerManager extends Log {
   private val retryingNum: AtomicInteger = new AtomicInteger(0)
   private val killedNum: AtomicInteger = new AtomicInteger(0)
   private val completedNum: AtomicInteger = new AtomicInteger(0)
-  private val runners = Environment.TASK_RUNNERS
+  private val runners: Array[TypedRunner[_ <: TaskConfig]] = Array(ProcessRunner)
 
   def getTaskInfo: NodeTaskInfo = {
     NodeTaskInfo(
@@ -41,7 +42,7 @@ object RunnerManager extends Log {
   }
 
   def submit(operatorProp: Prop): ExecutionHook = {
-    operatorProp.eventListener.prepare(operatorProp.env.taskMeta)
+    operatorProp.eventListener.prepare(operatorProp.env.taskMeta.asInstanceOf[RichTaskMeta])
     priorityMailbox.send(operatorProp)
     operatorProp.hook
   }

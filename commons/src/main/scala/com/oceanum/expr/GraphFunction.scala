@@ -2,9 +2,9 @@ package com.oceanum.expr
 
 import java.util.Date
 
-import com.googlecode.aviator.runtime.`type`.{AviatorLong, AviatorNil, AviatorObject, AviatorRuntimeJavaType, AviatorString}
+import com.googlecode.aviator.runtime.`type`._
 import com.googlecode.aviator.runtime.function.{AbstractFunction, FunctionUtils}
-import com.oceanum.common.{GraphContext, GraphMeta, RichGraphMeta}
+import com.oceanum.common.{GraphContext, GraphMeta}
 
 /**
  * @author chenmingkun
@@ -70,7 +70,7 @@ class GraphLatestTaskStateFunction extends AbstractFunction {
   override def getName: String = "graph.latestTask"
 
   override def call(env: JavaMap[String, AnyRef]): AviatorObject = {
-    val task = env.get(GraphContext.graphKey).asInstanceOf[RichGraphMeta].latestTask
+    val task = env.get(GraphContext.graphKey).asInstanceOf[GraphMeta].latestTask
     if (task == null) {
       AviatorNil.NIL
     } else {

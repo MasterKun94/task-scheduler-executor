@@ -42,7 +42,7 @@ case class ExecutionTask[T <: TaskConfig](name: String,
     this.copy(retryCount = this.retryCount - 1).updateMeta(meta)
   }
 
-  def metadata: RichTaskMeta = env.taskMeta
+  def metadata: RichTaskMeta = env.taskMeta.asInstanceOf[RichTaskMeta]
 
   def prepareStart(implicit ec: ExecutionContext): Future[ExecutionTask[_<:TaskConfig]] = {
     prop.prepare(env)

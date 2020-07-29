@@ -5,11 +5,12 @@ import java.util.Date
 
 import com.oceanum.client.Task
 import com.oceanum.common.Implicits.PathHelper
-import com.oceanum.exec.{State, StdHandler}
+import com.oceanum.exec.StdHandler
 
 @SerialVersionUID(1L)
-class RichTaskMeta(id: Int = -1,
+sealed class RichTaskMeta(id: Int = -1,
                    name: String = null,
+                   reRunId: Int = 0,
                    taskType: String = null,
                    user: String = null,
                    createTime: Date = null,
@@ -18,10 +19,11 @@ class RichTaskMeta(id: Int = -1,
                    execDir: String = "",
                    message: String = "",
                    error: Throwable = null,
-                   state: State.value = State.OFFLINE,
+                   state: TaskStatus.value = TaskStatus.OFFLINE,
                    retryNum: Int = 0) extends TaskMeta(
   id = id,
   name = name,
+  reRunId = reRunId,
   taskType = taskType,
   user = user,
   createTime = createTime,
@@ -36,6 +38,7 @@ class RichTaskMeta(id: Int = -1,
 
   def copy(id: Int = id,
            name: String = name,
+           reRunId: Int = reRunId,
            taskType: String = taskType,
            user: String = user,
            createTime: Date = createTime,
@@ -44,11 +47,12 @@ class RichTaskMeta(id: Int = -1,
            execDir: String = execDir,
            message: String = message,
            error: Throwable = error,
-           state: State.value = state,
+           state: TaskStatus.value = state,
            retryNum: Int = retryNum): RichTaskMeta = {
     new RichTaskMeta(
       id = id,
       name = name,
+      reRunId = reRunId,
       taskType = taskType,
       user = user,
       createTime = createTime,
@@ -106,7 +110,8 @@ class RichTaskMeta(id: Int = -1,
       taskType = task.prop.taskType,
       user = task.user,
       error = e,
-      message = e.getMessage
+      message = e.getMessage,
+      state = TaskStatus.FAILED
     )
   }
 

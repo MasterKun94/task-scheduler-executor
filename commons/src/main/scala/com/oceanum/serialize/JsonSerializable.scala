@@ -2,8 +2,8 @@ package com.oceanum.serialize
 
 import org.json4s.{Extraction, Formats, JValue}
 
-abstract class JsonSerializable[T<:AnyRef] {
-  implicit protected val formats: Formats = JsonSerialization.formats
+abstract class JsonSerializable[T<:AnyRef](serialization: JsonSerialization) {
+  implicit protected val formats: Formats = serialization.formats
 
   def toJson(t: AnyRef): JValue = Extraction.decompose(t)
 
@@ -15,11 +15,11 @@ abstract class JsonSerializable[T<:AnyRef] {
 }
 
 object JsonSerializable {
-  def apply[T<:AnyRef](clazz: Class[T]): JsonSerializable[T] = new JsonSerializable[T] {
+  def apply[T<:AnyRef](clazz: Class[T])(serialization: JsonSerialization): JsonSerializable[T] = new JsonSerializable[T](serialization) {
     override def objIdentifier(): Class[T] = clazz
   }
 
-  def apply[T<:AnyRef](name: String, clazz: Class[T]): JsonSerializable[T] = new JsonSerializable[T] {
+  def apply[T<:AnyRef](name: String, clazz: Class[T])(serialization: JsonSerialization): JsonSerializable[T] = new JsonSerializable[T](serialization) {
     override def objName(): String = name
     override def objIdentifier(): Class[T] = clazz
   }

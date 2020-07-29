@@ -15,7 +15,7 @@ class MetricsListener extends Actor with ActorLogging {
   type Listeners = mutable.Map[ActorRef, (Long, Cancellable)]
   val cluster: Cluster = Cluster(context.system)
   val extension: ClusterMetricsExtension = ClusterMetricsExtension(context.system)
-  val mediator: ActorRef = Environment.CLUSTER_NODE_MEDIATOR
+  val mediator: ActorRef = ActorSystems.CLUSTER_NODE_MEDIATOR
   val metricListeners: Listeners = mutable.Map()
   val stateListeners: Listeners = mutable.Map()
   val taskInfoListeners: Listeners = mutable.Map()
@@ -137,7 +137,7 @@ class MetricsListener extends Actor with ActorLogging {
 object MetricsListener {
 
   def start(): Unit = {
-    val system = Environment.CLUSTER_NODE_SYSTEM
+    val system = ActorSystems.CLUSTER_SYSTEM
     system.actorOf(ClusterSingletonManager.props(
       singletonProps = Props(classOf[MetricsListener]),
       settings = ClusterSingletonManagerSettings(system),

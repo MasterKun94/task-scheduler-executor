@@ -1,7 +1,7 @@
 package com.oceanum.expr
 
-import com.googlecode.aviator.runtime.`type`.{AviatorObject, AviatorRuntimeJavaType}
-import com.googlecode.aviator.runtime.function.{AbstractFunction, FunctionUtils}
+import com.googlecode.aviator.runtime.`type`.AviatorObject
+import com.googlecode.aviator.runtime.function.AbstractFunction
 
 /**
  * @author chenmingkun

@@ -1,4 +1,4 @@
-package com.oceanum.trigger
+package com.oceanum.triger
 
 /**
  * @author chenmingkun

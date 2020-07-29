@@ -1,9 +1,10 @@
 package com.oceanum.client
 
-import com.oceanum.common.{RichTaskMeta, StringParser}
+import com.oceanum.common.RichTaskMeta
 import com.oceanum.exec.TaskConfig
 import com.oceanum.exec.tasks.SysTasks.UserAddTaskConfig
 import com.oceanum.exec.tasks.{JavaTaskConfig, ProcessTaskConfig, PythonTaskConfig, ScalaTaskConfig, ShellScriptTaskConfig, ShellTaskConfig}
+import com.oceanum.expr.ValidateParser
 
 @SerialVersionUID(1L)
 abstract class TaskProp(val taskType: String) extends Serializable {
@@ -28,9 +29,9 @@ case class ShellTaskProp(cmd: Array[String] = Array.empty,
     cmd, env, directory, waitForTimeout, metadata.stdoutHandler, metadata.stderrHandler)
 
   override def validate(): Unit = {
-    cmd.foreach(StringParser.validate)
-    env.foreach(t => StringParser.validate(t._2))
-    StringParser.validate(directory)
+    cmd.foreach(ValidateParser.parse)
+    env.foreach(t => ValidateParser.parse(t._2))
+    ValidateParser.parse(directory)
   }
 }
 
@@ -45,10 +46,10 @@ case class ShellScriptTaskProp(scriptFile: String = "",
     scriptFile, args, env, directory, waitForTimeout, metadata.stdoutHandler, metadata.stderrHandler)
 
   override def validate(): Unit = {
-    args.foreach(StringParser.validate)
-    env.foreach(t => StringParser.validate(t._2))
-    StringParser.validate(directory)
-    StringParser.validate(scriptFile)
+    args.foreach(ValidateParser.parse)
+    env.foreach(t => ValidateParser.parse(t._2))
+    ValidateParser.parse(directory)
+    ValidateParser.parse(scriptFile)
   }
 }
 
@@ -65,12 +66,12 @@ case class JavaTaskProp(jars: Array[String] = Array.empty,
     jars, mainClass, args, options, env, directory, waitForTimeout, metadata.stdoutHandler, metadata.stderrHandler)
 
   override def validate(): Unit = {
-    options.foreach(StringParser.validate)
-    args.foreach(StringParser.validate)
-    jars.foreach(StringParser.validate)
-    env.foreach(t => StringParser.validate(t._2))
-    StringParser.validate(directory)
-    StringParser.validate(mainClass)
+    options.foreach(ValidateParser.parse)
+    args.foreach(ValidateParser.parse)
+    jars.foreach(ValidateParser.parse)
+    env.foreach(t => ValidateParser.parse(t._2))
+    ValidateParser.parse(directory)
+    ValidateParser.parse(mainClass)
   }
 }
 
@@ -87,12 +88,12 @@ case class ScalaTaskProp(jars: Array[String] = Array.empty,
     jars, mainClass, args, options, env, directory, waitForTimeout, metadata.stdoutHandler, metadata.stderrHandler)
 
   override def validate(): Unit = {
-    options.foreach(StringParser.validate)
-    args.foreach(StringParser.validate)
-    jars.foreach(StringParser.validate)
-    env.foreach(t => StringParser.validate(t._2))
-    StringParser.validate(directory)
-    StringParser.validate(mainClass)
+    options.foreach(ValidateParser.parse)
+    args.foreach(ValidateParser.parse)
+    jars.foreach(ValidateParser.parse)
+    env.foreach(t => ValidateParser.parse(t._2))
+    ValidateParser.parse(directory)
+    ValidateParser.parse(mainClass)
   }
 }
 
@@ -107,10 +108,10 @@ case class PythonTaskProp(pyFile: String = "",
     pyFile, args, env, directory, waitForTimeout, metadata.stdoutHandler, metadata.stderrHandler)
 
   override def validate(): Unit = {
-    args.foreach(StringParser.validate)
-    env.foreach(t => StringParser.validate(t._2))
-    StringParser.validate(directory)
-    StringParser.validate(pyFile)
+    args.foreach(ValidateParser.parse)
+    env.foreach(t => ValidateParser.parse(t._2))
+    ValidateParser.parse(directory)
+    ValidateParser.parse(pyFile)
   }
 }
 
@@ -118,5 +119,5 @@ case class PythonTaskProp(pyFile: String = "",
 case class UserAdd(user: String) extends ProcessTaskProp("USER_ADD") {
   override def toTask(metadata: RichTaskMeta): ProcessTaskConfig = UserAddTaskConfig(user)
 
-  override def validate(): Unit = StringParser.validate(user)
+  override def validate(): Unit = ValidateParser.parse(user)
 }

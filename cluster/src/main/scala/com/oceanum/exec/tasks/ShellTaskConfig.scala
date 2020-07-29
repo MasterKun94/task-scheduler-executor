@@ -1,7 +1,7 @@
 package com.oceanum.exec.tasks
 
 import com.oceanum.common.Environment
-import com.oceanum.common.StringParser.parseExprRaw
+import com.oceanum.expr.ExprParser.parse
 import com.oceanum.exec.StdHandler
 import com.oceanum.expr.JavaMap
 
@@ -17,8 +17,8 @@ case class ShellTaskConfig(cmd: Array[String] = Array.empty,
                            stderrHandler: StdHandler)
 extends ProcessTaskConfig(cmd, env, directory, waitForTimeout, stdoutHandler, stderrHandler) {
   override def parseFunction(implicit exprEnv: JavaMap[String, AnyRef]): ShellTaskConfig = this.copy(
-    cmd = cmd.map(parseExprRaw),
-    env = env.map(kv => (parseExprRaw(kv._1), parseExprRaw(kv._2))),
-    directory = parseExprRaw(directory)
+    cmd = cmd.map(parse),
+    env = env.map(kv => (parse(kv._1), parse(kv._2))),
+    directory = parse(directory)
   )
 }

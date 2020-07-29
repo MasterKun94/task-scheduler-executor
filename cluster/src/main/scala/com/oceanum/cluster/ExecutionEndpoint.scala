@@ -13,7 +13,7 @@ class ExecutionEndpoint extends Actor {
 
   //使用pub/sub方式设置
   private val topics = Environment.CLUSTER_NODE_TOPICS
-  private val mediator: ActorRef = Environment.CLUSTER_NODE_MEDIATOR
+  private val mediator: ActorRef = ActorSystems.CLUSTER_NODE_MEDIATOR
 
   override def preStart(): Unit = {
     for (topic <- topics) {

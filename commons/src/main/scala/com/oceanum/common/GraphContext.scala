@@ -1,11 +1,12 @@
 package com.oceanum.common
 
 
+import com.oceanum.expr.{ExprParser, JavaMap}
+
 import scala.collection.JavaConverters._
-import com.oceanum.expr.JavaMap
 
 @SerialVersionUID(1L)
-case class GraphContext(env: Map[String, Any], graphMeta: RichGraphMeta = null, taskMeta: RichTaskMeta = null) {
+case class GraphContext(env: Map[String, Any], graphMeta: GraphMeta, taskMeta: TaskMeta) {
 
   def exprEnv: Map[String, Any] = graphMeta.env ++ env + (GraphContext.graphKey -> graphMeta) + (GraphContext.taskKey -> taskMeta)
 
@@ -39,7 +40,7 @@ case class GraphContext(env: Map[String, Any], graphMeta: RichGraphMeta = null, 
   }
 
   private def evaluate(ref: AnyRef, env: JavaMap[String, AnyRef]): AnyRef = ref match {
-    case str: String => StringParser.parseExprRaw(str)(env)
+    case str: String => ExprParser.parse(str)(env)
     case map: java.util.Map[_, _] => map.asScala.mapValues(v => evaluate(v.asInstanceOf[AnyRef], env)).asJava
     case seq: java.util.List[_] => seq.asScala.map(v => evaluate(v.asInstanceOf[AnyRef], env)).asJava
     case set: java.util.Set[_] => set.asScala.map(v => evaluate(v.asInstanceOf[AnyRef], env)).asJava

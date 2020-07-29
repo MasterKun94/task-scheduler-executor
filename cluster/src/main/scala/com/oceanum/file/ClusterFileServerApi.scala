@@ -9,7 +9,7 @@ import akka.http.scaladsl.model._
 import akka.stream.scaladsl.{FileIO, Sink, Source}
 import akka.stream.{ActorAttributes, ActorMaterializer}
 import akka.util.ByteString
-import com.oceanum.common.{Environment, Log}
+import com.oceanum.common.{Environment, Log, ActorSystems}
 
 import scala.concurrent.{ExecutionContext, ExecutionContextExecutor, Future}
 import scala.util.{Failure, Success}
@@ -18,7 +18,7 @@ import scala.util.{Failure, Success}
  * @author chenmingkun
  * @date 2020/6/25
  */
-object ClusterFileServerApi extends Log(Environment.FILE_SERVER_SYSTEM) {
+object ClusterFileServerApi extends Log(ActorSystems.FILE_SERVER_SYSTEM) {
 
   private implicit lazy val mat: ActorMaterializer = ActorMaterializer()
   private lazy val http = Http()

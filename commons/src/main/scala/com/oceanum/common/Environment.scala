@@ -1,26 +1,16 @@
 package com.oceanum.common
 
 import java.io.{File, FileInputStream}
-import java.util.{Locale, Properties, TimeZone}
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.{Locale, Properties, TimeZone}
 
-import akka.actor.{ActorRef, ActorSystem}
-import akka.cluster.pubsub.DistributedPubSub
-import akka.stream.OverflowStrategy
 import ch.qos.logback.classic.LoggerContext
 import ch.qos.logback.classic.joran.JoranConfigurator
-import com.oceanum.client.TaskProp
-import com.oceanum.common.Implicits.{DurationHelper, PathHelper}
-import com.oceanum.exec.{TaskConfig, TypedRunner}
-import com.oceanum.exec.runners.ProcessRunner
-import com.oceanum.expr.Evaluator
-import com.typesafe.config.ConfigFactory
 import org.slf4j.LoggerFactory
 
-import scala.collection.JavaConversions.seqAsJavaList
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.FiniteDuration
-import scala.util.{Properties => SystemProp}
+import com.oceanum.common.Implicits._
 
 /**
  * @author chenmingkun
@@ -31,11 +21,10 @@ object Environment {
   private val properties = new Properties()
   lazy val LOCALE: Locale = Locale.ENGLISH
   lazy val TIME_ZONE: TimeZone = TimeZone.getTimeZone(getProperty("timezone", TimeZone.getDefault.getDisplayName))
-  lazy val AKKA_CONF: String = parsePath(getProperty(Key.AKKA_CONF, BASE_PATH/"conf"/"application.conf"))
-  lazy val BASE_PATH: String = getBasePath(getProperty(Key.BASE_PATH, SystemProp.userDir))
+  lazy val BASE_PATH: String = getBasePath(getProperty(Key.BASE_PATH, scala.util.Properties.userDir))
   lazy val EXEC_PYTHON: String = getProperty(Key.EXEC_PYTHON, "python")
   lazy val EXEC_PYTHON_ENABLED: Boolean = getProperty(Key.EXEC_PYTHON_ENABLED, "true").toBoolean
-  lazy val EXEC_JAVA: String = getProperty(Key.EXEC_JAVA, SystemProp.javaHome/"bin"/"java")
+  lazy val EXEC_JAVA: String = getProperty(Key.EXEC_JAVA, scala.util.Properties.javaHome/"bin"/"java")
   lazy val EXEC_JAVA_ENABLED: Boolean = getProperty(Key.EXEC_JAVA_ENABLED, "false").toBoolean
   lazy val EXEC_SCALA: String = getProperty(Key.EXEC_SCALA, "scala")
   lazy val EXEC_SCALA_ENABLED: Boolean = getProperty(Key.EXEC_SCALA_ENABLED, "false").toBoolean
@@ -69,23 +58,17 @@ object Environment {
   lazy val CLUSTER_NODE_LOGGER: String = getProperty(Key.CLUSTER_NODE_LOGGER, logger)
   lazy val CLUSTER_NODE_RUNNER_STDOUT_HANDLER_CLASS: Class[_] = Class.forName(getProperty(Key.CLUSTER_NODE_RUNNER_STDOUT_HANDLER_CLASS, "com.oceanum.exec.StdoutFileHandler"))
   lazy val CLUSTER_NODE_RUNNER_STDERR_HANDLER_CLASS: Class[_] = Class.forName(getProperty(Key.CLUSTER_NODE_RUNNER_STDERR_HANDLER_CLASS, "com.oceanum.exec.StderrFileHandler"))
-//  lazy val CLUSTER_NODE_RUNNERS_CLASSES: Set[Class[_]] = str2arr(getProperty(Key.CLUSTER_NODE_RUNNER_CLASSES, "com.oceanum.exec.runners.ProcessRunner")).map(Class.forName).toSet
-  lazy val CLUSTER_NODE_SYSTEM: ActorSystem = clusterSystem()
-  lazy val CLUSTER_NODE_MEDIATOR: ActorRef = DistributedPubSub(CLUSTER_NODE_SYSTEM).mediator
 
   lazy val CLIENT_NODE_SYSTEM_NAME: String = getProperty(Key.CLIENT_NODE_SYSTEM_NAME, "client")
   lazy val CLIENT_NODE_PORT: Int = getProperty(Key.CLIENT_NODE_PORT, "5551").toInt
   lazy val CLIENT_NODE_LOGGER: String = getProperty(Key.CLIENT_NODE_LOGGER, logger)
-  lazy val CLIENT_SYSTEM: ActorSystem = clientSystem()
 
   lazy val GRAPH_FLOW_DEFAULT_PARALLELISM: Int = 1
   lazy val GRAPH_SOURCE_QUEUE_BUFFER_SIZE: Int = 100
-  lazy val GRAPH_SOURCE_QUEUE_OVERFLOW_STRATEGY: OverflowStrategy = OverflowStrategy.backpressure
   lazy val GRAPH_DEFAULT_EXECUTOR: ExecutionContext = ExecutionContext.global
 
   lazy val FILE_CLIENT_DEFAULT_SCHEME: String = getProperty(Key.FILE_CLIENT_DEFAULT_SCHEME, "cluster")
   lazy val FILE_CLIENT_CLASSES: Set[Class[_]] = str2arr(getProperty(Key.FILE_CLIENT_CLASSES, "com.oceanum.file.ClusterFileClient")).toSet.map(Class.forName)
-  lazy val FILE_SERVER_SYSTEM: ActorSystem = fileServerSystem()
   lazy val FILE_SERVER_CONTEXT_PATH: String = getProperty(Key.FILE_SERVER_CONTEXT_PATH, "file")
   lazy val FILE_SERVER_PORT: Int = getProperty(Key.FILE_SERVER_PORT, "7011").toInt
   lazy val FILE_SERVER_SYSTEM_NAME: String = getProperty(Key.FILE_SERVER_SYSTEM_NAME, "file-server")
@@ -102,7 +85,6 @@ object Environment {
   lazy val FILE_SERVER_LOGGER: String = getProperty(Key.FILE_SERVER_LOGGER, logger)
   lazy val TASK_INFO_TRIGGER_INTERVAL: FiniteDuration = fd"${getProperty(Key.CLUSTER_NODE_TASK_INFO_TRIGGER_INTERVAL, "20s")}"
 
-  lazy val TASK_RUNNERS: Array[TypedRunner[_ <: TaskConfig]] = Array(ProcessRunner)
   lazy val PATH_SEPARATOR: String = File.separator
   lazy val LOG_LOGBACK: String = getProperty(Key.LOG_LOGBACK, BASE_PATH/"conf"/"logback.xml").toAbsolute()
   lazy val LOG_FILE: String = logFile
@@ -150,11 +132,11 @@ object Environment {
   }
 
   def getProperty(key: String): String = {
-    StringParser.parseEnv(properties.getProperty(key), properties)
+    PropertyParser.parse(properties.getProperty(key))(properties)
   }
 
   def getProperty(key: String, orElse: => String): String = {
-    StringParser.parseEnv(properties.getProperty(key, orElse), properties)
+    PropertyParser.parse(properties.getProperty(key, orElse))(properties)
   }
 
   private def getBasePath(path: String): String = new File(path).getAbsolutePath
@@ -183,7 +165,7 @@ object Environment {
       .map(arr => (arr(0), arr(1)))
       .toMap
 
-    load(Key.BASE_PATH, arg.getOrElse(Arg.BASE_PATH, SystemProp.userDir))
+    load(Key.BASE_PATH, arg.getOrElse(Arg.BASE_PATH, scala.util.Properties.userDir))
 
     val path = BASE_PATH/"conf"/"application.properties"
     val paths = arg.getOrElse(Arg.CONF, path)
@@ -241,7 +223,6 @@ object Environment {
       configurator.doConfigure(logback)
     }
     loaded.set(true)
-    Evaluator.init()
   }
 
   private def logFile: String = {
@@ -346,88 +327,5 @@ object Environment {
     val HADOOP_FS_URL = "hadoop.fs.url"
     val HADOOP_USER = "hadoop.user"
     val HADOOP_BUFFER_SIZE = "hadoop.buffer.size"
-  }
-
-  private def clusterSystem(): ActorSystem = {
-    import scala.collection.JavaConversions.mapAsJavaMap
-    val config = ConfigFactory
-      .parseMap(Map(
-        "akka.cluster.seed-nodes" -> seqAsJavaList(CLUSTER_NODE_SEEDS),
-        "akka.remote.netty.tcp.hostname" -> HOST,
-        "akka.remote.netty.tcp.port" -> CLUSTER_NODE_PORT,
-        "akka.remote.netty.tcp.bind-hostname" -> HOST,
-        "akka.remote.netty.tcp.bind-port" -> CLUSTER_NODE_PORT,
-        "akka.cluster.metrics.collector.sample-interval" -> CLUSTER_NODE_METRICS_SAMPLE_INTERVAL,
-        "akka.loggers" -> seqAsJavaList(Seq(CLUSTER_NODE_LOGGER))
-      ))
-      .withFallback(ConfigFactory.parseString(
-        """
-           |akka {
-           | actor {
-           |   provider = "akka.cluster.ClusterActorRefProvider"
-           |   warn-about-java-serializer-usage = false
-           |  }
-           | remote {
-           |  enabled-transports = ["akka.remote.netty.tcp"]
-           |  log-remote-lifecycle-events = off
-           | }
-           | extensions = ["akka.cluster.client.ClusterClientReceptionist", "akka.cluster.metrics.ClusterMetricsExtension"]
-           |}
-           |""".stripMargin))
-    ActorSystem.create(CLUSTER_NODE_SYSTEM_NAME, config)
-  }
-
-  private def clientSystem(): ActorSystem = {
-    val configString =
-      s"""
-         |akka {
-         | actor {
-         |   provider = remote
-         |   warn-about-java-serializer-usage = false
-         |
-         | }
-         | loggers = ["$CLIENT_NODE_LOGGER"]
-         | remote {
-         |    enabled-transports = ["akka.remote.netty.tcp"]
-         |    log-remote-lifecycle-events = off
-         |    netty.tcp {
-         |      hostname = "$HOST"
-         |      port = $CLIENT_NODE_PORT
-         |      bind-hostname = "$HOST"
-         |      bind-port = $CLIENT_NODE_PORT
-         |    }
-         |  }
-         |}
-         |""".stripMargin
-    ConfigFactory.parseString(configString)
-    ActorSystem(CLIENT_NODE_SYSTEM_NAME, ConfigFactory.parseString(configString))
-  }
-
-  private def fileServerSystem(): ActorSystem = {
-    val configString =
-      s"""
-         |file-io-dispatcher {
-         |  type = Dispatcher
-         |  executor = "thread-pool-executor"
-         |  thread-pool-executor {
-         |    core-pool-size-min = $FILE_SERVER_DISPATCHER_CORE_POOL_SIZE_MIN
-         |    core-pool-size-factor = $FILE_SERVER_DISPATCHER_CORE_POOL_SIZE_FACTOR
-         |    core-pool-size-max = $FILE_SERVER_DISPATCHER_CORE_POOL_SIZE_MAX
-         |  }
-         |  throughput = 1000
-         |}
-         |akka.loggers = ["$FILE_SERVER_LOGGER"]
-         |
-         |akka.http {
-         |  host-connection-pool {
-         |    max-connections = $FILE_SERVER_HOST_CONNECTION_POOL_MAX_CONNECTIONS
-         |    min-connections = $FILE_SERVER_HOST_CONNECTION_POOL_MIN_CONNECTIONS
-         |    min-retries = $FILE_SERVER_HOST_CONNECTION_POOL_MAX_RETRIES
-         |    max-open-requests = $FILE_SERVER_HOST_CONNECTION_POOL_MAX_OPEN_REQUESTS
-         |  }
-         |}
-         |""".stripMargin
-    ConfigFactory.parseString(configString)
-    ActorSystem(FILE_SERVER_SYSTEM_NAME, ConfigFactory.parseString(configString))
   }
 }

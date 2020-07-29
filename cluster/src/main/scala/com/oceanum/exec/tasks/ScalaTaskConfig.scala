@@ -1,7 +1,7 @@
 package com.oceanum.exec.tasks
 
 import com.oceanum.common.Environment
-import com.oceanum.common.StringParser.parseExprRaw
+import com.oceanum.expr.ExprParser.parse
 import com.oceanum.exec.StdHandler
 import com.oceanum.expr.JavaMap
 
@@ -27,12 +27,12 @@ case class ScalaTaskConfig(jars: Array[String],
     stderrHandler
   ) {
   override def parseFunction(implicit exprEnv: JavaMap[String, AnyRef]): ScalaTaskConfig = this.copy(
-    jars = jars.map(parseExprRaw),
-    mainClass = parseExprRaw(mainClass),
-    args = args.map(parseExprRaw),
-    options = options.map(parseExprRaw),
-    env = env.map(kv => (parseExprRaw(kv._1), parseExprRaw(kv._2))),
-    directory = parseExprRaw(directory)
+    jars = jars.map(parse),
+    mainClass = parse(mainClass),
+    args = args.map(parse),
+    options = options.map(parse),
+    env = env.map(kv => (parse(kv._1), parse(kv._2))),
+    directory = parse(directory)
   )
   override def files: Seq[String] = jars.toSeq
 

@@ -4,16 +4,16 @@ import java.util.Date
 import java.util.concurrent.atomic.AtomicInteger
 
 import akka.actor.{ActorSystem, PoisonPill, Props}
-import akka.stream.ClosedShape
+import akka.stream.{ClosedShape, OverflowStrategy}
 import akka.stream.scaladsl.{GraphDSL, RunnableGraph, Sink, Source}
-import com.oceanum.client.{Task, TaskClient}
-import com.oceanum.common.{Environment, GraphMeta, RichGraphMeta}
+import com.oceanum.client.TaskClient
+import com.oceanum.common.{Environment, GraphMeta, GraphStatus, ReRunStrategy, RichGraphMeta}
 import com.oceanum.exec.State
 import com.oceanum.graph.StreamFlows.{EndFlow, StartFlow}
-import com.oceanum.serialize.JsonSerialization
-import org.json4s.jackson.JsonMethods
+import com.oceanum.serialize.DefaultJsonSerialization
 
 import scala.util.{Failure, Success}
+
 class Workflow(runnableGraph: Graph, graphMetaHandler: GraphMetaHandler) {
   def run()(implicit client: TaskClient): WorkflowInstance = {
     implicit val system: ActorSystem = client.system
@@ -31,31 +31,45 @@ class Workflow(runnableGraph: Graph, graphMetaHandler: GraphMetaHandler) {
 }
 
 object Workflow {
-  def create(env: Map[String, Any], builder: GraphBuilder => Unit)(implicit taskClient: TaskClient, graphMetaHandler: GraphMetaHandler): Workflow = {
+  def create(env: Map[String, Any], builder: GraphBuilder => Unit)
+            (implicit taskClient: TaskClient, graphMetaHandler: GraphMetaHandler = GraphMetaHandler.default()): Workflow = {
     val metaHandler: GraphMetaHandler = new GraphMetaHandler {
       private val actor = taskClient.system.actorOf(Props(classOf[GraphMetaHandlerActor], graphMetaHandler))
-      override def onRunning(richGraphMeta: GraphMeta, taskState: State): Unit = actor ! OnRunning(richGraphMeta, taskState)
+      override def onRunning(graphMeta: GraphMeta, taskState: State): Unit = actor ! OnRunning(graphMeta, taskState)
 
-      override def onComplete(richGraphMeta: GraphMeta): Unit = actor ! OnComplete(richGraphMeta)
+      override def onComplete(graphMeta: GraphMeta): Unit = actor ! OnComplete(graphMeta)
 
-      override def onStart(richGraphMeta: GraphMeta): Unit = actor ! OnStart(richGraphMeta)
+      override def onStart(graphMeta: GraphMeta): Unit = actor ! OnStart(graphMeta)
 
       override def close(): Unit = actor ! PoisonPill
     }
     val atomicInteger = new AtomicInteger(0)
-    val date = new Date()
     val source0 = Source
-      .queue[RichGraphMeta](Environment.GRAPH_SOURCE_QUEUE_BUFFER_SIZE, Environment.GRAPH_SOURCE_QUEUE_OVERFLOW_STRATEGY)
+      .queue[RichGraphMeta](Environment.GRAPH_SOURCE_QUEUE_BUFFER_SIZE, OverflowStrategy.backpressure)
       .map { meta =>
-        val start = meta.copy(
-          createTime = date,
-          startTime = new Date(),
-          graphStatus = GraphStatus.RUNNING,
-          id = atomicInteger.getAndIncrement(),
-          reRunFlag = false,
-          env = env ++ meta.env,
-          latestTaskId = -1
-        )
+        val start =
+          if (meta.reRunStrategy == ReRunStrategy.NONE) {
+            meta.copy(
+              createTime = new Date(),
+              startTime = new Date(),
+              graphStatus = GraphStatus.RUNNING,
+              id = atomicInteger.getAndIncrement(),
+              reRunId = 0,
+              reRunFlag = false,
+              env = env ++ meta.env,
+              latestTaskId = -1
+            )
+          } else {
+            meta.copy(
+              startTime = new Date(),
+              graphStatus = GraphStatus.RUNNING,
+              reRunId = meta.reRunId + 1,
+              reRunFlag = false,
+              env = env ++ meta.env,
+              latestTaskId = -1
+            )
+          }
+
         metaHandler.onStart(start)
         start
       }
@@ -87,6 +101,6 @@ object Workflow {
   }
 
   def fromJson(json: String)(implicit taskClient: TaskClient, graphMetaHandler: GraphMetaHandler): Workflow = {
-    fromGraph(JsonSerialization.deSerialize(json).asInstanceOf[GraphDefine])
+    fromGraph(DefaultJsonSerialization.deSerialize(json).asInstanceOf[GraphDefine])
   }
 }

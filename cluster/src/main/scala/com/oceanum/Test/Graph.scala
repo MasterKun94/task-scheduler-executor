@@ -3,11 +3,11 @@ package com.oceanum.Test
 import java.net.{InetAddress, UnknownHostException}
 
 import com.oceanum.client.TaskClient
-import com.oceanum.common.{GraphContext, GraphMeta, RichGraphMeta}
+import com.oceanum.common.{GraphContext, GraphMeta, ReRunStrategy, RichGraphMeta}
 import com.oceanum.exec.State
-import com.oceanum.graph.Operators.{Converge, Decision, End, Fork, Join, Start, TaskOperator}
-import com.oceanum.graph.{FlowFactory, GraphDefine, GraphMetaHandler, ReRunStrategy, Workflow}
-import com.oceanum.serialize.JsonSerialization
+import com.oceanum.graph.Operators._
+import com.oceanum.graph.{GraphDefine, GraphMetaHandler, Workflow}
+import com.oceanum.serialize.DefaultJsonSerialization
 
 import scala.concurrent.Promise
 
@@ -23,26 +23,26 @@ object Graph {
     }
   }
 
-  val promise = Promise[RichGraphMeta]()
+  val promise: Promise[RichGraphMeta] = Promise[RichGraphMeta]()
 
   implicit val client: TaskClient = TaskClient(ip1, 5552, ip2, "cluster/src/main/resources/application.properties")
 
   implicit val metaHandler: GraphMetaHandler = new GraphMetaHandler {
-    override def onRunning(richGraphMeta: GraphMeta, taskState: State): Unit = {
+    override def onRunning(graphMeta: GraphMeta, taskState: State): Unit = {
       println("state: " + taskState)
-      println("graphMeta: " + richGraphMeta)
+      println("graphMeta: " + graphMeta)
     }
 
-    override def onComplete(richGraphMeta: GraphMeta): Unit = {
-      println("graphMeta complete: " + richGraphMeta.graphStatus)
-      println(richGraphMeta)
-      richGraphMeta.tasks.foreach(println)
+    override def onComplete(graphMeta: GraphMeta): Unit = {
+      println("graphMeta complete: " + graphMeta.graphStatus)
+      println(graphMeta)
+      graphMeta.tasks.foreach(println)
       if (!promise.isCompleted)
-        promise.success(richGraphMeta.asInstanceOf[RichGraphMeta])
+        promise.success(graphMeta.asInstanceOf[RichGraphMeta])
     }
 
-    override def onStart(richGraphMeta: GraphMeta): Unit = {
-      println("graphMeta start: " + richGraphMeta)
+    override def onStart(graphMeta: GraphMeta): Unit = {
+      println("graphMeta start: " + graphMeta)
     }
 
     override def close(): Unit = println("handler closed")
@@ -78,9 +78,9 @@ object Graph {
       Thread.sleep(3000)
 
       val ctx = new GraphContext(Map.empty).copy(graphMeta = meta.get)
-      val str = JsonSerialization.serialize(ctx)
+      val str = DefaultJsonSerialization.serialize(ctx)
       println(str)
-      val c = JsonSerialization.deSerialize(str).asInstanceOf[GraphContext]
+      val c = DefaultJsonSerialization.deSerialize(str).asInstanceOf[GraphContext]
       println(c)
       println(c.graphMeta)
 

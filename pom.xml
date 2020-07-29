@@ -27,6 +27,7 @@ under the License.
 	<modules>
 		<module>cluster</module>
 		<module>executor</module>
+		<module>commons</module>
 	</modules>
 	<packaging>pom</packaging>
 

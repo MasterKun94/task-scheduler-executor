@@ -42,7 +42,7 @@ case class Task(id: Int = -1,
 
   private def metadata: RichTaskMeta = {
     if (rawEnv.taskMeta == null) new RichTaskMeta().withTask(this)
-    else rawEnv.taskMeta
+    else rawEnv.taskMeta.asInstanceOf[RichTaskMeta]
   }
 }
 

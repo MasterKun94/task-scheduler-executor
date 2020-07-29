@@ -12,7 +12,7 @@ import akka.http.scaladsl.server.Route
 import akka.stream._
 import akka.stream.scaladsl._
 import akka.util.ByteString
-import com.oceanum.common.{Environment, Log}
+import com.oceanum.common.{Environment, Log, ActorSystems}
 
 import scala.annotation.tailrec
 import scala.concurrent.Future
@@ -21,7 +21,7 @@ import scala.concurrent.Future
  * @author chenmingkun
  * @date 2020/6/25
  */
-object ClusterFileServer extends Log(Environment.FILE_SERVER_SYSTEM) {
+object ClusterFileServer extends Log(ActorSystems.FILE_SERVER_SYSTEM) {
   private val host = Environment.HOST
   private val port = Environment.FILE_SERVER_PORT
   private val chunkSize = Environment.FILE_SERVER_CHUNK_SIZE

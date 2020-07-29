@@ -1,10 +1,7 @@
 package com.oceanum.serialize
 
-import java.io.{ByteArrayInputStream, ByteArrayOutputStream, ObjectInputStream, ObjectOutputStream}
-import java.util.Base64
-
-import com.fasterxml.jackson.databind.ObjectMapper
 import org.json4s._
+
 /**
  * @author chenmingkun
  * @date 2020/7/26
@@ -13,7 +10,6 @@ class ThrowableSerializer extends CustomSerializer[Throwable](implicit f =>
   (
     {
       case value: JObject =>
-        val throwable = Class.forName((value \ "className").extract[String]).getConstructor().newInstance().asInstanceOf[Throwable]
         val e = new RemoteException(
           realClassName = (value \ "className").extract[String],
           message = (value \ "message").extract[String],
@@ -67,7 +63,7 @@ class StackTraceElementSerializer extends CustomSerializer[StackTraceElement](im
 
 class RemoteException(val realClassName: String, message: String, cause: Throwable)
   extends Exception(message, cause) {
-  override def toString: String = {
-    "@" + realClassName + ": " + message
+    override def toString: String = {
+      "@" + realClassName + ": " + message
+    }
   }
-}

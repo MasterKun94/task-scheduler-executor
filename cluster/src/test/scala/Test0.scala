@@ -3,7 +3,7 @@ import java.util.Date
 
 import com.oceanum.Test.Test
 import com.oceanum.common.{Environment, RichGraphMeta, RichTaskMeta}
-import com.oceanum.serialize.{JsonSerialization, ThrowableSerializer}
+import com.oceanum.serialize.{DefaultJsonSerialization, ThrowableSerializer}
 import org.codehaus.jackson.{JsonNode, JsonParser}
 import org.codehaus.jackson.map.ObjectMapper
 import org.codehaus.jackson.node.{JsonNodeFactory, ObjectNode}
@@ -21,8 +21,8 @@ object Test0 {
     val e = new Exception("this is a test")
     val i = new IllegalArgumentException("test test", e)
     val taskMeta = new RichTaskMeta().withTask(Test.task().addGraphMeta(new RichGraphMeta().copy(startTime = new Date()))).copy(error = i)
-    val str = JsonSerialization.serialize(taskMeta)
-    val meta = JsonSerialization.deSerialize(str).asInstanceOf[RichTaskMeta]
+    val str = DefaultJsonSerialization.serialize(taskMeta)
+    val meta = DefaultJsonSerialization.deSerialize(str).asInstanceOf[RichTaskMeta]
 //    println(str)
     println(s + " -> " + meta)
   }

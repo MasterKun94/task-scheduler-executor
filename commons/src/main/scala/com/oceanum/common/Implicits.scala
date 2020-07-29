@@ -3,9 +3,6 @@ package com.oceanum.common
 import java.io.File
 import java.util.regex.Matcher
 
-import com.oceanum.expr.JavaMap
-
-import scala.collection.JavaConverters._
 import scala.concurrent.duration.{Duration, FiniteDuration}
 
 /**

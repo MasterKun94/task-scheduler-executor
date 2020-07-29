@@ -3,7 +3,7 @@ package com.oceanum.cluster
 import akka.actor.{Actor, ActorLogging, ActorRef, Cancellable, PoisonPill}
 import com.oceanum.client.Task
 import com.oceanum.common.Scheduler.{schedule, scheduleOnce}
-import com.oceanum.common._
+import com.oceanum.common.{TaskStatus, _}
 import com.oceanum.exec.{EventListener, ExecutionHook, FAILED, KILL, OFFLINE, PREPARE, RETRY, RUNNING, RunnerManager, START, SUCCESS, State, TIMEOUT}
 
 import scala.concurrent.ExecutionContext
@@ -151,7 +151,7 @@ class ExecutionInstance(task: Task, actor: ActorRef) extends Actor with ActorLog
       log.info("send state: [{}] to sender: [{}]", stateReceive.state.name, sender)
       sender ! stateReceive.state
       if ((System.currentTimeMillis() - clientCheckTime) > Environment.EXEC_UN_REACH_TIMEOUT
-        && Array(State.SUCCESS, State.KILL, State.FAILED).contains(stateReceive.state.name)) {
+        && Array(TaskStatus.SUCCESS, TaskStatus.KILL, TaskStatus.FAILED).contains(stateReceive.state.name)) {
         self ! TerminateAction
       }
 

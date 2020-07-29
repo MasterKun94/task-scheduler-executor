@@ -3,11 +3,11 @@ package com.oceanum.common
 import java.util.{Date, UUID}
 
 import com.oceanum.exec.{FAILED, KILL, SUCCESS, State}
-import com.oceanum.graph.{FallbackStrategy, GraphStatus, ReRunStrategy}
 
 @SerialVersionUID(1L)
-class RichGraphMeta(id: Int = 0,
+sealed class RichGraphMeta(id: Int = 0,
                     name: String = UUID.randomUUID().toString,
+                    reRunId: Int = 0,
                     tasks: Map[Int, RichTaskMeta] = Map.empty,
                     latestTaskId: Int = -1,
                     fallbackStrategy: FallbackStrategy.value = FallbackStrategy.CONTINUE,
@@ -24,6 +24,7 @@ class RichGraphMeta(id: Int = 0,
   extends GraphMeta(
     id = id,
     name = name,
+    reRunId = reRunId,
     tasks = tasks,
     latestTaskId = latestTaskId,
     fallbackStrategy = fallbackStrategy,
@@ -38,6 +39,7 @@ class RichGraphMeta(id: Int = 0,
 
   def copy(id: Int = id,
            name: String = name,
+           reRunId: Int = reRunId,
            tasks: Map[Int, RichTaskMeta] = tasks,
            latestTaskId: Int = latestTaskId,
            fallbackStrategy: FallbackStrategy.value = fallbackStrategy,
@@ -53,6 +55,7 @@ class RichGraphMeta(id: Int = 0,
     new RichGraphMeta(
       id = id,
       name = name,
+      reRunId = reRunId,
       tasks = tasks,
       latestTaskId = latestTaskId,
       fallbackStrategy = fallbackStrategy,
@@ -67,16 +70,13 @@ class RichGraphMeta(id: Int = 0,
       reRunFlag = reRunFlag)
   }
 
-  def latestTask: TaskMeta = if (latestTaskId < 0) null else tasks(latestTaskId)
-
-  def addTask(state: State, isComplete: Boolean = false): RichGraphMeta = {
-    val graphStatus = state match {
-      case _: SUCCESS => GraphStatus.RUNNING
-      case _: FAILED => GraphStatus.EXCEPTION
-      case _: KILL => GraphStatus.KILLED
+  def addTask(taskMeta: RichTaskMeta, isComplete: Boolean = false): RichGraphMeta = {
+    val graphStatus = taskMeta.state match {
+      case TaskStatus.SUCCESS => GraphStatus.RUNNING
+      case TaskStatus.FAILED => GraphStatus.EXCEPTION
+      case TaskStatus.KILL => GraphStatus.KILLED
       case _ => GraphStatus.RUNNING
     }
-    val taskMeta = state.metadata.asInstanceOf[RichTaskMeta]
     val tuple = taskMeta.id -> taskMeta
     if (isComplete)
       updateGraphStatus(graphStatus).copy(tasks = this.tasks + tuple, latestTaskId = taskMeta.id)
