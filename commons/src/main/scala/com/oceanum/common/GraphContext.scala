@@ -6,7 +6,7 @@ import com.oceanum.expr.{ExprParser, JavaMap}
 import scala.collection.JavaConverters._
 
 @SerialVersionUID(1L)
-case class GraphContext(env: Map[String, Any], graphMeta: GraphMeta, taskMeta: TaskMeta) {
+case class GraphContext(env: Map[String, Any], graphMeta: GraphMeta = null, taskMeta: TaskMeta = null) {
 
   def exprEnv: Map[String, Any] = graphMeta.env ++ env + (GraphContext.graphKey -> graphMeta) + (GraphContext.taskKey -> taskMeta)
 

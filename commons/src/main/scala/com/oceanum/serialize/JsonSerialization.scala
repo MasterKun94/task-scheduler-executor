@@ -69,7 +69,11 @@ class JsonSerialization(implicit val formats: Formats,
     serializer.fromJson(jValue)
   }
 
-  def deSerialize[T](str: String, clazz: Class[T]): T = {
-    Serialization.read(str)(formats, Manifest.classType(clazz))
+  def serializeRaw[T<:AnyRef](obj: T): String = {
+    Serialization.write(obj)
+  }
+
+  def deSerializeRaw[T<:AnyRef](str: String)(implicit mf: Manifest[T]): T = {
+    Serialization.read(str)(formats, mf)
   }
 }
