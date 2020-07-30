@@ -11,7 +11,6 @@ import org.elasticsearch.common.xcontent.XContentType
 import org.elasticsearch.search.builder.SearchSourceBuilder
 
 import scala.concurrent.{ExecutionContext, ExecutionContextExecutor, Future, Promise}
-import scala.util.{Failure, Success}
 
 class EsUtil {
 
@@ -61,13 +60,6 @@ object EsUtil {
 
 
   def main(args: Array[String]): Unit = {
-//    save("test", "2", Map("name" -> "hello", "lalal" -> "llllll")).onComplete(println)
-    findById[Map[String, Any]]("test", "3").onComplete {
-      case Success(value) => println(value)
-      case Failure(exception) => exception.printStackTrace()
-    }
-
-    Thread.sleep(3000)
   }
 }
 

@@ -1,13 +1,12 @@
 package com.oceanum.persistence.es
 
-import java.util.Date
-
-import com.oceanum.common.{FallbackStrategy, GraphMeta, GraphStatus, ReRunStrategy}
-import com.oceanum.persistence.{AbstractRepository, Catalog, Repository}
+import com.oceanum.annotation.Injection
+import com.oceanum.common.GraphMeta
+import com.oceanum.persistence.AbstractRepository
 
 import scala.concurrent.Future
-import scala.util.{Failure, Success}
 
+@Injection
 class EsGraphMetaRepository extends AbstractRepository[GraphMeta] {
 
   override def save(obj: GraphMeta): Future[Unit] = {

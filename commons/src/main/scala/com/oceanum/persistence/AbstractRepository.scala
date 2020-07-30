@@ -1,4 +1,5 @@
 package com.oceanum.persistence
+
 import scala.concurrent.Future
 
 abstract class AbstractRepository[T<:AnyRef](implicit val mf: Manifest[T]) extends Repository[T] {
