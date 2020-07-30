@@ -1,45 +1,45 @@
 package com.oceanum.serialize
 
+import com.oceanum.common.{FallbackStrategy, GraphStatus, ReRunStrategy, TaskStatus}
 import org.json4s._
-import org.json4s.jackson.{JsonMethods, Serialization}
+import org.json4s.ext.EnumNameSerializer
+import org.json4s.jackson.{JsonMethods, Serialization => JackSerial}
 
-import scala.collection.mutable
+import scala.collection.concurrent.TrieMap
 
-class JsonSerialization(implicit val formats: Formats,
-                        protected val serializableMap: mutable.Map[String, JsonSerializable[_<:AnyRef]] = mutable.Map(),
-                        protected val names: mutable.Map[Class[_<:AnyRef], String] = mutable.Map()) {
+class JsonSerialization(protected val serializableMap: TrieMap[String, Serializable[_<:AnyRef, JsonObject]] = TrieMap(),
+                        protected val names: TrieMap[Class[_], String] = TrieMap())(implicit val formats: Formats)
+  extends Serialization[JsonObject] {
   private val autoType = true
 
   def withJsonSerializer[T](serializer: Serializer[T]): JsonSerialization = {
-    new JsonSerialization()(formats = formats + serializer, serializableMap, names)
+    new JsonSerialization(serializableMap, names)(formats = formats + serializer)
   }
 
-  def register[T<:AnyRef](serializable: JsonSerializable[T]): JsonSerializable[T] = {
+  override def register[T<:AnyRef](serializable: DefSerializable[T]): DefSerializable[T] = {
     serializableMap += (serializable.objName -> serializable)
-    names += (serializable.objIdentifier() -> serializable.objName())
+    names += (serializable.runtimeClass -> serializable.objName)
     serializable
   }
 
-  def register[T<:AnyRef](name: String, clazz: Class[T]): JsonSerializable[T] = {
-    register(JsonSerializable(name, clazz)(this))
+  override def register[T<:AnyRef](name: String)(implicit mf: Manifest[T]): DefSerializable[T] = {
+    register(JsonSerializable(name, this))
   }
 
-  def register[T<:AnyRef](clazz: Class[T]): JsonSerializable[T] = {
-    register(JsonSerializable(clazz)(this))
+  override def register[T<:AnyRef](implicit mf: Manifest[T]): DefSerializable[T] = {
+    register(JsonSerializable(this))
   }
 
-  def unRegister[T<:AnyRef](clazz: Class[T]): Unit = {
-    names.remove(clazz).foreach {
-      serializableMap.remove
-    }
-  }
-
-  def unRegister(name: String): Unit = {
+  override def unRegister(name: String): Unit = {
     serializableMap.remove(name)
     names.find(_._2.equals(name)).map(_._1).foreach(names.remove)
   }
 
-  def serialize(obj: AnyRef, pretty: Boolean = false): String = {
+  override def unRegister[T<:AnyRef](implicit mf: Manifest[T]): Unit = {
+    names.remove(mf.runtimeClass.asInstanceOf[Class[_<:AnyRef]]).foreach(serializableMap.remove)
+  }
+
+  override def serialize[T<:AnyRef](obj: T, pretty: Boolean = false): String = {
     val name = names.getOrElse(obj.getClass, obj.getClass.getName)
     val serializer = serializableMap.get(name) match {
       case Some(serializer) =>
@@ -48,17 +48,12 @@ class JsonSerialization(implicit val formats: Formats,
         if (autoType) register(obj.getClass)
         else throw new IllegalArgumentException("can not serialize obj: " + obj.getClass)
     }
-    val jObj = serializer.toJson(obj) merge JObject("@type" -> JString(serializer.objName()))
-    if (pretty) {
-      Serialization.writePretty(jObj)
-    } else {
-      Serialization.write(jObj)
-    }
+    serializer.toJson(obj).serializedString(pretty)
   }
 
-  def deSerialize(str: String): AnyRef = {
-    val jValue = JsonMethods.parse(str)
-    val name = (jValue \ "@type").extract[String]
+  override def deSerialize(str: String): AnyRef = {
+    val jValue = new JsonObject(JsonMethods.parse(str))
+    val name = jValue.objType
     val serializer = serializableMap.get(name) match {
       case Some(serializer) =>
         serializer
@@ -69,11 +64,7 @@ class JsonSerialization(implicit val formats: Formats,
     serializer.fromJson(jValue)
   }
 
-  def serializeRaw[T<:AnyRef](obj: T): String = {
-    Serialization.write(obj)
-  }
-
-  def deSerializeRaw[T<:AnyRef](str: String)(implicit mf: Manifest[T]): T = {
-    Serialization.read(str)(formats, mf)
+  override def deSerializeRaw[T<:AnyRef](str: String)(implicit mf: Manifest[T]): T = {
+    JackSerial.read(str)(formats, mf)
   }
 }

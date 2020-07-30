@@ -7,7 +7,7 @@ import com.oceanum.common.{ActorSystems, Environment}
 import com.oceanum.expr.Evaluator
 import com.oceanum.file.ClusterFileServer
 import com.oceanum.metrics.MetricsListener
-import com.oceanum.serialize.DefaultJsonSerialization
+import com.oceanum.serialize.{DefaultJsonSerialization, SerializeUtil}
 /**
  * @author chenmingkun
  * @date 2020/5/28
@@ -28,7 +28,7 @@ object ClusterStarter {
     system.actorOf(Props(classOf[ReceptionistListener], receptionist),"event-listener")
     MetricsListener.start()
     ClusterFileServer.start()
-    DefaultJsonSerialization.init()
+    SerializeUtil.init()
     Evaluator.init()
   }
 }

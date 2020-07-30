@@ -12,7 +12,7 @@ import com.oceanum.client.actors.{ClientEndpoint, ClientInstance, ClientListener
 import com.oceanum.common.{ActorSystems, AvailableExecutorRequest, AvailableExecutorResponse, AvailableExecutorsRequest, ClusterInfoMessageHolder, ClusterMessage, ClusterMetrics, ClusterMetricsRequest, ClusterState, ClusterStateRequest, Environment, Message, NodeTaskInfo, NodeTaskInfoRequest, StopRequest}
 import com.oceanum.exec.State
 import com.oceanum.expr.Evaluator
-import com.oceanum.serialize.DefaultJsonSerialization
+import com.oceanum.serialize.{DefaultJsonSerialization, SerializeUtil}
 
 import scala.collection.concurrent.TrieMap
 import scala.concurrent.{ExecutionContext, Future, Promise}
@@ -112,7 +112,7 @@ object TaskClient {
       }
       val client = new TaskClient(endpoint, system)(executionContext, timeout)
       clients.put(system, client)
-      DefaultJsonSerialization.init()
+      SerializeUtil.init()
       Evaluator.init()
       client
     })

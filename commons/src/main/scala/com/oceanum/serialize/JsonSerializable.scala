@@ -1,26 +1,29 @@
 package com.oceanum.serialize
 
-import org.json4s.{Extraction, Formats, JValue}
+import org.json4s.{Extraction, Formats, JObject, JString, JValue}
 
-abstract class JsonSerializable[T<:AnyRef](serialization: JsonSerialization) {
+abstract class JsonSerializable[T<:AnyRef](serialization: JsonSerialization)(implicit mf: Manifest[T])
+  extends Serializable[T, JsonObject] {
   implicit protected val formats: Formats = serialization.formats
 
-  def toJson(t: AnyRef): JValue = Extraction.decompose(t)
+  def runtimeClass: Class[_] = mf.runtimeClass
 
-  def fromJson(value: JValue): T = value.extract(formats, Manifest.classType(objIdentifier()))
+  def toJson(t: AnyRef): JsonObject = {
+    new JsonObject(Extraction.decompose(t) merge JObject("@type" -> JString(objName)))
+  }
 
-  def objName(): String = objIdentifier().getName
+  def fromJson(value: JsonObject): T = {
+    value.deserializedObject(mf)
+  }
 
-  def objIdentifier(): Class[T]
+  def objName: String = mf.runtimeClass.getName
 }
 
 object JsonSerializable {
-  def apply[T<:AnyRef](clazz: Class[T])(serialization: JsonSerialization): JsonSerializable[T] = new JsonSerializable[T](serialization) {
-    override def objIdentifier(): Class[T] = clazz
+  def apply[T<:AnyRef](serialization: JsonSerialization)(implicit mf: Manifest[T]): JsonSerializable[T] = new JsonSerializable[T](serialization) {
   }
 
-  def apply[T<:AnyRef](name: String, clazz: Class[T])(serialization: JsonSerialization): JsonSerializable[T] = new JsonSerializable[T](serialization) {
-    override def objName(): String = name
-    override def objIdentifier(): Class[T] = clazz
+  def apply[T<:AnyRef](name: String, serialization: JsonSerialization)(implicit mf: Manifest[T]): JsonSerializable[T] = new JsonSerializable[T](serialization) {
+    override def objName: String = name
   }
 }

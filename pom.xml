@@ -28,7 +28,8 @@ under the License.
 		<module>cluster</module>
 		<module>executor</module>
 		<module>commons</module>
-	</modules>
+        <module>elastic-repository</module>
+    </modules>
 	<packaging>pom</packaging>
 
 	<name>Task Scheduler Executor</name>

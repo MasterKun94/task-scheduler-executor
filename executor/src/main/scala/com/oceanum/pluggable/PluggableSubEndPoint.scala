@@ -7,7 +7,7 @@ import akka.actor.{Actor, ActorSelection}
 import scala.concurrent.{ExecutionContext, ExecutionContextExecutor, Future}
 import scala.util.{Failure, Success}
 
-class PluggableSubEndPoint(actor: ActorSelection, executor: PluggableExecutor) extends Actor {
+class PluggableSubEndPoint(actor: ActorSelection, executor: ExecutionProxy) extends Actor {
   private implicit val ex: ExecutionContextExecutor = ExecutionContext.fromExecutor(Executors.newSingleThreadExecutor())
 
   override def preStart(): Unit = {
@@ -25,7 +25,7 @@ class PluggableSubEndPoint(actor: ActorSelection, executor: PluggableExecutor) e
   override def receive: Receive = {
     case CheckPluggableState => // send state
 
-    case Kill => // kill
+    case Kill => executor.kill()
 
     case msg: TaskFailed => actor ! msg
 
