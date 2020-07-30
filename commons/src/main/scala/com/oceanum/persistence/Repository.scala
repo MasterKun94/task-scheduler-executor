@@ -3,6 +3,7 @@ package com.oceanum.persistence
 import scala.concurrent.Future
 
 trait Repository[T<:AnyRef] {
+  def manifest: Manifest[T]
 
   def save(obj: T): Future[Unit]
 

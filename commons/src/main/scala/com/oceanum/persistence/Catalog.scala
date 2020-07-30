@@ -6,8 +6,8 @@ import scala.concurrent.Future
 object Catalog {
   private val repositories: TrieMap[Manifest[_], Repository[_]] = TrieMap()
 
-  def addRepository[T<:AnyRef](repository: Repository[T])(implicit mf: Manifest[T]): Unit = {
-    repositories += (mf -> repository)
+  def addRepository[T<:AnyRef](repository: Repository[T]): Unit = {
+    repositories += (repository.manifest -> repository)
   }
 
   def removeRepository[T<:AnyRef](implicit mf: Manifest[T]): Option[Repository[T]] = {

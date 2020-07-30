@@ -1,5 +1,6 @@
 package com.oceanum.persistence.es
 
+import com.oceanum.annotation.util.AnnotationUtil
 import com.oceanum.serialize.Serialization
 import org.apache.http.HttpHost
 import org.elasticsearch.action.ActionListener
@@ -60,6 +61,7 @@ object EsUtil {
 
 
   def main(args: Array[String]): Unit = {
+//    println(AnnotationUtil.jobWithAnnotation)
   }
 }
 

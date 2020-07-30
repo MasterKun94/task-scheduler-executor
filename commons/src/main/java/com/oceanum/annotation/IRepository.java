@@ -5,10 +5,13 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-@Target({ElementType.METHOD, ElementType.TYPE, ElementType.FIELD})
+/**
+ * @author chenmingkun
+ * @date 2020/7/31
+ */
+@Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
-public @interface Injection {
-    InjectType value();
-
+@Injection(InjectType.REPOSITORY)
+public @interface IRepository {
     int priority() default 1;
 }
