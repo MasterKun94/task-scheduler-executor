@@ -12,6 +12,4 @@ import java.lang.annotation.Target;
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
 @Injection(InjectType.REPOSITORY)
-public @interface IRepository {
-    int priority() default 1;
-}
+public @interface IRepository { }
