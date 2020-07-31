@@ -27,6 +27,11 @@
             <artifactId>commons</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>com.oceanum</groupId>
+            <artifactId>elastic-repository</artifactId>
+            <version>${project.version}</version>
+        </dependency>
 
         <dependency>
             <groupId>com.typesafe.akka</groupId>

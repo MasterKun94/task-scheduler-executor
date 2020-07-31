@@ -1,5 +1,6 @@
 package com.oceanum.persistence.es
 
+import com.oceanum.annotation.util.JobEnum
 import com.oceanum.serialize.Serialization
 import org.apache.http.HttpHost
 import org.elasticsearch.action.ActionListener
@@ -11,6 +12,7 @@ import org.elasticsearch.common.xcontent.XContentType
 import org.elasticsearch.search.builder.SearchSourceBuilder
 
 import scala.concurrent.{ExecutionContext, ExecutionContextExecutor, Future, Promise}
+import scala.util.{Failure, Success}
 
 class EsUtil {
 
@@ -60,6 +62,7 @@ object EsUtil {
 
 
   def main(args: Array[String]): Unit = {
+    println(JobEnum.jobWithAnnotation)
   }
 }
 
