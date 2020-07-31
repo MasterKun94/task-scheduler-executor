@@ -30,6 +30,10 @@ class EsGraphMetaRepository extends AbstractRepository[GraphMeta] {
             .map(option => (option.get.id -> option.get))
             .toMap
           )
+        f.map { map =>
+          EsMetaUtil.convertGraphMeta()
+
+        }
       }
     }
   }
