@@ -4,6 +4,7 @@ import com.oceanum.annotation.IRepository
 import com.oceanum.common.{GraphMeta, TaskMeta}
 import com.oceanum.persistence.{AbstractRepository, Catalog}
 
+import scala.collection.mutable
 import scala.concurrent.{ExecutionContext, Future}
 
 @IRepository
@@ -22,7 +23,13 @@ class EsGraphMetaRepository extends AbstractRepository[GraphMeta] {
     val future: Future[Option[EsGraphMeta]] = EsUtil.findById[EsGraphMeta]("graph-meta", id)
     future.map { _
       .map { esGraphMeta =>
-        esGraphMeta.tasks.map(taskRepo.findById)
+        val f: Future[Map[Int, TaskMeta]] = Future
+          .sequence(esGraphMeta.tasks.map(taskRepo.findById))
+          .map(_
+            .filter(_.nonEmpty)
+            .map(option => (option.get.id -> option.get))
+            .toMap
+          )
       }
     }
   }
