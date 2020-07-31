@@ -5,7 +5,7 @@ import scala.concurrent.Future
 trait Repository[T<:AnyRef] {
   def manifest: Manifest[T]
 
-  def save(obj: T): Future[Unit]
+  def save(id: String, obj: T): Future[Unit]
 
   def findById(id: String): Future[Option[T]]
 

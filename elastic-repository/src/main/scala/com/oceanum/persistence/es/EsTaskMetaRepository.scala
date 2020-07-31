@@ -9,8 +9,8 @@ import scala.concurrent.Future
 @IRepository
 class EsTaskMetaRepository extends AbstractRepository[TaskMeta] {
 
-  override def save(obj: TaskMeta): Future[Unit] = {
-    EsUtil.save("task-meta", s"${obj.name}-${obj.id}-${obj.reRunId}", obj)
+  override def save(id: String, obj: TaskMeta): Future[Unit] = {
+    EsUtil.save("task-meta", id, obj)
   }
 
   override def findById(id: String): Future[Option[TaskMeta]] = {

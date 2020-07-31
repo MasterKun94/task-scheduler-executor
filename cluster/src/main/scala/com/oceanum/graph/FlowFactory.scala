@@ -59,7 +59,7 @@ object FlowFactory {
   }
 
   def createDecision(expr: Array[String])(implicit builder: GraphBuilder): DecisionFlow = {
-    val meta2env = (meta: GraphMeta) => GraphContext(meta.env, graphMeta = meta.asInstanceOf[RichGraphMeta]).javaExprEnv
+    val meta2env = (meta: GraphMeta) => GraphContext(meta.env, graphMeta = RichGraphMeta(meta)).javaExprEnv
     val decide = expr
       .map(Evaluator.compile(_, cache = false))
       .map(expr => (meta: GraphMeta) => expr.execute(meta2env(meta)).asInstanceOf[Boolean])
@@ -77,7 +77,7 @@ object FlowFactory {
       case ReRunStrategy.RUN_ONLY_FAILED =>
         runIfNotSuccess(task)
       case ReRunStrategy.RUN_ALL_AFTER_FAILED =>
-        if (metadata.reRunFlag) {
+        if (metadata.isReRun) {
           run(task)
         } else {
           runIfNotSuccess(task)

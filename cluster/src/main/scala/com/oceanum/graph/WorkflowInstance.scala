@@ -3,7 +3,7 @@ package com.oceanum.graph
 import akka.Done
 import akka.stream.QueueOfferResult
 import akka.stream.scaladsl.SourceQueueWithComplete
-import com.oceanum.common.RichGraphMeta
+import com.oceanum.common.{GraphMeta, RichGraphMeta}
 
 import scala.concurrent.Future
 
@@ -16,7 +16,7 @@ class WorkflowInstance(protected val queue: SourceQueueWithComplete[RichGraphMet
 
     def fail(e: Throwable): Unit = queue.fail(e)
 
-    def offer(meta: RichGraphMeta): Future[QueueOfferResult] = queue.offer(meta)
+    def offer(meta: GraphMeta): Future[QueueOfferResult] = queue.offer(RichGraphMeta(meta))
 
     def listenComplete: Future[Done] = future
   }

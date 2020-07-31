@@ -14,7 +14,7 @@ class GraphMetaHandlerActor(graphMetaHandler: GraphMetaHandler) extends Actor {
     case OnStart(meta) =>
 //      println("on start" + map + ": " + meta)
       graphMetaHandler.onStart(meta)
-      map += (meta.id -> meta.asInstanceOf[RichGraphMeta])
+      map += (meta.id -> RichGraphMeta(meta))
 
     case OnRunning(meta, state) =>
 //      println("on running" + map + ": " + meta)

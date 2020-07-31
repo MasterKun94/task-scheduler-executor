@@ -19,19 +19,19 @@ trait GraphMetaHandler {
 object GraphMetaHandler {
   def default(): GraphMetaHandler = new GraphMetaHandler {
     override def onRunning(graphMeta: GraphMeta, taskState: State): Unit = {
-      val future: Future[Unit] = Catalog.save(graphMeta)
+//      val future: Future[Unit] = Catalog.save(graphMeta)
       println("state: " + taskState)
       println("graphMeta: " + graphMeta)
     }
 
     override def onComplete(graphMeta: GraphMeta): Unit = {
-      Catalog.save(graphMeta)
+//      Catalog.save(graphMeta)
       println("graphMeta complete: " + graphMeta.graphStatus)
       graphMeta.tasks.foreach(println)
     }
 
     override def onStart(graphMeta: GraphMeta): Unit = {
-      Catalog.save(graphMeta)
+//      Catalog.save(graphMeta)
       println("graphMeta start: " + graphMeta)
     }
 

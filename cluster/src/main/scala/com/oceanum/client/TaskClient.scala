@@ -88,13 +88,13 @@ object TaskClient {
 
   def apply(host: String, port: Int, seedNodes: String, configFile: String)(implicit timeout: Timeout = Timeout(20, TimeUnit.SECONDS)): TaskClient = {
     import Environment.Arg
-    Environment.loadArgs(Array(s"${Arg.CONF}=$configFile", s"${Arg.SEED_NODE}=$seedNodes", s"${Arg.HOST}=$host", s"${Arg.CLIENT_PORT}=$port"))
+    Environment.loadEnv(Array(s"${Arg.CONF}=$configFile", s"${Arg.SEED_NODE}=$seedNodes", s"${Arg.HOST}=$host", s"${Arg.CLIENT_PORT}=$port"))
     val system = ActorSystems.CLIENT_SYSTEM
     TaskClient.create(system, Environment.CLUSTER_NODE_SEEDS)
   }
 
   def create(system: ActorSystem, seedNodes: Seq[String])(implicit timeout: Timeout = Timeout(20, TimeUnit.SECONDS)): TaskClient = {
-    SystemInit.initAnnotatedClass()
+    Environment.initSystem()
     clients.getOrElse(system, {
       val executionContext = ExecutionContext.global
       val endpoint = {

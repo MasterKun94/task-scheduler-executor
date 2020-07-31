@@ -38,7 +38,7 @@ object Graph {
       println(graphMeta)
       graphMeta.tasks.foreach(println)
       if (!promise.isCompleted)
-        promise.success(graphMeta.asInstanceOf[RichGraphMeta])
+        promise.success(RichGraphMeta(graphMeta))
     }
 
     override def onStart(graphMeta: GraphMeta): Unit = {

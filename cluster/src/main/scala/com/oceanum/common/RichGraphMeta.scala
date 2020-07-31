@@ -6,7 +6,7 @@ import com.oceanum.annotation.ISerializationMessage
 import com.oceanum.exec.{FAILED, KILL, SUCCESS, State}
 
 @SerialVersionUID(1L)
-@ISerializationMessage("GRAPH_META")
+@ISerializationMessage("RICH_GRAPH_META")
 sealed class RichGraphMeta(id: Int = 0,
                     name: String = UUID.randomUUID().toString,
                     reRunId: Int = 0,
@@ -21,8 +21,7 @@ sealed class RichGraphMeta(id: Int = 0,
                     startTime: Date = null,
                     endTime: Date = null,
                     env: Map[String, Any] = Map.empty,
-                    val reRunFlag: Boolean = false
-                      )
+                    reRunFlag: Boolean = false)
   extends GraphMeta(
     id = id,
     name = name,
@@ -72,6 +71,8 @@ sealed class RichGraphMeta(id: Int = 0,
       reRunFlag = reRunFlag)
   }
 
+  def isReRun: Boolean = reRunFlag
+
   def addTask(taskMeta: RichTaskMeta, isComplete: Boolean = false): RichGraphMeta = {
     val graphStatus = taskMeta.state match {
       case TaskStatus.SUCCESS => GraphStatus.RUNNING
@@ -102,7 +103,7 @@ sealed class RichGraphMeta(id: Int = 0,
       }
       (key, task.asInstanceOf[RichTaskMeta])
     }}.toMap
-    val latest = Array(latestTask, meta.asInstanceOf[RichGraphMeta].latestTask)
+    val latest = Array(latestTask, RichGraphMeta(meta).latestTask)
       .map( t => {
         if (t == null) 0L -> -1
         else if (t.startTime == null) 0L -> t.id
@@ -126,5 +127,29 @@ sealed class RichGraphMeta(id: Int = 0,
   def addEnv(kv: (String, Any)): RichGraphMeta = this.copy(env = this.env + kv)
 
   def addEnv(right: Map[String, Any]): RichGraphMeta = this.copy(env = this.env ++ right)
+}
+
+object RichGraphMeta {
+  def apply(graphMeta: GraphMeta): RichGraphMeta = {
+    graphMeta match {
+      case meta: RichGraphMeta => meta
+      case _ => new RichGraphMeta(
+        id = graphMeta.id,
+        name = graphMeta.name,
+        reRunId = graphMeta.reRunId,
+        tasks = graphMeta.tasks.mapValues(RichTaskMeta.apply),
+        latestTaskId = graphMeta.latestTaskId,
+        fallbackStrategy = graphMeta.fallbackStrategy,
+        reRunStrategy = graphMeta.reRunStrategy,
+        graphStatus = graphMeta.graphStatus,
+        error = graphMeta.error,
+        createTime = graphMeta.createTime,
+        scheduleTime = graphMeta.scheduleTime,
+        startTime = graphMeta.startTime,
+        endTime = graphMeta.endTime,
+        env = graphMeta.env
+      )
+    }
+  }
 }
 

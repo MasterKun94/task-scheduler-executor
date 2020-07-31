@@ -12,7 +12,7 @@ object Test0 {
 
 
   def main(args: Array[String]): Unit = {
-    Environment.loadArgs(args)
+    Environment.loadEnv(args)
     SystemInit.initAnnotatedClass()
     SystemInit.serialization
   }

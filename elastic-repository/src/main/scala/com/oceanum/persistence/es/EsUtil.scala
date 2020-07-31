@@ -1,5 +1,6 @@
 package com.oceanum.persistence.es
 
+import com.oceanum.common.Environment
 import com.oceanum.serialize.Serialization
 import org.apache.http.HttpHost
 import org.elasticsearch.action.ActionListener
@@ -17,10 +18,14 @@ class EsUtil {
 }
 
 object EsUtil {
+  private val hostsKey = "es.hosts"
+  private lazy val hosts = Environment.getProperty(hostsKey, "localhost:9200")
+    .split(",")
+    .map(_.trim.split(":"))
+    .map(arr => if (arr.length == 1) new HttpHost(arr(0)) else new HttpHost(arr(0), arr(1).toInt))
+
   private lazy val client = new RestHighLevelClient(
-    RestClient.builder(
-      new HttpHost("192.168.10.132", 9200)
-    )
+    RestClient.builder(hosts:_*)
   )
   private lazy val serialization = Serialization.default
   private implicit val ex: ExecutionContextExecutor = ExecutionContext.global

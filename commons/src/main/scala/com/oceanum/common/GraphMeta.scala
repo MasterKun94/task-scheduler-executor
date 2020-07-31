@@ -2,7 +2,10 @@ package com.oceanum.common
 
 import java.util.Date
 
+import com.oceanum.annotation.ISerializationMessage
+
 @SerialVersionUID(1L)
+@ISerializationMessage("GRAPH_META")
 class GraphMeta(val id: Int,
                 val name: String,
                 val reRunId: Int,

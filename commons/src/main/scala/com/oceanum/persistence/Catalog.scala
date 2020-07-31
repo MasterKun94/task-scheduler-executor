@@ -18,7 +18,7 @@ object Catalog {
     repositories(mf).asInstanceOf[Repository[T]]
   }
 
-  def save[T<:AnyRef](obj: T)(implicit mf: Manifest[T]): Future[Unit] = getRepository(mf).save(obj)
+  def save[T<:AnyRef](id: String, obj: T)(implicit mf: Manifest[T]): Future[Unit] = getRepository(mf).save(id, obj)
 
   def findById[T<:AnyRef](idx: String)(implicit mf: Manifest[T]): Future[Option[T]] = getRepository(mf).findById(idx)
 

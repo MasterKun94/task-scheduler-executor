@@ -56,8 +56,6 @@ object Environment {
   lazy val CLUSTER_NODE_METRICS_PING_INTERVAL: FiniteDuration = fd"${getProperty(Key.CLUSTER_NODE_METRICS_PING_INTERVAL, "20s")}"
   lazy val CLUSTER_NODE_METRICS_PING_TIMEOUT: FiniteDuration = fd"${getProperty(Key.CLUSTER_NODE_METRICS_PING_TIMEOUT, "100s")}"
   lazy val CLUSTER_NODE_LOGGER: String = getProperty(Key.CLUSTER_NODE_LOGGER, logger)
-  lazy val CLUSTER_NODE_RUNNER_STDOUT_HANDLER_CLASS: Class[_] = Class.forName(getProperty(Key.CLUSTER_NODE_RUNNER_STDOUT_HANDLER_CLASS, "com.oceanum.exec.StdoutFileHandler"))
-  lazy val CLUSTER_NODE_RUNNER_STDERR_HANDLER_CLASS: Class[_] = Class.forName(getProperty(Key.CLUSTER_NODE_RUNNER_STDERR_HANDLER_CLASS, "com.oceanum.exec.StderrFileHandler"))
 
   lazy val CLIENT_NODE_SYSTEM_NAME: String = getProperty(Key.CLIENT_NODE_SYSTEM_NAME, "client")
   lazy val CLIENT_NODE_PORT: Int = getProperty(Key.CLIENT_NODE_PORT, "5551").toInt
@@ -103,24 +101,11 @@ object Environment {
   lazy val SCHEDULE_EXECUTION_CONTEXT: ExecutionContext = ExecutionContext.global
   lazy val AVIATOR_CACHE_ENABLED: Boolean = true
   lazy val AVIATOR_CACHE_CAPACITY: Int = 10000
-
   lazy val OS: OS = {
     val sys = scala.util.Properties
     if (sys.isWin) WINDOWS
     else if (sys.isMac) MAC
     else LINUX
-  }
-
-  private def findHadoopHome: String = {
-    val p1 = System.getProperty("HADOOP_HOME", System.getenv("HADOOP_HOME"))
-    if (p1 == null || p1.trim.isEmpty) {
-      Array("/opt/cloudera/parcels/CDH/lib/hadoop").find(s => new File(s).isDirectory) match {
-        case Some(s) => s
-        case None => throw new IllegalArgumentException("没有找到HADOOP_HOME")
-      }
-    } else {
-      p1
-    }
   }
 
   def print(): Unit = {
@@ -137,24 +122,13 @@ object Environment {
     PropertyParser.parse(properties.getProperty(key, orElse))(properties)
   }
 
-  private def getBasePath(path: String): String = new File(path).getAbsolutePath
-  private def fileServerBasePath(path: String): String = if (path.trim.isEmpty && OS != WINDOWS) "/" else path
-
-  private def load(files: Array[String]): Unit = {
-    for (file <- files) {
-      val path = parsePath(file)
-      println("load: " + path)
-      properties.load(new FileInputStream(new File(path)))
-    }
-  }
-
-  def load(key: String, value: String): Unit = {
-    properties.put(key, value)
+  def setProperty(key: String, value: String): Unit = {
+    properties.setProperty(key, value)
     System.setProperty("conf." + key, value)
   }
 
-  private val loaded: AtomicBoolean = new AtomicBoolean(false)
-  def loadArgs(args: Array[String]): Unit = {
+  private val loaded = new AtomicBoolean(false)
+  def loadEnv(args: Array[String]): Unit = {
     if (loaded.get()) {
       return
     }
@@ -163,7 +137,7 @@ object Environment {
       .map(arr => (arr(0), arr(1)))
       .toMap
 
-    load(Key.BASE_PATH, arg.getOrElse(Arg.BASE_PATH, scala.util.Properties.userDir))
+    setProperty(Key.BASE_PATH, arg.getOrElse(Arg.BASE_PATH, scala.util.Properties.userDir))
 
     val path = BASE_PATH/"conf"/"application.properties"
     val paths = arg.getOrElse(Arg.CONF, path)
@@ -182,17 +156,17 @@ object Environment {
       .toSeq
 
     if (topics.nonEmpty) {
-      load(Key.CLUSTER_NODE_TOPICS, topics.mkString(","))
+      setProperty(Key.CLUSTER_NODE_TOPICS, topics.mkString(","))
     }
 
     val host = arg.getOrElse(Arg.HOST, HOST)
-    load(Key.HOST, host)
+    setProperty(Key.HOST, host)
 
     val port = arg.getOrElse(Arg.PORT, CLUSTER_NODE_PORT.toString)
-    load(Key.CLUSTER_NODE_PORT, port)
+    setProperty(Key.CLUSTER_NODE_PORT, port)
 
     val clientPort = arg.getOrElse(Arg.CLIENT_PORT, CLIENT_NODE_PORT.toString)
-    load(Key.CLIENT_NODE_PORT, clientPort)
+    setProperty(Key.CLIENT_NODE_PORT, clientPort)
 
     val seedNodes: Seq[String] = arg
       .get(Arg.SEED_NODE)
@@ -205,12 +179,12 @@ object Environment {
       )
       .getOrElse(CLUSTER_NODE_SEEDS)
 
-    load(Key.CLUSTER_NODE_SEEDS, seedNodes.mkString(","))
-    load(Key.LOG_FILE, LOG_FILE)
-    load(Key.LOG_FILE_MAX_HISTORY, LOG_FILE_MAX_HISTORY)
-    load(Key.LOG_FILE_MAX_SIZE, LOG_FILE_MAX_SIZE)
-    load(Key.LOG_FILE_PATTERN, LOG_FILE_PATTERN)
-    load(Key.LOG_STDOUT_PATTERN, LOG_STDOUT_PATTERN)
+    setProperty(Key.CLUSTER_NODE_SEEDS, seedNodes.mkString(","))
+    setProperty(Key.LOG_FILE, LOG_FILE)
+    setProperty(Key.LOG_FILE_MAX_HISTORY, LOG_FILE_MAX_HISTORY)
+    setProperty(Key.LOG_FILE_MAX_SIZE, LOG_FILE_MAX_SIZE)
+    setProperty(Key.LOG_FILE_PATTERN, LOG_FILE_PATTERN)
+    setProperty(Key.LOG_STDOUT_PATTERN, LOG_STDOUT_PATTERN)
 
     val logback = new File(LOG_LOGBACK)
     if (logback.exists()) {
@@ -223,27 +197,7 @@ object Environment {
     loaded.set(true)
   }
 
-  private def logFile: String = {
-    LOG_FILE_DIR/LOG_FILE_NAME
-//    val file = LOG_FILE_NAME
-//    val name = if (file.endsWith(".log")) {
-//      file.substring(0, file.length - 4)
-//    } else file
-//    LOG_FILE_DIR/name
-  }
-
-  private def str2arr(string: String): Array[String] = {
-    string.split(",")
-      .map(_.trim)
-      .filter(_.nonEmpty)
-  }
-
-  private def parsePath(file: String): String = {
-      if (file.toFile.isAbsolute)
-        file.toAbsolute()
-      else
-        BASE_PATH / file
-  }
+  def initSystem(): Unit = SystemInit.initAnnotatedClass()
 
   object Arg {
     val BASE_PATH = "--base-path"
@@ -325,5 +279,43 @@ object Environment {
     val HADOOP_FS_URL = "hadoop.fs.url"
     val HADOOP_USER = "hadoop.user"
     val HADOOP_BUFFER_SIZE = "hadoop.buffer.size"
+  }
+
+  private def getBasePath(path: String): String = new File(path).getAbsolutePath
+  private def fileServerBasePath(path: String): String = if (path.trim.isEmpty && OS != WINDOWS) "/" else path
+
+  private def load(files: Array[String]): Unit = {
+    for (file <- files) {
+      val path = parsePath(file)
+      println("load: " + path)
+      properties.load(new FileInputStream(new File(path)))
+    }
+  }
+
+  private def findHadoopHome: String = {
+    val p1 = System.getProperty("HADOOP_HOME", System.getenv("HADOOP_HOME"))
+    if (p1 == null || p1.trim.isEmpty) {
+      Array("/opt/cloudera/parcels/CDH/lib/hadoop").find(s => new File(s).isDirectory) match {
+        case Some(s) => s
+        case None => throw new IllegalArgumentException("没有找到HADOOP_HOME")
+      }
+    } else {
+      p1
+    }
+  }
+
+  private def logFile: String = LOG_FILE_DIR/LOG_FILE_NAME
+
+  private def str2arr(string: String): Array[String] = {
+    string.split(",")
+      .map(_.trim)
+      .filter(_.nonEmpty)
+  }
+
+  private def parsePath(file: String): String = {
+    if (file.toFile.isAbsolute)
+      file.toAbsolute()
+    else
+      BASE_PATH / file
   }
 }

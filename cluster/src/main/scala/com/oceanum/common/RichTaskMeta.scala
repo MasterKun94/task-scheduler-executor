@@ -1,15 +1,13 @@
 package com.oceanum.common
 
-import java.io.File
 import java.util.Date
 
 import com.oceanum.annotation.ISerializationMessage
 import com.oceanum.client.Task
 import com.oceanum.common.Implicits.PathHelper
-import com.oceanum.exec.StdHandler
 
 @SerialVersionUID(1L)
-@ISerializationMessage("TASK_META")
+@ISerializationMessage("RICH_TASK_META")
 sealed class RichTaskMeta(id: Int = -1,
                    name: String = null,
                    reRunId: Int = 0,
@@ -99,4 +97,25 @@ sealed class RichTaskMeta(id: Int = -1,
   override def toString: String = s"TaskMeta(id=$id, taskType=$taskType, user=$user, createTime=$createTime, startTime=$startTime, endTime=$endTime, execDir=$execDir, message=$message, error=$error, state=$state, retryNum=$retryNum"
 }
 
-
+object RichTaskMeta {
+  def apply(taskMeta: TaskMeta): RichTaskMeta = {
+    taskMeta match {
+      case richTaskMeta: RichTaskMeta => richTaskMeta
+      case _ => new RichTaskMeta(
+        id = taskMeta.id,
+        name = taskMeta.name,
+        reRunId = taskMeta.reRunId,
+        taskType = taskMeta.taskType,
+        user = taskMeta.user,
+        createTime = taskMeta.createTime,
+        startTime = taskMeta.startTime,
+        endTime = taskMeta.endTime,
+        execDir = taskMeta.execDir,
+        message = taskMeta.message,
+        error = taskMeta.error,
+        state = taskMeta.state,
+        retryNum = taskMeta.retryNum
+      )
+    }
+  }
+}

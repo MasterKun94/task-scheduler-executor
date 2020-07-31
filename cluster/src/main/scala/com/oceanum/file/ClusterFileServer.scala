@@ -118,7 +118,7 @@ object ClusterFileServer extends Log(ActorSystems.FILE_SERVER_SYSTEM) {
   def start(): Future[Http.ServerBinding] = Http().bindAndHandle(route, host, port)
 
   def main(args: Array[String]): Unit = {
-    Environment.loadArgs(args)
+    Environment.loadEnv(args)
     Environment.print()
     start()
   }
