@@ -10,7 +10,7 @@ import com.oceanum.client.TaskClient
 import com.oceanum.common.{Environment, GraphMeta, GraphStatus, ReRunStrategy, RichGraphMeta}
 import com.oceanum.exec.State
 import com.oceanum.graph.StreamFlows.{EndFlow, StartFlow}
-import com.oceanum.serialize.DefaultJsonSerialization
+import com.oceanum.serialize.{DefaultJsonSerialization, Serialization}
 
 import scala.util.{Failure, Success}
 
@@ -101,6 +101,6 @@ object Workflow {
   }
 
   def fromJson(json: String)(implicit taskClient: TaskClient, graphMetaHandler: GraphMetaHandler): Workflow = {
-    fromGraph(DefaultJsonSerialization.deSerialize(json).asInstanceOf[GraphDefine])
+    fromGraph(Serialization.default.deSerialize(json).asInstanceOf[GraphDefine])
   }
 }

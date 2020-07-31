@@ -1,7 +1,5 @@
 package com.oceanum.persistence
 
-import com.oceanum.annotation.util.JobEnum
-
 import scala.collection.concurrent.TrieMap
 import scala.concurrent.Future
 

@@ -9,6 +9,4 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 public @interface Injection {
     InjectType value();
-
-    int priority() default 1;
 }

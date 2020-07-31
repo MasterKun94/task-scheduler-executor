@@ -4,11 +4,13 @@ import java.io.File
 
 import com.googlecode.aviator.runtime.`type`.{AviatorBoolean, AviatorLong, AviatorObject, AviatorRuntimeJavaType, AviatorString}
 import com.googlecode.aviator.runtime.function.{AbstractFunction, FunctionUtils}
+import com.oceanum.annotation.IFunction
 
 /**
  * @author chenmingkun
  * @date 2020/7/17
  */
+@IFunction
 class FSExistFunction extends AbstractFunction {
   override def getName: String = "fs.exist"
 
@@ -18,10 +20,12 @@ class FSExistFunction extends AbstractFunction {
   }
 }
 
+@IFunction
 class FSExistsFunction extends FSExistFunction {
   override def getName: String = "fs.exists"
 }
 
+@IFunction
 class FSIsDirFunction extends AbstractFunction {
   override def getName: String = "fs.isDir"
 
@@ -31,6 +35,7 @@ class FSIsDirFunction extends AbstractFunction {
   }
 }
 
+@IFunction
 class FSIsFileFunction extends AbstractFunction {
   override def getName: String = "fs.isFile"
 
@@ -40,6 +45,7 @@ class FSIsFileFunction extends AbstractFunction {
   }
 }
 
+@IFunction
 class FSCanExecuteFunction extends AbstractFunction {
   override def getName: String = "fs.canExecute"
 
@@ -49,6 +55,7 @@ class FSCanExecuteFunction extends AbstractFunction {
   }
 }
 
+@IFunction
 class FSCanReadFunction extends AbstractFunction {
   override def getName: String = "fs.canRead"
 
@@ -58,6 +65,7 @@ class FSCanReadFunction extends AbstractFunction {
   }
 }
 
+@IFunction
 class FSCanWriteFunction extends AbstractFunction {
   override def getName: String = "fs.canWrite"
 
@@ -67,6 +75,7 @@ class FSCanWriteFunction extends AbstractFunction {
   }
 }
 
+@IFunction
 class FSAbsoluteFunction extends AbstractFunction {
   override def getName: String = "fs.absolute"
 
@@ -76,6 +85,7 @@ class FSAbsoluteFunction extends AbstractFunction {
   }
 }
 
+@IFunction
 class FSNameFunction extends AbstractFunction {
   override def getName: String = "fs.name"
 
@@ -85,6 +95,7 @@ class FSNameFunction extends AbstractFunction {
   }
 }
 
+@IFunction
 class FSParentFunction extends AbstractFunction {
   override def getName: String = "fs.parent"
 
@@ -94,6 +105,7 @@ class FSParentFunction extends AbstractFunction {
   }
 }
 
+@IFunction
 class FSListFunction extends AbstractFunction {
   override def getName: String = "fs.list"
 
@@ -103,6 +115,7 @@ class FSListFunction extends AbstractFunction {
   }
 }
 
+@IFunction
 class FSListFilePathsFunction extends AbstractFunction {
   override def getName: String = "fs.listFiles"
 
@@ -112,6 +125,7 @@ class FSListFilePathsFunction extends AbstractFunction {
   }
 }
 
+@IFunction
 class FSSizeFunction extends AbstractFunction {
   override def getName: String = "fs.size"
 
@@ -121,6 +135,7 @@ class FSSizeFunction extends AbstractFunction {
   }
 }
 
+@IFunction
 class FSModifiedTimeFunction extends AbstractFunction {
   override def getName: String = "fs.modifiedTime"
 

@@ -1,5 +1,6 @@
 package com.oceanum.graph
 
+import com.oceanum.annotation.ISerializationMessage
 import com.oceanum.client.{Task, TaskClient}
 import com.oceanum.graph.StreamFlows._
 
@@ -23,6 +24,7 @@ object Operators {
     }
   }
 
+  @ISerializationMessage("TASK_OPERATOR")
   case class TaskOperator(task: Task, parallelism: Int = 1)
     extends Operator[TaskFlow] {
     override protected def createFlow(implicit builder: GraphBuilder, taskClient: TaskClient): TaskFlow = {
@@ -30,6 +32,7 @@ object Operators {
     }
   }
 
+  @ISerializationMessage("FORK_OPERATOR")
   case class Fork(parallelism: Int)
     extends Operator[ForkFlow]  {
     override protected def createFlow(implicit builder: GraphBuilder, taskClient: TaskClient): ForkFlow = {
@@ -45,6 +48,7 @@ object Operators {
     }
   }
 
+  @ISerializationMessage("JOIN_OPERATOR")
   case class Join(parallelism: Int)
     extends Operator[JoinFlow]  {
     override protected def createFlow(implicit builder: GraphBuilder, taskClient: TaskClient): JoinFlow = {
@@ -61,6 +65,7 @@ object Operators {
     }
   }
 
+  @ISerializationMessage("DECISION_OPERATOR")
   case class Decision(expr: Array[String])
     extends Operator[DecisionFlow]  {
     override protected def createFlow(implicit builder: GraphBuilder, taskClient: TaskClient): DecisionFlow = {
@@ -76,6 +81,7 @@ object Operators {
     }
   }
 
+  @ISerializationMessage("DECISION_OUT_OPERATOR")
   case class DecisionOut(decision: Decision, condition: Int)
     extends Operator[ConditionFlow]  {
     override protected def createFlow(implicit builder: GraphBuilder, taskClient: TaskClient): ConditionFlow = {
@@ -91,6 +97,7 @@ object Operators {
     }
   }
 
+  @ISerializationMessage("CONVERGE_OPERATOR")
   case class Converge(parallelism: Int)
     extends Operator[ConvergeFlow]  {
     override protected def createFlow(implicit builder: GraphBuilder, taskClient: TaskClient): ConvergeFlow = {
@@ -107,6 +114,7 @@ object Operators {
     }
   }
 
+  @ISerializationMessage("START_OPERATOR")
   case class Start()
     extends Operator[StartFlow]  {
     override protected def createFlow(implicit builder: GraphBuilder, taskClient: TaskClient): StartFlow = {
@@ -121,6 +129,7 @@ object Operators {
     }
   }
 
+  @ISerializationMessage("END_OPERATOR")
   case class End()
     extends Operator[EndFlow]  {
     override protected def createFlow(implicit builder: GraphBuilder, taskClient: TaskClient): EndFlow = {

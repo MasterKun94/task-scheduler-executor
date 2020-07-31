@@ -68,7 +68,6 @@ object Environment {
   lazy val GRAPH_DEFAULT_EXECUTOR: ExecutionContext = ExecutionContext.global
 
   lazy val FILE_CLIENT_DEFAULT_SCHEME: String = getProperty(Key.FILE_CLIENT_DEFAULT_SCHEME, "cluster")
-  lazy val FILE_CLIENT_CLASSES: Set[Class[_]] = str2arr(getProperty(Key.FILE_CLIENT_CLASSES, "com.oceanum.file.ClusterFileClient")).toSet.map(Class.forName)
   lazy val FILE_SERVER_CONTEXT_PATH: String = getProperty(Key.FILE_SERVER_CONTEXT_PATH, "file")
   lazy val FILE_SERVER_PORT: Int = getProperty(Key.FILE_SERVER_PORT, "7011").toInt
   lazy val FILE_SERVER_SYSTEM_NAME: String = getProperty(Key.FILE_SERVER_SYSTEM_NAME, "file-server")
@@ -128,7 +127,6 @@ object Environment {
     import scala.collection.JavaConversions.asScalaSet
     println("config:")
     properties.keySet().foreach(k => println(s"\t$k -> ${getProperty(k.toString)}"))
-    FILE_CLIENT_CLASSES
   }
 
   def getProperty(key: String): String = {

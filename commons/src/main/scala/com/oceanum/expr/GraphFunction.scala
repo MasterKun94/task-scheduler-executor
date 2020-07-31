@@ -4,12 +4,14 @@ import java.util.Date
 
 import com.googlecode.aviator.runtime.`type`._
 import com.googlecode.aviator.runtime.function.{AbstractFunction, FunctionUtils}
+import com.oceanum.annotation.IFunction
 import com.oceanum.common.{GraphContext, GraphMeta}
 
 /**
  * @author chenmingkun
  * @date 2020/7/18
  */
+@IFunction
 class GraphIdFunction extends AbstractFunction {
   override def getName: String = "graph.id"
 
@@ -18,6 +20,16 @@ class GraphIdFunction extends AbstractFunction {
   }
 }
 
+@IFunction
+class GraphReRunIdFunction extends AbstractFunction {
+  override def getName: String = "graph.reRunId"
+
+  override def call(env: JavaMap[String, AnyRef]): AviatorObject = {
+    AviatorLong.valueOf(env.get(GraphContext.graphKey).asInstanceOf[GraphMeta].reRunId)
+  }
+}
+
+@IFunction
 class GraphNameFunction extends AbstractFunction {
   override def getName: String = "graph.name"
 
@@ -26,6 +38,7 @@ class GraphNameFunction extends AbstractFunction {
   }
 }
 
+@IFunction
 class GraphCreateTimeFunction extends AbstractFunction {
   override def getName: String = "graph.createTime"
 
@@ -35,6 +48,7 @@ class GraphCreateTimeFunction extends AbstractFunction {
   }
 }
 
+@IFunction
 class GraphScheduleTimeFunction extends AbstractFunction {
   override def getName: String = "graph.scheduleTime"
 
@@ -44,6 +58,7 @@ class GraphScheduleTimeFunction extends AbstractFunction {
   }
 }
 
+@IFunction
 class GraphStartTimeFunction extends AbstractFunction {
   override def getName: String = "graph.startTime"
 
@@ -53,6 +68,7 @@ class GraphStartTimeFunction extends AbstractFunction {
   }
 }
 
+@IFunction
 class GraphFindTaskFunction extends AbstractFunction {
   override def getName: String = "graph.findTask"
 
@@ -66,6 +82,7 @@ class GraphFindTaskFunction extends AbstractFunction {
   }
 }
 
+@IFunction
 class GraphLatestTaskStateFunction extends AbstractFunction {
   override def getName: String = "graph.latestTask"
 

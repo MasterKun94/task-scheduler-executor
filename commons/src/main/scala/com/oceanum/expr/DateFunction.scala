@@ -4,6 +4,7 @@ import java.util.Date
 
 import com.googlecode.aviator.runtime.`type`.{AviatorObject, AviatorRuntimeJavaType, AviatorType}
 import com.googlecode.aviator.runtime.function.{AbstractFunction, FunctionUtils}
+import com.oceanum.annotation.IFunction
 import com.oceanum.common.DateUtil
 
 import scala.concurrent.duration.Duration
@@ -12,6 +13,7 @@ import scala.concurrent.duration.Duration
  * @author chenmingkun
  * @date 2020/7/17
  */
+@IFunction
 class DateFunction extends AbstractFunction {
   override def getName: String = "date"
 
@@ -21,6 +23,7 @@ class DateFunction extends AbstractFunction {
   }
 }
 
+@IFunction
 class DateFormatFunction extends AbstractFunction {
   override def getName: String = "date.format"
 
@@ -68,6 +71,7 @@ class DateFormatFunction extends AbstractFunction {
   }
 }
 
+@IFunction
 class DateParseFunction extends AbstractFunction {
   override def getName: String = "date.parse"
 
@@ -78,6 +82,7 @@ class DateParseFunction extends AbstractFunction {
   }
 }
 
+@IFunction
 class DateShiftFunction extends AbstractFunction {
   override def getName: String = "date.shift"
 
@@ -87,6 +92,7 @@ class DateShiftFunction extends AbstractFunction {
   }
 }
 
+@IFunction
 class DateNowFunction extends AbstractFunction {
   override def getName: String = "date.now"
 

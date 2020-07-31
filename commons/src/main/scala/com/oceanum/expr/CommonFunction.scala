@@ -2,11 +2,13 @@ package com.oceanum.expr
 
 import com.googlecode.aviator.runtime.`type`.AviatorObject
 import com.googlecode.aviator.runtime.function.AbstractFunction
+import com.oceanum.annotation.IFunction
 
 /**
  * @author chenmingkun
  * @date 2020/7/26
  */
+@IFunction
 class OptionFunction extends AbstractFunction {
   override def getName: String = "option"
 
@@ -16,6 +18,7 @@ class OptionFunction extends AbstractFunction {
   }
 }
 
+@IFunction
 class OptionalFunction extends AbstractFunction {
   override def getName: String = "optional"
 }

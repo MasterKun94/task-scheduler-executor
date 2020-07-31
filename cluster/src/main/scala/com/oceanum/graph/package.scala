@@ -2,6 +2,7 @@ package com.oceanum
 
 import akka.Done
 import akka.stream.scaladsl.{GraphDSL, RunnableGraph, SourceQueueWithComplete}
+import com.oceanum.annotation.ISerializationMessage
 import com.oceanum.common.{GraphMeta, RichGraphMeta}
 import com.oceanum.exec.State
 import com.oceanum.graph.Operators.Operator
@@ -19,5 +20,6 @@ package object graph {
   case class OnRunning(graphMeta: GraphMeta, taskState: State)
   case class OnComplete(graphMeta: GraphMeta)
 
+  @ISerializationMessage("GRAPH_DEFINE")
   case class GraphDefine(nodes: Map[String, Operator[_<:StreamFlow]], edges: Map[String, Array[String]], env: Map[String, Any])
 }

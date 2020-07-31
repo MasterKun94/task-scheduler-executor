@@ -11,9 +11,9 @@ import java.lang.annotation.Target;
  * @author chenmingkun
  * @date 2020/7/31
  */
-@Target(ElementType.TYPE)
+@Target({ElementType.METHOD, ElementType.TYPE, ElementType.FIELD})
 @Retention(RetentionPolicy.RUNTIME)
 @Injection(InjectType.OPERATOR_FUNCTION)
-public @interface OperatorFunction {
-    OperatorType operatorType();
+public @interface IOpFunction {
+    OperatorType value();
 }

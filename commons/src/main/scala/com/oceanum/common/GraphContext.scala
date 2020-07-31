@@ -1,11 +1,13 @@
 package com.oceanum.common
 
 
+import com.oceanum.annotation.ISerializationMessage
 import com.oceanum.expr.{ExprParser, JavaMap}
 
 import scala.collection.JavaConverters._
 
 @SerialVersionUID(1L)
+@ISerializationMessage("GRAPH_CONTEXT")
 case class GraphContext(env: Map[String, Any], graphMeta: GraphMeta = null, taskMeta: TaskMeta = null) {
 
   def exprEnv: Map[String, Any] = graphMeta.env ++ env + (GraphContext.graphKey -> graphMeta) + (GraphContext.taskKey -> taskMeta)

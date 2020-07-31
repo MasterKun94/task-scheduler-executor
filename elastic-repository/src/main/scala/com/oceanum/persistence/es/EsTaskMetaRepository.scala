@@ -1,12 +1,12 @@
 package com.oceanum.persistence.es
 
-import com.oceanum.annotation.{InjectType, Injection}
+import com.oceanum.annotation.IRepository
 import com.oceanum.common.TaskMeta
 import com.oceanum.persistence.AbstractRepository
 
 import scala.concurrent.Future
 
-@Injection(InjectType.REPOSITORY)
+@IRepository
 class EsTaskMetaRepository extends AbstractRepository[TaskMeta] {
 
   override def save(obj: TaskMeta): Future[Unit] = {

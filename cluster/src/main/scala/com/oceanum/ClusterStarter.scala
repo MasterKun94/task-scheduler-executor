@@ -3,11 +3,11 @@ package com.oceanum
 import akka.actor.Props
 import akka.cluster.client.ClusterClientReceptionist
 import com.oceanum.cluster.{ClusterNode, ExecutionEndpoint, ReceptionistListener}
-import com.oceanum.common.{ActorSystems, Environment}
+import com.oceanum.common.{ActorSystems, Environment, SystemInit}
 import com.oceanum.expr.Evaluator
 import com.oceanum.file.ClusterFileServer
 import com.oceanum.metrics.MetricsListener
-import com.oceanum.serialize.{DefaultJsonSerialization, SerializeUtil}
+import com.oceanum.serialize.DefaultJsonSerialization
 /**
  * @author chenmingkun
  * @date 2020/5/28
@@ -27,8 +27,6 @@ object ClusterStarter {
     val receptionist = ClusterClientReceptionist(system).underlying
     system.actorOf(Props(classOf[ReceptionistListener], receptionist),"event-listener")
     MetricsListener.start()
-    ClusterFileServer.start()
-    SerializeUtil.init()
-    Evaluator.init()
+    SystemInit.initAnnotatedClass()
   }
 }

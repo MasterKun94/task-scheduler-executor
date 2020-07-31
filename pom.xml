@@ -29,6 +29,7 @@ under the License.
 		<module>executor</module>
 		<module>commons</module>
         <module>elastic-repository</module>
+        <module>hdfs-file-system</module>
     </modules>
 	<packaging>pom</packaging>
 

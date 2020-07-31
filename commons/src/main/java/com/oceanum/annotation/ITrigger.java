@@ -5,12 +5,8 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-/**
- * @author chenmingkun
- * @date 2020/7/31
- */
-@Target(ElementType.TYPE)
+@Target({ElementType.METHOD, ElementType.TYPE, ElementType.FIELD})
 @Retention(RetentionPolicy.RUNTIME)
-@Injection(InjectType.CONFIGURATION)
-public @interface Configuration {
+@Injection(InjectType.TRIGGER)
+public @interface ITrigger {
 }

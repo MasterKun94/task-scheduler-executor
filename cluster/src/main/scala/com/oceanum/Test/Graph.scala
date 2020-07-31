@@ -7,7 +7,7 @@ import com.oceanum.common.{GraphContext, GraphMeta, ReRunStrategy, RichGraphMeta
 import com.oceanum.exec.State
 import com.oceanum.graph.Operators._
 import com.oceanum.graph.{GraphDefine, GraphMetaHandler, Workflow}
-import com.oceanum.serialize.DefaultJsonSerialization
+import com.oceanum.serialize.{DefaultJsonSerialization, Serialization}
 
 import scala.concurrent.Promise
 
@@ -52,7 +52,7 @@ object Graph {
 
     val instance = Workflow.create { implicit graph => import graph.flowFactory._
 
-      val python1 = createFlow(Test.task().copy(rawEnv = GraphContext(Map("file_name" -> "${(graph.id() % 2 == 0) ? 'python-err' : 'python'}"))))
+      val python1 = createFlow(Test.task().copy(rawEnv = GraphContext(Map("file_name" -> "${(graph.reRunId() % 2 == 0) ? 'python-err' : 'python'}"))))
       val python2 = createFlow(Test.task())
       val python3 = createFlow(Test.task())
       val python4 = createFlow(Test.task())
@@ -78,9 +78,9 @@ object Graph {
       Thread.sleep(3000)
 
       val ctx = new GraphContext(Map.empty).copy(graphMeta = meta.get)
-      val str = DefaultJsonSerialization.serialize(ctx)
+      val str = Serialization.default.serialize(ctx)
       println(str)
-      val c = DefaultJsonSerialization.deSerialize(str).asInstanceOf[GraphContext]
+      val c = Serialization.default.deSerialize(str).asInstanceOf[GraphContext]
       println(c)
       println(c.graphMeta)
 

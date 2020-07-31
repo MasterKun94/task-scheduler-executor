@@ -3,11 +3,13 @@ package com.oceanum.common
 import java.io.File
 import java.util.Date
 
+import com.oceanum.annotation.ISerializationMessage
 import com.oceanum.client.Task
 import com.oceanum.common.Implicits.PathHelper
 import com.oceanum.exec.StdHandler
 
 @SerialVersionUID(1L)
+@ISerializationMessage("TASK_META")
 sealed class RichTaskMeta(id: Int = -1,
                    name: String = null,
                    reRunId: Int = 0,
@@ -68,29 +70,6 @@ sealed class RichTaskMeta(id: Int = -1,
 
   def incRetry(): RichTaskMeta = this.copy(retryNum = this.retryNum + 1)
 
-  def stdoutPath: String = outputPath/s"$id-stdout.out"
-
-  def stderrPath: String = outputPath/s"$id-stderr.out"
-
-  private lazy val outputPath: String = {
-    //创建文件路径//创建文件路径
-    val file: File = (execDir/"out").toFile
-    //判断文件父目录是否已经存在,不存在则创建
-    if (!file.exists)
-      file.mkdirs
-    file.getAbsolutePath
-  }
-
-  def stdoutHandler: StdHandler = Environment.CLUSTER_NODE_RUNNER_STDOUT_HANDLER_CLASS
-    .getConstructor(this.getClass)
-    .newInstance(this)
-    .asInstanceOf[StdHandler]
-
-  def stderrHandler: StdHandler = Environment.CLUSTER_NODE_RUNNER_STDERR_HANDLER_CLASS
-    .getConstructor(this.getClass)
-    .newInstance(this)
-    .asInstanceOf[StdHandler]
-
   def withTask(task: Task): RichTaskMeta = {
     val graphMeta = task.rawEnv.graphMeta
     val dateFormat = DateUtil.format("yyyyMMdd").format(graphMeta.startTime)
@@ -99,7 +78,7 @@ sealed class RichTaskMeta(id: Int = -1,
       name = task.name,
       taskType = task.prop.taskType,
       user = task.user,
-      execDir = Environment.EXEC_WORK_DIR/dateFormat/graphMeta.name/graphMeta.id/task.id
+      execDir = Environment.EXEC_WORK_DIR/dateFormat/graphMeta.name/graphMeta.id/graphMeta.reRunId/task.id
     )
   }
 

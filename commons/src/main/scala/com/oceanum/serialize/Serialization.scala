@@ -1,8 +1,7 @@
 package com.oceanum.serialize
 
-import com.oceanum.common.{FallbackStrategy, GraphStatus, ReRunStrategy, TaskStatus}
-import org.json4s.{DefaultFormats, Formats}
-import org.json4s.ext.EnumNameSerializer
+import com.oceanum.annotation.ISerialization
+import com.oceanum.common.SystemInit
 
 trait Serialization[W<:WrappedObject] {
   type DefSerializable[T<:AnyRef] = Serializable[T, W]
@@ -10,6 +9,7 @@ trait Serialization[W<:WrappedObject] {
   def register[T<:AnyRef](name: String)(implicit mf: Manifest[T]): DefSerializable[T]
   def register[T<:AnyRef](implicit mf: Manifest[T]): DefSerializable[T]
   def register[T<:AnyRef](clazz: Class[T]): DefSerializable[T] = register(Manifest.classType[T](clazz))
+  def register[T<:AnyRef](name: String, clazz: Class[T]): DefSerializable[T] = register(name)(Manifest.classType[T](clazz))
   def unRegister(name: String): Unit
   def unRegister[T<:AnyRef](implicit mf: Manifest[T]): Unit
   def unRegister[T<:AnyRef](clazz: Class[T]): Unit = unRegister(Manifest.classType[T](clazz))
@@ -19,13 +19,10 @@ trait Serialization[W<:WrappedObject] {
 }
 
 object Serialization {
-  implicit private val formats: Formats = DefaultFormats +
-  new EnumNameSerializer(FallbackStrategy) +
-    new EnumNameSerializer(ReRunStrategy) +
-    new EnumNameSerializer(GraphStatus) +
-    new EnumNameSerializer(TaskStatus) +
-    new ThrowableSerializer() +
-    new StackTraceElementSerializer()
-
-  lazy val default: Serialization[_] = new JsonSerialization()
+  lazy val default: Serialization[_] = SystemInit.serialization
 }
+
+import JsonSerialization.formats
+
+@ISerialization(priority = -1)
+class DefaultSerialization extends JsonSerialization()

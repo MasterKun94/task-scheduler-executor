@@ -32,6 +32,11 @@
             <artifactId>elastic-repository</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>com.oceanum</groupId>
+            <artifactId>hdfs-file-system</artifactId>
+            <version>${project.version}</version>
+        </dependency>
 
         <dependency>
             <groupId>com.typesafe.akka</groupId>

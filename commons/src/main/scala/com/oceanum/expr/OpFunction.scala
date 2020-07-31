@@ -6,6 +6,7 @@ import java.util.concurrent.TimeUnit
 import com.googlecode.aviator.lexer.token.OperatorType
 import com.googlecode.aviator.runtime.`type`.{AviatorBoolean, AviatorDouble, AviatorObject, AviatorRuntimeJavaType, AviatorType}
 import com.googlecode.aviator.runtime.function.{AbstractFunction, FunctionUtils}
+import com.oceanum.annotation.IOpFunction
 
 import scala.concurrent.duration.Duration
 
@@ -13,6 +14,7 @@ import scala.concurrent.duration.Duration
  * @author chenmingkun
  * @date 2020/7/19
  */
+@IOpFunction(OperatorType.ADD)
 class OpAddFunction extends AbstractFunction {
   override def getName: String = OperatorType.ADD.getToken
 
@@ -44,6 +46,7 @@ class OpAddFunction extends AbstractFunction {
   }
 }
 
+@IOpFunction(OperatorType.SUB)
 class OpSubFunction extends AbstractFunction {
   override def getName: String = OperatorType.SUB.getToken
 
@@ -75,6 +78,7 @@ class OpSubFunction extends AbstractFunction {
   }
 }
 
+@IOpFunction(OperatorType.NEG)
 class OpNegFunction extends AbstractFunction {
   override def getName: String = OperatorType.NEG.getToken
 
@@ -91,6 +95,7 @@ class OpNegFunction extends AbstractFunction {
   }
 }
 
+@IOpFunction(OperatorType.DIV)
 class OpDivFunction extends AbstractFunction {
   override def getName: String = OperatorType.DIV.getToken
 
@@ -116,6 +121,7 @@ class OpDivFunction extends AbstractFunction {
   }
 }
 
+@IOpFunction(OperatorType.MULT)
 class OpMulFunction extends AbstractFunction {
   override def getName: String = OperatorType.MULT.getToken
 
@@ -135,6 +141,7 @@ class OpMulFunction extends AbstractFunction {
   }
 }
 
+@IOpFunction(OperatorType.GT)
 class OpGtFunction extends AbstractFunction {
   override def getName: String = OperatorType.GT.getToken
 
@@ -170,6 +177,7 @@ class OpGtFunction extends AbstractFunction {
   }
 }
 
+@IOpFunction(OperatorType.GE)
 class OpGeFunction extends AbstractFunction {
   override def getName: String = OperatorType.GE.getToken
 
@@ -205,6 +213,7 @@ class OpGeFunction extends AbstractFunction {
   }
 }
 
+@IOpFunction(OperatorType.LT)
 class OpLtFunction extends AbstractFunction {
   override def getName: String = OperatorType.LT.getToken
 
@@ -240,6 +249,7 @@ class OpLtFunction extends AbstractFunction {
   }
 }
 
+@IOpFunction(OperatorType.LE)
 class OpLeFunction extends AbstractFunction {
   override def getName: String = OperatorType.LE.getToken
 
@@ -275,6 +285,7 @@ class OpLeFunction extends AbstractFunction {
   }
 }
 
+@IOpFunction(OperatorType.EQ)
 class OpEqFunction extends AbstractFunction {
   override def getName: String = OperatorType.EQ.getToken
 
@@ -310,6 +321,7 @@ class OpEqFunction extends AbstractFunction {
   }
 }
 
+@IOpFunction(OperatorType.NEQ)
 class OpNEqFunction extends AbstractFunction {
   override def getName: String = OperatorType.NEQ.getToken
 

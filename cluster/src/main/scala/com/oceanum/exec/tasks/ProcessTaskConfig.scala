@@ -6,7 +6,7 @@ import com.oceanum.common.{Environment, GraphContext, TaskMeta}
 import com.oceanum.common.Implicits.PathHelper
 import com.oceanum.exec.{StdHandler, TaskConfig}
 import com.oceanum.expr.JavaMap
-import com.oceanum.file.FileClient
+import com.oceanum.file.FileSystem
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -35,7 +35,7 @@ abstract class ProcessTaskConfig(val propCmd: Array[String] = Array.empty,
         .map(src => (src, taskMeta.execDir/new File(src).getName))
         .toMap
       val newConfig = taskConfig.convert(fileMap)
-      fileMap.map(kv => FileClient.download(kv._1, kv._2))
+      fileMap.map(kv => FileSystem.download(kv._1, kv._2))
         .reduce((f1, f2) => f1.flatMap(_ => f2))
         .map(_ => newConfig)
     } flatMap {

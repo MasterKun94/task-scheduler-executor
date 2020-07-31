@@ -4,23 +4,28 @@ import java.net.URI
 
 import com.oceanum.common.Environment
 
+import scala.collection.concurrent.TrieMap
 import scala.concurrent.{ExecutionContext, Future}
 
 /**
  * @author chenmingkun
  * @date 2020/7/4
  */
-abstract class FileClient(val scheme: String) {
+abstract class FileSystem(val scheme: String) {
   def download(srcPath: String, destPath: String)(implicit ec: ExecutionContext): Future[Unit]
 
   def upload(srcPath: String, destPath: String)(implicit ec: ExecutionContext): Future[Unit]
 }
 
-object FileClient extends FileClient("root") {
-  lazy val innerClients: Map[String, FileClient] = Environment.FILE_CLIENT_CLASSES
-    .map(_.getConstructor().newInstance().asInstanceOf[FileClient])
-    .map(c => (c.scheme, c))
-    .toMap
+object FileSystem extends FileSystem("root") {
+  lazy val innerClients: TrieMap[String, FileSystem] = TrieMap()
+//    Environment.FILE_CLIENT_CLASSES
+//    .map(_.getConstructor().newInstance().asInstanceOf[FileClient])
+//    .map(c => (c.scheme, c))
+//    .toMap
+  def add(fileClient: FileSystem): Unit = {
+  innerClients += (fileClient.scheme -> fileClient)
+}
 
   override def download(srcPath: String, destPath: String)(implicit ec: ExecutionContext): Future[Unit] = {
     val uri = new URI(srcPath)

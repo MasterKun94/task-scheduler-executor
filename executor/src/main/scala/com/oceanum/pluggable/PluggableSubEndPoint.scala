@@ -7,7 +7,7 @@ import akka.actor.{Actor, ActorSelection}
 import scala.concurrent.{ExecutionContext, ExecutionContextExecutor, Future}
 import scala.util.{Failure, Success}
 
-class PluggableSubEndPoint(actor: ActorSelection, executor: ExecutionProxy) extends Actor {
+class PluggableSubEndPoint(actor: ActorSelection, executor: Executor) extends Actor {
   private implicit val ex: ExecutionContextExecutor = ExecutionContext.fromExecutor(Executors.newSingleThreadExecutor())
 
   override def preStart(): Unit = {

@@ -4,6 +4,7 @@ import java.util.concurrent.TimeUnit
 
 import com.googlecode.aviator.runtime.`type`.{AviatorObject, AviatorRuntimeJavaType, AviatorType}
 import com.googlecode.aviator.runtime.function.{AbstractFunction, FunctionUtils}
+import com.oceanum.annotation.IFunction
 
 import scala.concurrent.duration.Duration
 
@@ -11,6 +12,7 @@ import scala.concurrent.duration.Duration
  * @author chenmingkun
  * @date 2020/7/17
  */
+@IFunction
 class DurationFunction extends AbstractFunction {
   override def getName: String = "duration"
 
@@ -20,6 +22,7 @@ class DurationFunction extends AbstractFunction {
   }
 }
 
+@IFunction
 class DurationMillisFunction extends AbstractFunction {
   override def getName: String = "duration.millis"
 
@@ -37,10 +40,12 @@ class DurationMillisFunction extends AbstractFunction {
   }
 }
 
+@IFunction
 class DurationMilliFunction extends DurationMillisFunction {
   override def getName: String = "duration.milli"
 }
 
+@IFunction
 class DurationSecondsFunction extends AbstractFunction {
   override def getName: String = "duration.seconds"
 
@@ -58,10 +63,12 @@ class DurationSecondsFunction extends AbstractFunction {
   }
 }
 
+@IFunction
 class DurationSecondFunction extends DurationSecondsFunction {
   override def getName: String = "duration.second"
 }
 
+@IFunction
 class DurationMinutesFunction extends AbstractFunction {
   override def getName: String = "duration.minutes"
 
@@ -79,10 +86,12 @@ class DurationMinutesFunction extends AbstractFunction {
   }
 }
 
+@IFunction
 class DurationMinuteFunction extends DurationMinutesFunction {
   override def getName: String = "duration.minute"
 }
 
+@IFunction
 class DurationHoursFunction extends AbstractFunction {
   override def getName: String = "duration.hours"
 
@@ -100,10 +109,12 @@ class DurationHoursFunction extends AbstractFunction {
   }
 }
 
+@IFunction
 class DurationHourFunction extends DurationHoursFunction {
   override def getName: String = "duration.hour"
 }
 
+@IFunction
 class DurationDaysFunction extends AbstractFunction {
   override def getName: String = "duration.days"
 
@@ -121,6 +132,7 @@ class DurationDaysFunction extends AbstractFunction {
   }
 }
 
+@IFunction
 class DurationDayFunction extends DurationDaysFunction {
   override def getName: String = "duration.day"
 }

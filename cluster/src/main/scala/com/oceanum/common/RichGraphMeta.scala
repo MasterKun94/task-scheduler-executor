@@ -2,9 +2,11 @@ package com.oceanum.common
 
 import java.util.{Date, UUID}
 
+import com.oceanum.annotation.ISerializationMessage
 import com.oceanum.exec.{FAILED, KILL, SUCCESS, State}
 
 @SerialVersionUID(1L)
+@ISerializationMessage("GRAPH_META")
 sealed class RichGraphMeta(id: Int = 0,
                     name: String = UUID.randomUUID().toString,
                     reRunId: Int = 0,

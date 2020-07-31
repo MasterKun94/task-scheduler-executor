@@ -4,12 +4,14 @@ import java.util.Date
 
 import com.googlecode.aviator.runtime.`type`.{AviatorLong, AviatorNil, AviatorObject, AviatorRuntimeJavaType, AviatorString}
 import com.googlecode.aviator.runtime.function.{AbstractFunction, FunctionUtils}
+import com.oceanum.annotation.IFunction
 import com.oceanum.common.{GraphContext, TaskMeta}
 
 /**
  * @author chenmingkun
  * @date 2020/7/18
  */
+@IFunction
 class TaskIdFunction extends AbstractFunction {
   override def getName: String = "task.id"
 
@@ -26,6 +28,24 @@ class TaskIdFunction extends AbstractFunction {
   }
 }
 
+@IFunction
+class TaskReRunIdFunction extends AbstractFunction {
+  override def getName: String = "task.reRunId"
+
+  override def call(env: JavaMap[String, AnyRef]): AviatorObject = {
+    AviatorLong.valueOf(env.get(GraphContext.taskKey).asInstanceOf[TaskMeta].reRunId)
+  }
+
+  override def call(env: JavaMap[String, AnyRef], task: AviatorObject): AviatorObject = {
+    if (task.isNull(env))
+      AviatorNil.NIL
+    else {
+      AviatorLong.valueOf(FunctionUtils.getJavaObject(task, env).asInstanceOf[TaskMeta].reRunId)
+    }
+  }
+}
+
+@IFunction
 class TaskNameFunction extends AbstractFunction {
   override def getName: String = "task.name"
 
@@ -42,6 +62,7 @@ class TaskNameFunction extends AbstractFunction {
   }
 }
 
+@IFunction
 class TaskCreateTimeFunction extends AbstractFunction {
   override def getName: String = "task.createTime"
 
@@ -59,6 +80,7 @@ class TaskCreateTimeFunction extends AbstractFunction {
   }
 }
 
+@IFunction
 class TaskStartTimeFunction extends AbstractFunction {
   override def getName: String = "task.startTime"
 
@@ -77,6 +99,7 @@ class TaskStartTimeFunction extends AbstractFunction {
 }
 
 
+@IFunction
 class TaskEndTimeFunction extends AbstractFunction {
   override def getName: String = "task.endTime"
 
@@ -89,6 +112,7 @@ class TaskEndTimeFunction extends AbstractFunction {
   }
 }
 
+@IFunction
 class TaskUserFunction extends AbstractFunction {
   override def getName: String = "task.user"
 
@@ -105,6 +129,7 @@ class TaskUserFunction extends AbstractFunction {
   }
 }
 
+@IFunction
 class TaskTypeFunction extends AbstractFunction {
   override def getName: String = "task.type"
 
@@ -121,6 +146,7 @@ class TaskTypeFunction extends AbstractFunction {
   }
 }
 
+@IFunction
 class TaskExecDirFunction extends AbstractFunction {
   override def getName: String = "task.execDir"
 

@@ -9,7 +9,7 @@ import scala.concurrent.{ExecutionContext, Future}
  * @author chenmingkun
  * @date 2020/7/5
  */
-class ClusterFileClient extends FileClient("cluster") {
+class ClusterFileSystem extends FileSystem("cluster") {
   override def download(srcPath: String, destPath: String)(implicit ec: ExecutionContext): Future[Unit] = {
     val uri = new URI(srcPath)
     val host = if (uri.getHost == null || uri.getHost.equals("null")) Environment.HOST else uri.getHost

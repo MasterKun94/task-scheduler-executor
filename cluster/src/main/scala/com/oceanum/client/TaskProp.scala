@@ -5,6 +5,7 @@ import com.oceanum.exec.TaskConfig
 import com.oceanum.exec.tasks.SysTasks.UserAddTaskConfig
 import com.oceanum.exec.tasks.{JavaTaskConfig, ProcessTaskConfig, PythonTaskConfig, ScalaTaskConfig, ShellScriptTaskConfig, ShellTaskConfig}
 import com.oceanum.expr.ValidateParser
+import com.oceanum.exec.StdHandlerFactory.default._
 
 @SerialVersionUID(1L)
 abstract class TaskProp(val taskType: String) extends Serializable {
@@ -26,7 +27,7 @@ case class ShellTaskProp(cmd: Array[String] = Array.empty,
                          directory: String = "",
                          waitForTimeout: String = "24h") extends ProcessTaskProp("SHELL") {
   override def toTask(metadata: RichTaskMeta): ProcessTaskConfig = ShellTaskConfig(
-    cmd, env, directory, waitForTimeout, metadata.stdoutHandler, metadata.stderrHandler)
+    cmd, env, directory, waitForTimeout, createStdOutHandler(metadata), createStdErrHandler(metadata))
 
   override def validate(): Unit = {
     cmd.foreach(ValidateParser.parse)
@@ -43,7 +44,7 @@ case class ShellScriptTaskProp(scriptFile: String = "",
                                waitForTimeout: String = "24h") extends ProcessTaskProp("SHELL_SCRIPT") {
 
   override def toTask(metadata: RichTaskMeta): ProcessTaskConfig = ShellScriptTaskConfig(
-    scriptFile, args, env, directory, waitForTimeout, metadata.stdoutHandler, metadata.stderrHandler)
+    scriptFile, args, env, directory, waitForTimeout, createStdOutHandler(metadata), createStdErrHandler(metadata))
 
   override def validate(): Unit = {
     args.foreach(ValidateParser.parse)
@@ -63,7 +64,7 @@ case class JavaTaskProp(jars: Array[String] = Array.empty,
                         waitForTimeout: String = "24h") extends ProcessTaskProp("JAVA") {
 
   override def toTask(metadata: RichTaskMeta): ProcessTaskConfig = JavaTaskConfig(
-    jars, mainClass, args, options, env, directory, waitForTimeout, metadata.stdoutHandler, metadata.stderrHandler)
+    jars, mainClass, args, options, env, directory, waitForTimeout, createStdOutHandler(metadata), createStdErrHandler(metadata))
 
   override def validate(): Unit = {
     options.foreach(ValidateParser.parse)
@@ -85,7 +86,7 @@ case class ScalaTaskProp(jars: Array[String] = Array.empty,
                          waitForTimeout: String = "24h") extends ProcessTaskProp("SCALA") {
 
   override def toTask(metadata: RichTaskMeta): ProcessTaskConfig = ScalaTaskConfig(
-    jars, mainClass, args, options, env, directory, waitForTimeout, metadata.stdoutHandler, metadata.stderrHandler)
+    jars, mainClass, args, options, env, directory, waitForTimeout, createStdOutHandler(metadata), createStdErrHandler(metadata))
 
   override def validate(): Unit = {
     options.foreach(ValidateParser.parse)
@@ -105,7 +106,7 @@ case class PythonTaskProp(pyFile: String = "",
                           waitForTimeout: String = "24h") extends ProcessTaskProp("PYTHON") {
 
   override def toTask(metadata: RichTaskMeta): ProcessTaskConfig = PythonTaskConfig(
-    pyFile, args, env, directory, waitForTimeout, metadata.stdoutHandler, metadata.stderrHandler)
+    pyFile, args, env, directory, waitForTimeout, createStdOutHandler(metadata), createStdErrHandler(metadata))
 
   override def validate(): Unit = {
     args.foreach(ValidateParser.parse)

@@ -9,10 +9,10 @@ import akka.cluster.client.ClusterClient.Publish
 import akka.cluster.client.{ClusterClient, ClusterClientSettings}
 import akka.util.Timeout
 import com.oceanum.client.actors.{ClientEndpoint, ClientInstance, ClientListener, HandlerActor}
-import com.oceanum.common.{ActorSystems, AvailableExecutorRequest, AvailableExecutorResponse, AvailableExecutorsRequest, ClusterInfoMessageHolder, ClusterMessage, ClusterMetrics, ClusterMetricsRequest, ClusterState, ClusterStateRequest, Environment, Message, NodeTaskInfo, NodeTaskInfoRequest, StopRequest}
+import com.oceanum.common.{ActorSystems, AvailableExecutorRequest, AvailableExecutorResponse, AvailableExecutorsRequest, ClusterInfoMessageHolder, ClusterMessage, ClusterMetrics, ClusterMetricsRequest, ClusterState, ClusterStateRequest, Environment, Message, NodeTaskInfo, NodeTaskInfoRequest, StopRequest, SystemInit}
 import com.oceanum.exec.State
 import com.oceanum.expr.Evaluator
-import com.oceanum.serialize.{DefaultJsonSerialization, SerializeUtil}
+import com.oceanum.serialize.DefaultJsonSerialization
 
 import scala.collection.concurrent.TrieMap
 import scala.concurrent.{ExecutionContext, Future, Promise}
@@ -94,6 +94,7 @@ object TaskClient {
   }
 
   def create(system: ActorSystem, seedNodes: Seq[String])(implicit timeout: Timeout = Timeout(20, TimeUnit.SECONDS)): TaskClient = {
+    SystemInit.initAnnotatedClass()
     clients.getOrElse(system, {
       val executionContext = ExecutionContext.global
       val endpoint = {
@@ -112,8 +113,6 @@ object TaskClient {
       }
       val client = new TaskClient(endpoint, system)(executionContext, timeout)
       clients.put(system, client)
-      SerializeUtil.init()
-      Evaluator.init()
       client
     })
   }
