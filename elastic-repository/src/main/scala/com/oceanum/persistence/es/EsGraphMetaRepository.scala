@@ -1,12 +1,12 @@
 package com.oceanum.persistence.es
 
-import com.oceanum.annotation.Injection
+import com.oceanum.annotation.{InjectType, Injection}
 import com.oceanum.common.GraphMeta
 import com.oceanum.persistence.AbstractRepository
 
 import scala.concurrent.Future
 
-@Injection
+@Injection(InjectType.REPOSITORY)
 class EsGraphMetaRepository extends AbstractRepository[GraphMeta] {
 
   override def save(obj: GraphMeta): Future[Unit] = {
