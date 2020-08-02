@@ -32,6 +32,24 @@ class EsMatchFunction extends AbstractFunction {
   }
 }
 
+//@IFunction
+//class EsRangeFunction extends AbstractFunction {
+//  override def getName: String = "es.range"
+//
+//  override def call(env: JavaMap[String, AnyRef], field: AviatorObject, value: AviatorObject): AviatorObject = {
+//    val fieldString = FunctionUtils.getStringValue(field, env)
+//    val valueObject = value.getValue(env)
+//    AviatorRuntimeJavaType.valueOf(QueryBuilders.rangeQuery(fieldString).from(valueObject))
+//  }
+//
+//  override def call(env: JavaMap[String, AnyRef], field: AviatorObject, from: AviatorObject, to: AviatorObject): AviatorObject = {
+//    val fieldString = FunctionUtils.getStringValue(field, env)
+//    val fromObject = from.getValue(env)
+//    val toObject = from.getValue(env)
+//    AviatorRuntimeJavaType.valueOf(QueryBuilders.rangeQuery(fieldString).from(fromObject).to(toObject))
+//  }
+//} //TODO
+
 @IFunction
 class EsTermFunction extends AbstractFunction {
   override def getName: String = "es.term"
