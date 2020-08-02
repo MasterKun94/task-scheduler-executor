@@ -2,10 +2,11 @@ package com.oceanum.graph
 
 import java.util.concurrent.atomic.AtomicInteger
 
-import com.oceanum.client.{Task, TaskClient}
+import com.oceanum.client.{SingleTaskInstanceRef, Task, TaskClient}
 import com.oceanum.graph.Operators._
 import com.oceanum.graph.StreamFlows.{EndFlow, StartFlow, StreamFlow}
 
+import scala.collection.concurrent.TrieMap
 import scala.collection.mutable
 
 class GraphBuilder(protected[graph] val startFlow: StartFlow,

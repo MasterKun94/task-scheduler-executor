@@ -1,7 +1,7 @@
 package com.oceanum.graph
 
 import akka.stream.scaladsl.{Broadcast, Flow, Merge, Partition, ZipWithN}
-import com.oceanum.client.{StateHandler, Task, TaskClient}
+import com.oceanum.client.{SingleTaskInstanceRef, StateHandler, Task, TaskClient}
 import com.oceanum.common._
 import com.oceanum.expr.Evaluator
 import com.oceanum.graph.StreamFlows._
@@ -42,11 +42,11 @@ object FlowFactory {
   }
 
   def createJoin(parallel: Int)(implicit builder: GraphBuilder): JoinFlow = {
-    JoinFlow(builder.dslBuilder.add(ZipWithN[RichGraphMeta, RichGraphMeta](_.reduce(_ merge _))(parallel)))
+    JoinFlow(builder.dslBuilder.add(ZipWithN[Message, Message](_.reduce((m1, m2) => m1.copy(m1.meta merge m2.meta)))(parallel)))
   }
 
   def createDecision(parallel: Int)(decide: GraphMeta => Int)(implicit builder: GraphBuilder): DecisionFlow = {
-    DecisionFlow(builder.dslBuilder.add(Partition(parallel, decide)))
+    DecisionFlow(builder.dslBuilder.add(Partition(parallel, message => decide(message.meta))))
   }
 
   def createDecision(decide: Array[GraphMeta => Boolean])(implicit builder: GraphBuilder): DecisionFlow = {
@@ -104,35 +104,37 @@ object FlowFactory {
       val graphMeta = metadata.addTask(taskMeta)
       builder.handler.onRunning(graphMeta, state)
     }
-    schedulerClient.execute(task, stateHandler)
+    val instance: SingleTaskInstanceRef = schedulerClient.execute(task, stateHandler)
+    instance
       .completeState
       .onComplete {
-      case Success(value) =>
-        val taskMeta = value.metadata.copy(reRunId = metadata.reRunId)
-        val graphMeta = metadata
-          .addTask(taskMeta, isComplete = true)
-          .copy(reRunFlag = true)
-        promise.success(graphMeta)
-      case Failure(e) =>
-        e.printStackTrace()
-        val taskMeta = task.env.taskMeta.asInstanceOf[RichTaskMeta].failure(task, e).copy(reRunId = metadata.reRunId)
-        val graphMeta = metadata.addTask(taskMeta, isComplete = true)
-        promise.success(graphMeta)
-    }
+        case Success(value) =>
+          val taskMeta = value.metadata.copy(reRunId = metadata.reRunId)
+          val graphMeta = metadata
+            .addTask(taskMeta, isComplete = true)
+            .copy(reRunFlag = true)
+          promise.success(graphMeta)
+        case Failure(e) =>
+          e.printStackTrace()
+          val taskMeta = task.env.taskMeta.asInstanceOf[RichTaskMeta].failure(task, e).copy(reRunId = metadata.reRunId)
+          val graphMeta = metadata.addTask(taskMeta, isComplete = true)
+          promise.success(graphMeta)
+      }
     promise.future
   }
 
   def map(id: Int)(func: RichGraphMeta => RichGraphMeta): TaskFlow = {
-    val flow = Flow[RichGraphMeta].map(func)
+    val flow = Flow[Message].map(message => message.copy(meta = func(message.meta)))
     TaskFlow(flow, id)
   }
 
   def mapAsync(parallelism: Int = 1, id: Int)(func: RichGraphMeta => Future[RichGraphMeta])(implicit taskClient: TaskClient): TaskFlow = {
-    val flow = Flow[RichGraphMeta].mapAsync(parallelism) { meta =>
-      val promise = Promise[RichGraphMeta]()
+    val flow = Flow[Message].mapAsync(parallelism) { message =>
+      val meta = message.meta
+      val promise = Promise[Message]()
       func(meta).onComplete {
-        case Success(value) => promise.success(value)
-        case Failure(e) => promise.success(meta.copy(error = e))
+        case Success(value) => promise.success(Message(value, message.instances))
+        case Failure(e) => promise.success(Message(meta.copy(error = e), message.instances))
       } (taskClient.system.dispatcher)
       promise.future
     }

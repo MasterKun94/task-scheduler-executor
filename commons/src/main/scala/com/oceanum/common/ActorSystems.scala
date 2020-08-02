@@ -1,15 +1,16 @@
 package com.oceanum.common
 
 import akka.actor.{ActorRef, ActorSystem}
-import akka.cluster.pubsub.DistributedPubSub
 import com.typesafe.config.ConfigFactory
 
 import scala.collection.JavaConversions.seqAsJavaList
 
+/**
+ * @author chenmingkun
+ * @date 2020/8/2
+ */
 object ActorSystems {
   lazy val SYSTEM: ActorSystem = if (Environment.MODE equals "cluster") clusterSystem() else clientSystem()
-  lazy val CLUSTER_NODE_MEDIATOR: ActorRef = DistributedPubSub(SYSTEM).mediator
-
 
   private def clusterSystem(): ActorSystem = {
     import scala.collection.JavaConversions.mapAsJavaMap

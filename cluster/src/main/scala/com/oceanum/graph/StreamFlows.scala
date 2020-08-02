@@ -11,9 +11,9 @@ object StreamFlows {
 
   trait StreamFlow {}
 
-  case class TaskFlow(elem: Flow[RichGraphMeta, RichGraphMeta, NotUsed], id: Int) extends StreamFlow
+  case class TaskFlow(elem: Flow[Message, Message, NotUsed], id: Int) extends StreamFlow
 
-  case class ForkFlow(elem: UniformFanOutShape[RichGraphMeta, RichGraphMeta]) extends StreamFlow {
+  case class ForkFlow(elem: UniformFanOutShape[Message, Message]) extends StreamFlow {
     def -->(flow: TaskFlow)(implicit builder: GraphBuilder): OpsFlow = {
       import builder.dslBuilder
       OpsFlow(elem ~> flow.elem)
@@ -36,7 +36,7 @@ object StreamFlows {
     }
   }
 
-  case class JoinFlow(elem: UniformFanInShape[RichGraphMeta, RichGraphMeta]) extends StreamFlow {
+  case class JoinFlow(elem: UniformFanInShape[Message, Message]) extends StreamFlow {
     def -->(flow: TaskFlow)(implicit builder: GraphBuilder): OpsFlow = {
       import builder.dslBuilder
       OpsFlow(elem ~> flow.elem)
@@ -59,11 +59,11 @@ object StreamFlows {
     }
     def -->(flow: EndFlow)(implicit builder: GraphBuilder): Unit = {
       import builder.dslBuilder
-      elem ~> Flow[RichGraphMeta].map(_.end) ~> flow.elem
+      elem ~> Flow[Message].map(message => message.copy(message.meta.end)) ~> flow.elem
     }
   }
 
-  case class DecisionFlow(elem: UniformFanOutShape[RichGraphMeta, RichGraphMeta]) extends StreamFlow {
+  case class DecisionFlow(elem: UniformFanOutShape[Message, Message]) extends StreamFlow {
     def condition(i: Int): ConditionFlow = ConditionFlow(elem.out(i))
     def -->(flow: TaskFlow)(implicit builder: GraphBuilder): OpsFlow = {
       import builder.dslBuilder
@@ -87,7 +87,7 @@ object StreamFlows {
     }
   }
 
-  case class ConditionFlow(elem: Outlet[RichGraphMeta]) extends StreamFlow {
+  case class ConditionFlow(elem: Outlet[Message]) extends StreamFlow {
     def -->(flow: TaskFlow)(implicit builder: GraphBuilder): OpsFlow = {
       import builder.dslBuilder
       OpsFlow(elem ~> flow.elem)
@@ -110,7 +110,7 @@ object StreamFlows {
     }
   }
 
-  case class ConvergeFlow(elem: UniformFanInShape[RichGraphMeta, RichGraphMeta]) extends StreamFlow {
+  case class ConvergeFlow(elem: UniformFanInShape[Message, Message]) extends StreamFlow {
     def -->(flow: TaskFlow)(implicit builder: GraphBuilder): OpsFlow = {
       import builder.dslBuilder
       OpsFlow(elem ~> flow.elem)
@@ -133,11 +133,11 @@ object StreamFlows {
     }
     def -->(flow: EndFlow)(implicit builder: GraphBuilder): Unit = {
       import builder.dslBuilder
-      elem ~> Flow[RichGraphMeta].map(_.end) ~> flow.elem
+      elem ~> Flow[Message].map(message => message.copy(message.meta.end)) ~> flow.elem
     }
   }
 
-  case class StartFlow(elem: Source[RichGraphMeta, ActorRef]#Shape) extends StreamFlow {
+  case class StartFlow(elem: Source[Message, ActorRef]#Shape) extends StreamFlow {
     def -->(flow: TaskFlow)(implicit builder: GraphBuilder): OpsFlow = {
       import builder.dslBuilder
       OpsFlow(elem ~> flow.elem)
@@ -152,13 +152,13 @@ object StreamFlows {
     }
     def -->(flow: EndFlow)(implicit builder: GraphBuilder): Unit = {
       import builder.dslBuilder
-      elem ~> Flow[RichGraphMeta].map(_.end) ~> flow.elem
+      elem ~> Flow[Message].map(message => message.copy(message.meta.end)) ~> flow.elem
     }
   }
 
-  case class EndFlow(elem: SinkShape[RichGraphMeta]) extends StreamFlow
+  case class EndFlow(elem: SinkShape[Message]) extends StreamFlow
 
-  case class OpsFlow(elem: PortOps[RichGraphMeta]) extends StreamFlow {
+  case class OpsFlow(elem: PortOps[Message]) extends StreamFlow {
     def -->(flow: TaskFlow)(implicit builder: GraphBuilder): OpsFlow = {
       import builder.dslBuilder
       OpsFlow(elem ~> flow.elem)
@@ -181,7 +181,7 @@ object StreamFlows {
     }
     def -->(flow: EndFlow)(implicit builder: GraphBuilder): Unit = {
       import builder.dslBuilder
-      elem ~> Flow[RichGraphMeta].map(_.end) ~> flow.elem
+      elem ~> Flow[Message].map(message => message.copy(message.meta.end)) ~> flow.elem
     }
   }
 }

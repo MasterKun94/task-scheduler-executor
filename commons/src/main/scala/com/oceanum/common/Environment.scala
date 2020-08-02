@@ -109,7 +109,7 @@ object Environment {
     else LINUX
   }
 
-  lazy val NONE_BLOCKING_EXECUTION_CONTEXT: ExecutionContextExecutor = ExecutionContext.global
+  implicit lazy val NONE_BLOCKING_EXECUTION_CONTEXT: ExecutionContextExecutor = ActorSystems.SYSTEM.dispatcher
 
   def printEnv(): Unit = {
     import scala.collection.JavaConversions.asScalaSet

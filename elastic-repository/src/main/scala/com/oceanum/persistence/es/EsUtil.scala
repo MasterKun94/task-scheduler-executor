@@ -1,6 +1,7 @@
 package com.oceanum.persistence.es
 
 import com.oceanum.common.Environment
+import com.oceanum.expr.{Evaluator, JavaHashMap}
 import com.oceanum.serialize.Serialization
 import org.apache.http.HttpHost
 import org.elasticsearch.action.ActionListener
@@ -10,6 +11,7 @@ import org.elasticsearch.action.index.{IndexRequest, IndexResponse}
 import org.elasticsearch.action.search.{SearchRequest, SearchResponse}
 import org.elasticsearch.client.{RequestOptions, RestClient, RestHighLevelClient}
 import org.elasticsearch.common.xcontent.XContentType
+import org.elasticsearch.index.query.QueryBuilders
 import org.elasticsearch.search.builder.SearchSourceBuilder
 
 import scala.concurrent.{ExecutionContext, ExecutionContextExecutor, Future, Promise}
@@ -81,16 +83,16 @@ object EsUtil {
   }
 
   def findByIdIn[T<:AnyRef](idx: String, ids: Seq[String])(implicit mf: Manifest[T]): Future[Seq[T]] = {
-    val req = new MultiGetRequest()
-    for (id <- ids) {
-      req.add(idx, typ, id)
-    }
+    val req = new SearchRequest()
+      .indices(idx)
+      .types(typ)
+      .source(new SearchSourceBuilder()
+        .query(QueryBuilders.idsQuery().addIds(ids:_*))
+      )
     val promise = Promise[Seq[T]]()
-    client.mgetAsync(req, RequestOptions.DEFAULT, Listener[MultiGetResponse, Seq[T]](promise) { res =>
-      res.getResponses
-        .filterNot(_.isFailed)
-        .map(_.getResponse)
-        .filter(_.isExists)
+    client.searchAsync(req, RequestOptions.DEFAULT, Listener[SearchResponse, Seq[T]](promise) { res =>
+      res.getHits
+        .getHits
         .map(res => serialization.deSerializeRaw(res.getSourceAsString)(mf))
     })
     promise.future
@@ -100,16 +102,15 @@ object EsUtil {
     val req = new SearchRequest(idx).source(parseExpr(expr))
     val promise = Promise[Seq[T]]()
     client.searchAsync(req, RequestOptions.DEFAULT, Listener[SearchResponse, Seq[T]](promise) { res =>
-      res.getHits.getHits.map(hit => serialization.deSerializeRaw(hit.getSourceAsString)(mf))
+      res.getHits
+        .getHits
+        .map(hit => serialization.deSerializeRaw(hit.getSourceAsString)(mf))
     })
     promise.future
   }
 
-  def parseExpr(expr: String): SearchSourceBuilder = ???
-
-
-  def main(args: Array[String]): Unit = {
-//    println(AnnotationUtil.jobWithAnnotation)
+  def parseExpr(expr: String): SearchSourceBuilder = {
+    Evaluator.rawExecute(expr, new JavaHashMap(0)).asInstanceOf[SearchSourceBuilder]
   }
 }
 

@@ -1,6 +1,6 @@
 package com.oceanum.api
 
-import com.oceanum.api.entities.{Coordinator, CoordinatorMetaInfo, WorkflowDefine}
+import com.oceanum.api.entities.{Coordinator, CoordinatorMeta, WorkflowDefine}
 import com.oceanum.common.GraphMeta
 
 import scala.concurrent.Future
@@ -22,7 +22,7 @@ trait RestService {
 
   def getCoordinator(name: String): Future[Coordinator]
 
-  def checkCoordinatorState(name: String): Future[CoordinatorMetaInfo]
+  def checkCoordinatorState(name: String): Future[CoordinatorMeta]
 
   def killCoordinator(name: String): Future[Unit]
 

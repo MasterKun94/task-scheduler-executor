@@ -13,6 +13,7 @@ import com.oceanum.exec.State
 import com.oceanum.graph.StreamFlows.{EndFlow, StartFlow}
 import com.oceanum.serialize.{DefaultJsonSerialization, Serialization}
 
+import scala.collection.concurrent.TrieMap
 import scala.util.{Failure, Success}
 
 class Workflow(runnableGraph: Graph, graphMetaHandler: GraphMetaHandler) {
@@ -46,8 +47,9 @@ object Workflow {
     }
     val atomicInteger = new AtomicInteger(0)
     val source0 = Source
-      .queue[RichGraphMeta](Environment.GRAPH_SOURCE_QUEUE_BUFFER_SIZE, OverflowStrategy.backpressure)
-      .map { meta =>
+      .queue[Message](Environment.GRAPH_SOURCE_QUEUE_BUFFER_SIZE, OverflowStrategy.backpressure)
+      .map { message =>
+        val meta = message.meta
         val start =
           if (meta.reRunStrategy == ReRunStrategy.NONE) {
             meta.copy(
@@ -76,10 +78,10 @@ object Workflow {
           }
 
         metaHandler.onStart(start)
-        start
+        Message(start, message.instances)
       }
 
-    val sink0 = Sink.foreach[RichGraphMeta](metaHandler.onComplete)
+    val sink0 = Sink.foreach[Message](message => metaHandler.onComplete(message.meta))
     val graph = GraphDSL.create(source0, sink0)(_ -> _) { implicit b => (source, sink) =>
       val start = StartFlow(source)
       val end = EndFlow(sink)
