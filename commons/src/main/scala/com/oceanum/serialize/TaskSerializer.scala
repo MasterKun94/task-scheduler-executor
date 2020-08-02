@@ -1,6 +1,6 @@
 package com.oceanum.serialize
 
-import com.oceanum.client.{JavaTaskProp, PythonTaskProp, ScalaTaskProp, ShellScriptTaskProp, ShellTaskProp, Task, TaskProp, UserAdd}
+import com.oceanum.client._
 import org.json4s.{CustomSerializer, DefaultFormats, Extraction, Formats, JObject, JString}
 
 /**

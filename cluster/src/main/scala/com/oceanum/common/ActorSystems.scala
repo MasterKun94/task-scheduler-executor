@@ -7,10 +7,8 @@ import com.typesafe.config.ConfigFactory
 import scala.collection.JavaConversions.seqAsJavaList
 
 object ActorSystems {
-  lazy val CLUSTER_SYSTEM: ActorSystem = clusterSystem()
-  lazy val CLIENT_SYSTEM: ActorSystem = clientSystem()
-  lazy val FILE_SERVER_SYSTEM: ActorSystem = fileServerSystem()
-  lazy val CLUSTER_NODE_MEDIATOR: ActorRef = DistributedPubSub(CLUSTER_SYSTEM).mediator
+  lazy val SYSTEM: ActorSystem = if (Environment.MODE equals "cluster") clusterSystem() else clientSystem()
+  lazy val CLUSTER_NODE_MEDIATOR: ActorRef = DistributedPubSub(SYSTEM).mediator
 
 
   private def clusterSystem(): ActorSystem = {
@@ -66,33 +64,5 @@ object ActorSystems {
          |""".stripMargin
     ConfigFactory.parseString(configString)
     ActorSystem(Environment.CLIENT_NODE_SYSTEM_NAME, ConfigFactory.parseString(configString))
-  }
-
-  private def fileServerSystem(): ActorSystem = {
-    val configString =
-      s"""
-         |file-io-dispatcher {
-         |  type = Dispatcher
-         |  executor = "thread-pool-executor"
-         |  thread-pool-executor {
-         |    core-pool-size-min = ${Environment.FILE_SERVER_DISPATCHER_CORE_POOL_SIZE_MIN}
-         |    core-pool-size-factor = ${Environment.FILE_SERVER_DISPATCHER_CORE_POOL_SIZE_FACTOR}
-         |    core-pool-size-max = ${Environment.FILE_SERVER_DISPATCHER_CORE_POOL_SIZE_MAX}
-         |  }
-         |  throughput = 1000
-         |}
-         |akka.loggers = ["${Environment.FILE_SERVER_LOGGER}"]
-         |
-         |akka.http {
-         |  host-connection-pool {
-         |    max-connections = ${Environment.FILE_SERVER_HOST_CONNECTION_POOL_MAX_CONNECTIONS}
-         |    min-connections = ${Environment.FILE_SERVER_HOST_CONNECTION_POOL_MIN_CONNECTIONS}
-         |    min-retries = ${Environment.FILE_SERVER_HOST_CONNECTION_POOL_MAX_RETRIES}
-         |    max-open-requests = ${Environment.FILE_SERVER_HOST_CONNECTION_POOL_MAX_OPEN_REQUESTS}
-         |  }
-         |}
-         |""".stripMargin
-    ConfigFactory.parseString(configString)
-    ActorSystem(Environment.FILE_SERVER_SYSTEM_NAME, ConfigFactory.parseString(configString))
   }
 }

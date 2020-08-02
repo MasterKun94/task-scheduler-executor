@@ -1,7 +1,9 @@
 package com.oceanum.cluster
 
 import akka.actor.{Actor, ActorRef, Props}
+import akka.cluster.pubsub.DistributedPubSub
 import akka.cluster.pubsub.DistributedPubSubMediator.{Publish, Subscribe, Unsubscribe}
+import com.oceanum.common.ActorSystems.SYSTEM
 import com.oceanum.common._
 import com.oceanum.exec.RunnerManager
 
@@ -13,7 +15,7 @@ class ExecutionEndpoint extends Actor {
 
   //使用pub/sub方式设置
   private val topics = Environment.CLUSTER_NODE_TOPICS
-  private val mediator: ActorRef = ActorSystems.CLUSTER_NODE_MEDIATOR
+  private val mediator: ActorRef = DistributedPubSub(context.system).mediator
 
   override def preStart(): Unit = {
     for (topic <- topics) {
@@ -33,7 +35,8 @@ class ExecutionEndpoint extends Actor {
 
   override def receive: Receive = {
     case ExecuteOperatorRequest(task) =>
-      context.system.actorOf(Props(classOf[ExecutionInstance], task, sender()))
+      val actor = sender()
+      context.system.actorOf(Props(new ExecutionInstance(task, actor)))
 
     case _: AvailableExecutorRequest =>
       sender() ! AvailableExecutor(self, RunnerManager.getTaskInfo, Environment.CLUSTER_NODE_TOPICS)

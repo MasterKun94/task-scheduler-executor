@@ -8,7 +8,7 @@ import ch.qos.logback.classic.LoggerContext
 import ch.qos.logback.classic.joran.JoranConfigurator
 import org.slf4j.LoggerFactory
 
-import scala.concurrent.ExecutionContext
+import scala.concurrent.{ExecutionContext, ExecutionContextExecutor}
 import scala.concurrent.duration.FiniteDuration
 import com.oceanum.common.Implicits._
 
@@ -19,6 +19,7 @@ import com.oceanum.common.Implicits._
 object Environment {
 
   private val properties = new Properties()
+  lazy val MODE: String = getProperty("mode", "client")
   lazy val LOCALE: Locale = Locale.ENGLISH
   lazy val TIME_ZONE: TimeZone = TimeZone.getTimeZone(getProperty("timezone", TimeZone.getDefault.getDisplayName))
   lazy val BASE_PATH: String = getBasePath(getProperty(Key.BASE_PATH, scala.util.Properties.userDir))
@@ -65,7 +66,7 @@ object Environment {
   lazy val GRAPH_SOURCE_QUEUE_BUFFER_SIZE: Int = 100
   lazy val GRAPH_DEFAULT_EXECUTOR: ExecutionContext = ExecutionContext.global
 
-  lazy val FILE_CLIENT_DEFAULT_SCHEME: String = getProperty(Key.FILE_CLIENT_DEFAULT_SCHEME, "cluster")
+  lazy val FILE_CLIENT_DEFAULT_SCHEME: String = getProperty(Key.FILE_CLIENT_DEFAULT_SCHEME, "hdfs")
   lazy val FILE_SERVER_CONTEXT_PATH: String = getProperty(Key.FILE_SERVER_CONTEXT_PATH, "file")
   lazy val FILE_SERVER_PORT: Int = getProperty(Key.FILE_SERVER_PORT, "7011").toInt
   lazy val FILE_SERVER_SYSTEM_NAME: String = getProperty(Key.FILE_SERVER_SYSTEM_NAME, "file-server")
@@ -108,7 +109,9 @@ object Environment {
     else LINUX
   }
 
-  def print(): Unit = {
+  lazy val NONE_BLOCKING_EXECUTION_CONTEXT: ExecutionContextExecutor = ExecutionContext.global
+
+  def printEnv(): Unit = {
     import scala.collection.JavaConversions.asScalaSet
     println("config:")
     properties.keySet().foreach(k => println(s"\t$k -> ${getProperty(k.toString)}"))
@@ -168,6 +171,9 @@ object Environment {
     val clientPort = arg.getOrElse(Arg.CLIENT_PORT, CLIENT_NODE_PORT.toString)
     setProperty(Key.CLIENT_NODE_PORT, clientPort)
 
+    val mode = arg.getOrElse(Arg.MODE, MODE)
+    setProperty(Key.MODE, mode)
+
     val seedNodes: Seq[String] = arg
       .get(Arg.SEED_NODE)
       .map(str2arr)
@@ -200,6 +206,7 @@ object Environment {
   def initSystem(): Unit = SystemInit.initAnnotatedClass()
 
   object Arg {
+    val MODE = "--mode"
     val BASE_PATH = "--base-path"
     val TOPICS = "--topics"
     val HOST = "--host"
@@ -210,6 +217,7 @@ object Environment {
   }
 
   object Key {
+    val MODE: String = "mode"
     val AKKA_CONF: String = "akka.conf"
     val BASE_PATH: String = "base.path"
     val EXEC_PYTHON: String = "exec.python.cmd"

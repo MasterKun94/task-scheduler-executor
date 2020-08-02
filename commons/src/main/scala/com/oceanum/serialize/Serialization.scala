@@ -21,8 +21,3 @@ trait Serialization[W<:WrappedObject] {
 object Serialization {
   lazy val default: Serialization[_] = SystemInit.serialization
 }
-
-import JsonSerialization.formats
-
-@ISerialization(priority = -1)
-class DefaultSerialization extends JsonSerialization()

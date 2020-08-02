@@ -3,7 +3,6 @@ package com.oceanum.common
 import java.util.{Date, UUID}
 
 import com.oceanum.annotation.ISerializationMessage
-import com.oceanum.exec.{FAILED, KILL, SUCCESS, State}
 
 @SerialVersionUID(1L)
 @ISerializationMessage("RICH_GRAPH_META")
@@ -103,13 +102,8 @@ sealed class RichGraphMeta(id: Int = 0,
       }
       (key, task.asInstanceOf[RichTaskMeta])
     }}.toMap
-    val latest = Array(latestTask, RichGraphMeta(meta).latestTask)
-      .map( t => {
-        if (t == null) 0L -> -1
-        else if (t.startTime == null) 0L -> t.id
-        else t.startTime.getTime -> t.id
-      })
-        .maxBy(_._1)._2
+    val completedTasks = map.filter(t => t._2.reRunId == meta.reRunId && t._2.endTime != null)
+    val latest = if (completedTasks.isEmpty) -1 else completedTasks.maxBy(_._2.endTime)._2.id
     updateGraphStatus(meta.graphStatus).copy(tasks = map, latestTaskId = latest)
   }
 

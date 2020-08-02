@@ -6,6 +6,7 @@ import java.util.concurrent.atomic.AtomicInteger
 import akka.actor.{ActorSystem, PoisonPill, Props}
 import akka.stream.{ClosedShape, OverflowStrategy}
 import akka.stream.scaladsl.{GraphDSL, RunnableGraph, Sink, Source}
+import com.oceanum.api.entities.WorkflowDefine
 import com.oceanum.client.TaskClient
 import com.oceanum.common.{Environment, GraphMeta, GraphStatus, ReRunStrategy, RichGraphMeta}
 import com.oceanum.exec.State
@@ -31,10 +32,10 @@ class Workflow(runnableGraph: Graph, graphMetaHandler: GraphMetaHandler) {
 }
 
 object Workflow {
-  def create(env: Map[String, Any], builder: GraphBuilder => Unit)
-            (implicit taskClient: TaskClient, graphMetaHandler: GraphMetaHandler = GraphMetaHandler.default()): Workflow = {
+  def create(env: Map[String, Any], builder: GraphBuilder => Unit)(implicit taskClient: TaskClient, graphMetaHandler: GraphMetaHandler): Workflow = {
+    val createTime = new Date()
     val metaHandler: GraphMetaHandler = new GraphMetaHandler {
-      private val actor = taskClient.system.actorOf(Props(classOf[GraphMetaHandlerActor], graphMetaHandler))
+      private val actor = taskClient.system.actorOf(Props(classOf[GraphMetaHandlerActor], Array(graphMetaHandler, GraphMetaHandler.default)))
       override def onRunning(graphMeta: GraphMeta, taskState: State): Unit = actor ! OnRunning(graphMeta, taskState)
 
       override def onComplete(graphMeta: GraphMeta): Unit = actor ! OnComplete(graphMeta)
@@ -50,8 +51,10 @@ object Workflow {
         val start =
           if (meta.reRunStrategy == ReRunStrategy.NONE) {
             meta.copy(
-              createTime = new Date(),
+              createTime = createTime,
+              scheduleTime = new Date(),
               startTime = new Date(),
+              endTime = null,
               graphStatus = GraphStatus.RUNNING,
               id = atomicInteger.getAndIncrement(),
               reRunId = 0,
@@ -61,7 +64,9 @@ object Workflow {
             )
           } else {
             meta.copy(
+              createTime = createTime,
               startTime = new Date(),
+              endTime = null,
               graphStatus = GraphStatus.RUNNING,
               reRunId = meta.reRunId + 1,
               reRunFlag = false,
@@ -74,7 +79,7 @@ object Workflow {
         start
       }
 
-    val sink0 = Sink.foreach[RichGraphMeta](graphMetaHandler.onComplete)
+    val sink0 = Sink.foreach[RichGraphMeta](metaHandler.onComplete)
     val graph = GraphDSL.create(source0, sink0)(_ -> _) { implicit b => (source, sink) =>
       val start = StartFlow(source)
       val end = EndFlow(sink)
@@ -84,15 +89,17 @@ object Workflow {
     new Workflow(RunnableGraph.fromGraph(graph), metaHandler)
   }
 
-  def create(builder: GraphBuilder => Unit)(implicit taskClient: TaskClient, graphMetaHandler: GraphMetaHandler): Workflow = {
-    create(Map.empty, builder)(taskClient, graphMetaHandler)
+  def create(builder: GraphBuilder => Unit)(implicit taskClient: TaskClient, graphMetaHandler: GraphMetaHandler = GraphMetaHandler.default): Workflow = {
+    create(Map.empty, builder)
   }
 
-  def fromGraph(graphDefine: GraphDefine)(implicit taskClient: TaskClient, graphMetaHandler: GraphMetaHandler): Workflow = {
-    create(graphDefine.env, implicit builder => {
-      for ((prim, subs) <- graphDefine.edges) {
-        val parent = graphDefine.nodes(prim)
-        val children = subs.map(graphDefine.nodes)
+  def fromGraph(workflowDefine: WorkflowDefine)(implicit taskClient: TaskClient, graphMetaHandler: GraphMetaHandler = GraphMetaHandler.default): Workflow = {
+    create(workflowDefine.env, implicit builder => {
+      val dag = workflowDefine.dag
+      val operators = dag.vertexes.mapValues(Operators.from)
+      for ((prim, subs) <- dag.edges) {
+        val parent = operators(prim)
+        val children = subs.map(operators)
         builder.buildEdges(parent, children:_*)
       }
       builder.createGraph()
@@ -100,7 +107,7 @@ object Workflow {
     )
   }
 
-  def fromJson(json: String)(implicit taskClient: TaskClient, graphMetaHandler: GraphMetaHandler): Workflow = {
-    fromGraph(Serialization.default.deSerialize(json).asInstanceOf[GraphDefine])
+  def fromJson(json: String)(implicit taskClient: TaskClient, graphMetaHandler: GraphMetaHandler = GraphMetaHandler.default): Workflow = {
+    fromGraph(Serialization.default.deSerialize(json).asInstanceOf[WorkflowDefine])
   }
 }

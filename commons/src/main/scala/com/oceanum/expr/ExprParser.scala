@@ -1,6 +1,6 @@
 package com.oceanum.expr
 
-import com.oceanum.common.StringParser
+import com.oceanum.common.{Environment, StringParser}
 
 object ExprParser extends StringParser[JavaMap[String, AnyRef]] {
   override protected def replace(regex: String)(implicit env: JavaMap[String, AnyRef]): String = {

@@ -1,6 +1,6 @@
 package com.oceanum.serialize
 
-import org.json4s.{Extraction, Formats, JObject, JString, JValue}
+import org.json4s.{Extraction, Formats, JObject, JString}
 
 abstract class JsonSerializable[T<:AnyRef](serialization: JsonSerialization)(implicit mf: Manifest[T])
   extends Serializable[T, JsonObject] {

@@ -4,7 +4,7 @@ import akka.actor.{Actor, ActorLogging, ActorRef, Cancellable, PoisonPill}
 import com.oceanum.client.Task
 import com.oceanum.common.Scheduler.{schedule, scheduleOnce}
 import com.oceanum.common.{TaskStatus, _}
-import com.oceanum.exec.{EventListener, ExecutionHook, FAILED, KILL, OFFLINE, PREPARE, RETRY, RUNNING, RunnerManager, START, SUCCESS, State, TIMEOUT}
+import com.oceanum.exec.{EventListener, ExecutionHook, ExecutionTask, FAILED, KILL, OFFLINE, PREPARE, RETRY, RUNNING, RunnerManager, START, SUCCESS, State, TIMEOUT}
 
 import scala.concurrent.ExecutionContext
 
@@ -13,7 +13,6 @@ import scala.concurrent.ExecutionContext
  * @date 2020/5/2
  */
 class ExecutionInstance(task: Task, actor: ActorRef) extends Actor with ActorLogging {
-
   private def listener: EventListener = new EventListener {
     override def prepare(message: RichTaskMeta): Unit = {
       self ! PrepareMessage(message)
@@ -47,23 +46,22 @@ class ExecutionInstance(task: Task, actor: ActorRef) extends Actor with ActorLog
       self ! KillMessage(message)
     }
   }
-
+  private val executionTask = ExecutionTask.from(task, listener)
+  private val client = actor
   var execTimeoutMax: Cancellable = _
   var clientCheckTime: Long = System.currentTimeMillis()
 
   override def preStart(): Unit = {
     implicit val executor: ExecutionContext = Environment.CLUSTER_NODE_TASK_INIT_EXECUTOR
-    val operator = task.toExecutionTask(listener)
     val interval = task.checkStateInterval
-    val client = actor
-    log.info("receive operator: [{}], receive schedule check state request from [{}], start schedule with duration [{}]", operator, sender, interval)
+    log.info("receive operator: [{}], receive schedule check state request from [{}], start schedule with duration [{}]", executionTask, sender, interval)
     val cancelable: Cancellable = schedule(interval, interval) {
       self.tell(CheckState, client)
     }
-    val hook: ExecutionHook = RunnerManager.submit(operator)
-    val metadata: RichTaskMeta = operator.metadata
+    val hook: ExecutionHook = RunnerManager.submit(executionTask)
+    val metadata: RichTaskMeta = executionTask.metadata
     context.become(offline(metadata)(Holder(hook, cancelable, client)))
-    client ! ExecuteOperatorResponse(operator.metadata)
+    client ! ExecuteOperatorResponse(executionTask.metadata)
     execTimeoutMax = scheduleOnce(Environment.EXEC_MAX_TIMEOUT) {
       context.stop(self)
     }

@@ -6,5 +6,5 @@ import com.oceanum.annotation.ISerialization
 class DefaultJsonSerialization extends JsonSerialization()(
   JsonSerialization.formats +
     TaskSerializer.default() +
-    OperatorSerializer.default()) {
+    VertexSerializer.default()) {
 }

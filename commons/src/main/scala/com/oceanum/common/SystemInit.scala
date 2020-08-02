@@ -3,11 +3,12 @@ package com.oceanum.common
 import java.util.concurrent.atomic.AtomicBoolean
 
 import com.googlecode.aviator.runtime.`type`.AviatorFunction
-import com.oceanum.annotation.{IOpFunction, ISerialization, ISerializationMessage, IStdHandlerFactory, InjectType, Injection}
+import com.oceanum.annotation.{IOpFunction, IRepositoryFactory, ISerialization, ISerializationMessage, IStdHandlerFactory, InjectType, Injection}
+import com.oceanum.api.RestService
 import com.oceanum.exec.StdHandlerFactory
 import com.oceanum.expr.Evaluator
 import com.oceanum.file.FileSystem
-import com.oceanum.persistence.{Catalog, Repository}
+import com.oceanum.persistence.{Catalog, Repository, RepositoryFactory}
 import com.oceanum.serialize.{Serialization, WrappedObject}
 import org.reflections.Reflections
 
@@ -23,10 +24,13 @@ object SystemInit {
   private val lazyInitSet = mutable.Set[() => Unit]()
   private val serializations: mutable.Map[() => Any, Int] = mutable.Map()
   private val stdHandlerFactories: mutable.Map[() => Any, Int] = mutable.Map()
-
+  private val repositoryFactories: mutable.Map[() => Any, Int] = mutable.Map()
+  private val restServices: mutable.Map[() => Any, Int] = mutable.Map()
 
   lazy val serialization: Serialization[_] = serializations.maxBy(_._2)._1().asInstanceOf[Serialization[_<:WrappedObject]]
   lazy val stdHandlerFactory: StdHandlerFactory = stdHandlerFactories.maxBy(_._2)._1().asInstanceOf[StdHandlerFactory]
+  lazy val repositoryFactory: RepositoryFactory = repositoryFactories.maxBy(_._2)._1().asInstanceOf[RepositoryFactory]
+  lazy val restService: RestService =  restServices.maxBy(_._2)._1().asInstanceOf[RestService]
 
   def initAnnotatedClass(): Unit = {
     if (isInited.getAndSet(true)) {
@@ -48,6 +52,10 @@ object SystemInit {
         case InjectType.OPERATOR_FUNCTION =>
           val operatorFunction = clazz.getAnnotation(classOf[IOpFunction])
           Evaluator.addOpFunction(operatorFunction.value(), func().asInstanceOf[AviatorFunction])
+
+        case InjectType.REPOSITORY_FACTORY =>
+          val IRepositoryFactory = clazz.getAnnotation(classOf[IRepositoryFactory])
+          repositoryFactories += (func -> IRepositoryFactory.priority())
 
         case InjectType.STD_HANDLER_FACTORY =>
           val stdHandlerFactory = clazz.getAnnotation(classOf[IStdHandlerFactory])
@@ -92,6 +100,10 @@ object SystemInit {
           val operatorFunction = field.getAnnotation(classOf[IOpFunction])
           Evaluator.addOpFunction(operatorFunction.value(), fieldObj.asInstanceOf[AviatorFunction])
 
+        case InjectType.REPOSITORY_FACTORY =>
+          val IRepositoryFactory = field.getAnnotation(classOf[IRepositoryFactory])
+          repositoryFactories += ((() => fieldObj) -> IRepositoryFactory.priority())
+
         case InjectType.STD_HANDLER_FACTORY =>
           val stdHandlerFactory = field.getAnnotation(classOf[IStdHandlerFactory])
           stdHandlerFactories += ((() => fieldObj) -> stdHandlerFactory.priority())
@@ -125,6 +137,10 @@ object SystemInit {
         case InjectType.OPERATOR_FUNCTION =>
           val operatorFunction = method.getAnnotation(classOf[IOpFunction])
           Evaluator.addOpFunction(operatorFunction.value(), methodObj().asInstanceOf[AviatorFunction])
+
+        case InjectType.REPOSITORY_FACTORY =>
+          val IRepositoryFactory = method.getAnnotation(classOf[IRepositoryFactory])
+          repositoryFactories += (methodObj -> IRepositoryFactory.priority())
 
         case InjectType.STD_HANDLER_FACTORY =>
           val stdHandlerFactory = method.getAnnotation(classOf[IStdHandlerFactory])

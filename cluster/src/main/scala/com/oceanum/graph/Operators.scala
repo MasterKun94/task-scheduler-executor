@@ -1,6 +1,7 @@
 package com.oceanum.graph
 
 import com.oceanum.annotation.ISerializationMessage
+import com.oceanum.api.entities.{ConvergeVertex, DecisionVertex, EndVertex, ForkVertex, JoinVertex, StartVertex, TaskVertex, Vertex}
 import com.oceanum.client.{Task, TaskClient}
 import com.oceanum.graph.StreamFlows._
 
@@ -153,5 +154,15 @@ object Operators {
 
   case class ReachEnd(unit: Unit)
     extends Operator[Nothing]  {
+  }
+
+  def from(vertex: Vertex): Operator[_<:StreamFlow] = vertex match {
+    case o: TaskVertex => TaskOperator(o.task, o.parallelism)
+    case o: ForkVertex => Fork(o.parallelism)
+    case o: JoinVertex => Join(o.parallelism)
+    case o: DecisionVertex => Decision(o.expr)
+    case o: ConvergeVertex => Converge(o.parallelism)
+    case o: StartVertex => Start()
+    case o: EndVertex => End()
   }
 }

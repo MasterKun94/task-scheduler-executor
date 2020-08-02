@@ -1,7 +1,9 @@
 package com.oceanum.exec
 
+import java.util.Date
 import java.util.concurrent.atomic.{AtomicBoolean, AtomicReference}
 
+import com.oceanum.client.Task
 import com.oceanum.common.{GraphContext, RichTaskMeta}
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -42,7 +44,7 @@ case class ExecutionTask[T <: TaskConfig](name: String,
     this.copy(retryCount = this.retryCount - 1).updateMeta(meta)
   }
 
-  def metadata: RichTaskMeta = env.taskMeta.asInstanceOf[RichTaskMeta]
+  def metadata: RichTaskMeta = RichTaskMeta(env.taskMeta)
 
   def prepareStart(implicit ec: ExecutionContext): Future[ExecutionTask[_<:TaskConfig]] = {
     prop.prepare(env)
@@ -51,5 +53,21 @@ case class ExecutionTask[T <: TaskConfig](name: String,
 
   def updateMeta(meta: RichTaskMeta): ExecutionTask[T] = {
     this.copy(env = env.copy(taskMeta = meta))
+  }
+}
+
+object ExecutionTask {
+  def from(task: Task, listener: EventListener): ExecutionTask[_ <: TaskConfig] = {
+    val env = task.env
+    val taskMeta = RichTaskMeta(env.taskMeta).copy(createTime = new Date())
+    ExecutionTask(
+      name = task.name,
+      retryCount = task.retryCount,
+      retryInterval = task.retryInterval,
+      priority = task.priority,
+      prop = TaskConfig.from(task.prop, taskMeta),
+      eventListener = listener,
+      env = env.copy(taskMeta = taskMeta)
+    )
   }
 }

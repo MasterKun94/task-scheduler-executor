@@ -2,6 +2,7 @@ package com.oceanum.exec.tasks
 
 import java.io.{File, IOException}
 
+import com.oceanum.client.TaskProp
 import com.oceanum.common.{Environment, GraphContext, TaskMeta}
 import com.oceanum.common.Implicits.PathHelper
 import com.oceanum.exec.{StdHandler, TaskConfig}

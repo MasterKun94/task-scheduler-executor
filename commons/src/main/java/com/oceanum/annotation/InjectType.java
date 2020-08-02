@@ -6,6 +6,7 @@ package com.oceanum.annotation;
  */
 public enum  InjectType {
     REPOSITORY,
+    REPOSITORY_FACTORY,
     SERIALIZATION,
     SERIALIZATION_MESSAGE,
     TRIGGER,

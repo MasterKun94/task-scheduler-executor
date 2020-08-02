@@ -4,7 +4,8 @@ import com.oceanum.common.Environment
 import com.oceanum.serialize.Serialization
 import org.apache.http.HttpHost
 import org.elasticsearch.action.ActionListener
-import org.elasticsearch.action.get.{GetRequest, GetResponse}
+import org.elasticsearch.action.bulk.{BulkRequest, BulkResponse}
+import org.elasticsearch.action.get.{GetRequest, GetResponse, MultiGetAction, MultiGetRequest, MultiGetRequestBuilder, MultiGetResponse}
 import org.elasticsearch.action.index.{IndexRequest, IndexResponse}
 import org.elasticsearch.action.search.{SearchRequest, SearchResponse}
 import org.elasticsearch.client.{RequestOptions, RestClient, RestHighLevelClient}
@@ -19,6 +20,7 @@ class EsUtil {
 
 object EsUtil {
   private val hostsKey = "es.hosts"
+  private val typ = "type"
   private lazy val hosts = Environment.getProperty(hostsKey, "localhost:9200")
     .split(",")
     .map(_.trim.split(":"))
@@ -31,15 +33,41 @@ object EsUtil {
   private implicit val ex: ExecutionContextExecutor = ExecutionContext.global
 
   def save[T<:AnyRef](idx: String, id: String, t: T): Future[Unit] = {
-    val req = new IndexRequest(idx, "type", id)
+    val req = new IndexRequest(idx, typ, id)
       .source(serialization.serialize[T](t), XContentType.JSON)
     val promise = Promise[Unit]()
     client.indexAsync(req, RequestOptions.DEFAULT, Listener[IndexResponse, Unit](promise)(_ => Unit))
     promise.future
   }
 
+  def save[T<:AnyRef](idx: String, t: T): Future[String] = {
+    val req = new IndexRequest(idx, typ)
+      .source(serialization.serialize[T](t), XContentType.JSON)
+    val promise = Promise[String]()
+    client.indexAsync(req, RequestOptions.DEFAULT, Listener[IndexResponse, String](promise)(_.getId))
+    promise.future
+  }
+
+  def saveAll[T<:AnyRef](idx: String, objs: Seq[(String, T)]): Future[Unit] = {
+    if (objs.isEmpty) {
+      return Future.successful(Unit)
+    }
+    val req = new BulkRequest()
+    for ((id, t) <- objs) {
+      req.add(new IndexRequest(idx, typ, id).source(serialization.serialize[T](t), XContentType.JSON))
+    }
+    val promise = Promise[Unit]()
+    client.bulkAsync(req, RequestOptions.DEFAULT, Listener[BulkResponse, Unit](promise) { res =>
+      res.getItems.find(_.isFailed) match {
+        case Some(res) => res.getFailure.getCause
+        case None => Unit
+      }
+    })
+    promise.future
+  }
+
   def findById[T<:AnyRef](idx: String, id: String)(implicit mf: Manifest[T]): Future[Option[T]] = {
-    val req = new GetRequest(idx, "type", id)
+    val req = new GetRequest(idx, typ, id)
     val promise = Promise[Option[T]]()
     client.getAsync(req, RequestOptions.DEFAULT, Listener[GetResponse, Option[T]](promise) { res =>
       if (res.isExists) {
@@ -52,10 +80,26 @@ object EsUtil {
     promise.future
   }
 
-  def find[T<:AnyRef](idx: String, expr: String)(implicit mf: Manifest[T]): Future[Array[T]] = {
+  def findByIdIn[T<:AnyRef](idx: String, ids: Seq[String])(implicit mf: Manifest[T]): Future[Seq[T]] = {
+    val req = new MultiGetRequest()
+    for (id <- ids) {
+      req.add(idx, typ, id)
+    }
+    val promise = Promise[Seq[T]]()
+    client.mgetAsync(req, RequestOptions.DEFAULT, Listener[MultiGetResponse, Seq[T]](promise) { res =>
+      res.getResponses
+        .filterNot(_.isFailed)
+        .map(_.getResponse)
+        .filter(_.isExists)
+        .map(res => serialization.deSerializeRaw(res.getSourceAsString)(mf))
+    })
+    promise.future
+  }
+
+  def find[T<:AnyRef](idx: String, expr: String)(implicit mf: Manifest[T]): Future[Seq[T]] = {
     val req = new SearchRequest(idx).source(parseExpr(expr))
-    val promise = Promise[Array[T]]()
-    client.searchAsync(req, RequestOptions.DEFAULT, Listener[SearchResponse, Array[T]](promise) { res =>
+    val promise = Promise[Seq[T]]()
+    client.searchAsync(req, RequestOptions.DEFAULT, Listener[SearchResponse, Seq[T]](promise) { res =>
       res.getHits.getHits.map(hit => serialization.deSerializeRaw(hit.getSourceAsString)(mf))
     })
     promise.future
@@ -70,7 +114,12 @@ object EsUtil {
 }
 
 class Listener[T, OUT](promise: Promise[OUT], func: T => OUT) extends ActionListener[T] {
-  override def onResponse(response: T): Unit = promise.success(func(response))
+  override def onResponse(response: T): Unit = {
+    func(response) match {
+      case e: Throwable => promise.failure(e)
+      case out => promise.success(out)
+    }
+  }
   override def onFailure(e: Exception): Unit = promise.failure(e)
 }
 

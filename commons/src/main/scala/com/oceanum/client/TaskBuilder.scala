@@ -1,10 +1,8 @@
 package com.oceanum.client
 
 import java.text.SimpleDateFormat
+import java.util.Date
 import java.util.concurrent.atomic.AtomicInteger
-import java.util.{Date, UUID}
-
-import scala.concurrent.duration.Duration
 
 /**
  * @author chenmingkun

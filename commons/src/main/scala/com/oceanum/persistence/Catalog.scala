@@ -1,10 +1,13 @@
 package com.oceanum.persistence
 
+import com.oceanum.common.SystemInit
+
 import scala.collection.concurrent.TrieMap
 import scala.concurrent.Future
 
 object Catalog {
   private val repositories: TrieMap[Manifest[_], Repository[_]] = TrieMap()
+  private lazy val repositoryFactory: RepositoryFactory = SystemInit.repositoryFactory
 
   def addRepository[T<:AnyRef](repository: Repository[T]): Unit = {
     repositories += (repository.manifest -> repository)
@@ -15,12 +18,22 @@ object Catalog {
   }
 
   def getRepository[T<:AnyRef](implicit mf: Manifest[T]): Repository[T] = {
-    repositories(mf).asInstanceOf[Repository[T]]
+    repositories.get(mf) match {
+      case Some(repo) => repo.asInstanceOf[Repository[T]]
+      case None =>
+        val repo = repositoryFactory.create(mf)
+        addRepository(repo)
+        repo
+    }
   }
 
   def save[T<:AnyRef](id: String, obj: T)(implicit mf: Manifest[T]): Future[Unit] = getRepository(mf).save(id, obj)
 
-  def findById[T<:AnyRef](idx: String)(implicit mf: Manifest[T]): Future[Option[T]] = getRepository(mf).findById(idx)
+  def saveAll[T<:AnyRef](objs: Seq[(String, T)])(implicit mf: Manifest[T]): Future[Unit] = getRepository(mf).saveAll(objs)
 
-  def find[T<:AnyRef](expr: String)(implicit mf: Manifest[T]): Future[Array[T]] = getRepository(mf).find(expr)
+  def findById[T<:AnyRef](id: String)(implicit mf: Manifest[T]): Future[Option[T]] = getRepository(mf).findById(id)
+
+  def findByIdIn[T<:AnyRef](ids: Seq[String])(implicit mf: Manifest[T]): Future[Seq[T]] = getRepository(mf).findByIdIn(ids)
+
+  def find[T<:AnyRef](expr: String)(implicit mf: Manifest[T]): Future[Seq[T]] = getRepository(mf).find(expr)
 }
