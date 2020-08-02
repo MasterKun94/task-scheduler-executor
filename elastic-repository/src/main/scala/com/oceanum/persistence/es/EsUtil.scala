@@ -11,7 +11,7 @@ import org.elasticsearch.action.index.{IndexRequest, IndexResponse}
 import org.elasticsearch.action.search.{SearchRequest, SearchResponse}
 import org.elasticsearch.client.{RequestOptions, RestClient, RestHighLevelClient}
 import org.elasticsearch.common.xcontent.XContentType
-import org.elasticsearch.index.query.QueryBuilders
+import org.elasticsearch.index.query.{QueryBuilder, QueryBuilders}
 import org.elasticsearch.search.builder.SearchSourceBuilder
 
 import scala.concurrent.{ExecutionContext, ExecutionContextExecutor, Future, Promise}
@@ -99,7 +99,10 @@ object EsUtil {
   }
 
   def find[T<:AnyRef](idx: String, expr: String)(implicit mf: Manifest[T]): Future[Seq[T]] = {
-    val req = new SearchRequest(idx).source(parseExpr(expr))
+    val req = new SearchRequest(idx)
+      .indices(idx)
+      .types(typ)
+      .source(parseExpr(expr))
     val promise = Promise[Seq[T]]()
     client.searchAsync(req, RequestOptions.DEFAULT, Listener[SearchResponse, Seq[T]](promise) { res =>
       res.getHits
@@ -110,7 +113,10 @@ object EsUtil {
   }
 
   def parseExpr(expr: String): SearchSourceBuilder = {
-    Evaluator.rawExecute(expr, new JavaHashMap(0)).asInstanceOf[SearchSourceBuilder]
+    Evaluator.rawExecute(expr, new JavaHashMap(0)) match {
+      case searchSourceBuilder: SearchSourceBuilder => searchSourceBuilder
+      case queryBuilder: QueryBuilder => new SearchSourceBuilder().query(queryBuilder)
+    }
   }
 }
 
