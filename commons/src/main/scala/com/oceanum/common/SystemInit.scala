@@ -3,7 +3,7 @@ package com.oceanum.common
 import java.util.concurrent.atomic.AtomicBoolean
 
 import com.googlecode.aviator.runtime.`type`.AviatorFunction
-import com.oceanum.annotation.{IOpFunction, IRepositoryFactory, ISerialization, ISerializationMessage, IStdHandlerFactory, InjectType, Injection}
+import com.oceanum.annotation.{IOpFunction, IRepositoryFactory, IRestService, ISerialization, ISerializationMessage, IStdHandlerFactory, InjectType, Injection}
 import com.oceanum.api.RestService
 import com.oceanum.exec.StdHandlerFactory
 import com.oceanum.expr.Evaluator
@@ -54,16 +54,20 @@ object SystemInit {
           Evaluator.addOpFunction(operatorFunction.value(), func().asInstanceOf[AviatorFunction])
 
         case InjectType.REPOSITORY_FACTORY =>
-          val IRepositoryFactory = clazz.getAnnotation(classOf[IRepositoryFactory])
-          repositoryFactories += (func -> IRepositoryFactory.priority())
+          val i = clazz.getAnnotation(classOf[IRepositoryFactory])
+          repositoryFactories += (func -> i.priority())
 
         case InjectType.STD_HANDLER_FACTORY =>
-          val stdHandlerFactory = clazz.getAnnotation(classOf[IStdHandlerFactory])
-          stdHandlerFactories += (func -> stdHandlerFactory.priority())
+          val i = clazz.getAnnotation(classOf[IStdHandlerFactory])
+          stdHandlerFactories += (func -> i.priority())
 
         case InjectType.SERIALIZATION =>
-          val iSerialization = clazz.getAnnotation(classOf[ISerialization])
-          serializations += (func -> iSerialization.priority())
+          val i = clazz.getAnnotation(classOf[ISerialization])
+          serializations += (func -> i.priority())
+
+        case InjectType.REST_SERVICE =>
+          val i = clazz.getAnnotation(classOf[IRestService])
+          restServices += (func -> i.priority())
 
         case InjectType.SERIALIZATION_MESSAGE =>
           val serializationMessage = clazz.getAnnotation(classOf[ISerializationMessage])
@@ -108,6 +112,10 @@ object SystemInit {
           val stdHandlerFactory = field.getAnnotation(classOf[IStdHandlerFactory])
           stdHandlerFactories += ((() => fieldObj) -> stdHandlerFactory.priority())
 
+        case InjectType.REST_SERVICE =>
+          val i = field.getAnnotation(classOf[IRestService])
+          restServices += ((() => fieldObj) -> i.priority())
+
         case InjectType.SERIALIZATION =>
           val iSerialization = field.getAnnotation(classOf[ISerialization])
           serializations += ((() => fieldObj) -> iSerialization.priority())
@@ -149,6 +157,10 @@ object SystemInit {
         case InjectType.SERIALIZATION =>
           val iSerialization = method.getAnnotation(classOf[ISerialization])
           serializations += (methodObj -> iSerialization.priority())
+
+        case InjectType.REST_SERVICE =>
+          val i = method.getAnnotation(classOf[IRestService])
+          restServices += (methodObj -> i.priority())
 
         case InjectType.INIT =>
           lazyInitSet += (methodObj.apply)

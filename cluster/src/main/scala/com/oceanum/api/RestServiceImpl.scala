@@ -1,5 +1,6 @@
 package com.oceanum.api
 import akka.stream.QueueOfferResult.{Dropped, Enqueued, Failure, QueueClosed}
+import com.oceanum.annotation.IRestService
 import com.oceanum.api.entities.RunWorkflowInfo
 import com.oceanum.client.TaskClient
 import com.oceanum.common.{ActorSystems, Environment, GraphMeta}
@@ -9,6 +10,7 @@ import scala.collection.concurrent.TrieMap
 import scala.concurrent.Future
 import scala.util.Success
 
+@IRestService(priority = 1)
 class RestServiceImpl extends AbstractRestService {
   import Environment.NONE_BLOCKING_EXECUTION_CONTEXT
   private implicit val client: TaskClient = TaskClient.create(ActorSystems.SYSTEM, Environment.CLUSTER_NODE_SEEDS)
@@ -56,7 +58,7 @@ class RestServiceImpl extends AbstractRestService {
   }
 
   override def killWorkflow(name: String): Future[Unit] = {
-    Future.sequence(hooks.remove(name).map(_.kill())).map(_ => Unit)
+    Future.sequence(hooks.remove(name).map(_.kill()).toSeq).map(_ => Unit)
   }
 
   override def stopWorkflow(name: String): Future[Unit] = {

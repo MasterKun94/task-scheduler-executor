@@ -3,13 +3,13 @@ package com.oceanum.api
 import akka.Done
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.server.Directives._
+import akka.http.scaladsl.server.Directives.{path, _}
 import akka.http.scaladsl.server.Route
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
-import com.oceanum.api.entities.{Coordinator, WorkflowDefine}
-import com.oceanum.common.{Environment, Log, SystemInit}
+import com.oceanum.api.entities.{Coordinator, RunWorkflowInfo, WorkflowDefine}
+import com.oceanum.common.{Environment, FallbackStrategy, GraphMeta, Log, SystemInit}
 
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
@@ -19,19 +19,54 @@ import scala.util.{Failure, Success}
  * @date 2020/8/2
  */
 object HttpServer extends Log {
-  private val host = Environment.HOST
-  private val port = Environment.FILE_SERVER_PORT
+  private lazy val host = Environment.HOST
+  private lazy val port = Environment.FILE_SERVER_PORT
   private implicit lazy val httpMat: ActorMaterializer = ActorMaterializer()
   private lazy val restService = SystemInit.restService
   private lazy val serialization = SystemInit.serialization
 
   private val route: Route = pathPrefix("api") {
-    pathPrefix("workflow" / Segment) { name =>
+    pathPrefix("workflow"/Segment) { name =>
+      (pathPrefix("status") & parameterMap) { map =>
+        val future: Future[GraphMeta] = map.get("id") match {
+          case Some(id) => restService.checkWorkflowState(name, id.toInt)
+          case None => restService.checkWorkflowState(name)
+        }
+        returnResponseWithEntity(future)
+      } ~
+        (pathPrefix("run") & parameterMap & extractDataBytes) { (map, bytes) =>
+          val future: Future[RunWorkflowInfo] = bytes
+            .map(_.utf8String)
+            .map(serialization.deSerializeRaw[GraphMeta])
+            .mapAsync(0)(meta => {
+              restService.runWorkflow(name, meta.fallbackStrategy, meta.env, map.get("keepAlive").forall(_.toBoolean))
+            })
+            .runReduce((f1, _) => f1)
+          returnResponseWithEntity(future)
+        } ~
+        (pathPrefix("rerun") & parameterMap & extractDataBytes) { (map, bytes) =>
+          val future: Future[RunWorkflowInfo] = bytes
+            .map(_.utf8String)
+            .map(serialization.deSerializeRaw[GraphMeta])
+            .mapAsync(0)(meta => {
+              restService.reRunWorkflow(name, meta.reRunStrategy, meta.env, map.get("keepAlive").forall(_.toBoolean))
+            })
+            .runReduce((f1, _) => f1)
+          returnResponseWithEntity(future)
+        } ~
+        pathPrefix("kill") {
+          val future: Future[RunWorkflowInfo] = restService.killWorkflow(name)
+          returnResponse(future)
+        } ~
+        pathPrefix("stop") {
+          val future: Future[RunWorkflowInfo] = restService.stopWorkflow(name)
+          returnResponse(future)
+        } ~
       get {
         val future = restService.getWorkflow(name)
         returnResponseWithEntity(future)
       } ~
-        path("execute") {
+        (post & put) {
           extractDataBytes { bytes =>
             val future = bytes
               .map(_.utf8String)
@@ -41,14 +76,6 @@ object HttpServer extends Log {
               .runForeach(unit => unit)
             returnResponse(future)
           }
-        } ~
-        path("status") {
-          val future = restService.checkWorkflowState(name)
-          returnResponseWithEntity(future)
-        } ~
-        path("kill") {
-          val future = restService.killWorkflow(name)
-          returnResponse(future)
         }
 
     } ~ {
@@ -111,7 +138,8 @@ object HttpServer extends Log {
   def start(): Future[Http.ServerBinding] = Http().bindAndHandle(route, host, port)
 
   def main(args: Array[String]): Unit = {
-    Environment.loadEnv(args)
+    Environment.loadEnv(Array("--conf=cluster/src/main/resources/application.properties"))
+    Environment.initSystem()
     println(host)
     println(port)
     start()
