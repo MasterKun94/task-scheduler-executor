@@ -69,9 +69,9 @@ class RestServiceImpl extends AbstractRestService {
     }
   }
 
-  override def runCoordinator(name: String): Unit = ???
+  override def runCoordinator(name: String): Future[Unit] = ???
 
-  override def killCoordinator(name: String): Future[Unit] = ???
+  override def stopCoordinator(name: String): Future[Unit] = ???
 
   override def suspendCoordinator(name: String): Future[Unit] = ???
 

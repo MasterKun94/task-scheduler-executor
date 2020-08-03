@@ -55,11 +55,11 @@ object HttpServer extends Log {
           returnResponseWithEntity(future)
         } ~
         pathPrefix("kill") {
-          val future: Future[RunWorkflowInfo] = restService.killWorkflow(name)
+          val future = restService.killWorkflow(name)
           returnResponse(future)
         } ~
         pathPrefix("stop") {
-          val future: Future[RunWorkflowInfo] = restService.stopWorkflow(name)
+          val future = restService.stopWorkflow(name)
           returnResponse(future)
         } ~
       get {
@@ -84,7 +84,7 @@ object HttpServer extends Log {
           val future = restService.getCoordinator(name)
           returnResponseWithEntity(future)
         } ~
-          path("execute") {
+          (post & put) {
             extractDataBytes { bytes =>
               val future = bytes
                 .map(_.utf8String)
@@ -95,12 +95,16 @@ object HttpServer extends Log {
               returnResponse(future)
             }
           } ~
+          path("run") {
+            val future = restService.runCoordinator(name)
+            returnResponse(future)
+          } ~
           path("status") {
             val future = restService.checkCoordinatorState(name)
             returnResponseWithEntity(future)
           } ~
-          path("kill") {
-            val future = restService.killCoordinator(name)
+          path("stop") {
+            val future = restService.stopCoordinator(name)
             returnResponse(future)
           } ~
           path("suspend") {

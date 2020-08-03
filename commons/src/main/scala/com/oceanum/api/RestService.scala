@@ -28,13 +28,13 @@ trait RestService {
 
   def submitCoordinator(coordinator: Coordinator): Future[Unit]
 
-  def runCoordinator(name: String)
+  def runCoordinator(name: String): Future[Unit]
 
   def getCoordinator(name: String): Future[Coordinator]
 
   def checkCoordinatorState(name: String): Future[CoordinatorMeta]
 
-  def killCoordinator(name: String): Future[Unit]
+  def stopCoordinator(name: String): Future[Unit]
 
   def suspendCoordinator(name: String): Future[Unit]
 

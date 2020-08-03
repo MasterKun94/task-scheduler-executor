@@ -72,7 +72,7 @@ object Graph {
     }.run()
 
 
-    instance.offer(new RichGraphMeta() addEnv ("file_name" -> "python"))
+    instance.offer(new RichGraphMeta().copy(id = 0) addEnv ("file_name" -> "python"))
 
     import scala.concurrent.ExecutionContext.Implicits.global
     promise.future.onComplete(meta => {
@@ -133,7 +133,7 @@ object Graph2 {
     }.run()
 
 
-    instance.offer(new RichGraphMeta() addEnv ("file_name" -> "python"))
+    instance.offer(new RichGraphMeta().copy(id = 0) addEnv ("file_name" -> "python"))
 
     import scala.concurrent.ExecutionContext.Implicits.global
     promise.future.onComplete(meta => {
@@ -190,7 +190,7 @@ object Graph3 {
     )).run()
 
 
-    instance.offer(new RichGraphMeta())
+    instance.offer(new RichGraphMeta().copy(id = 0))
 
     import scala.concurrent.ExecutionContext.Implicits.global
     promise.future.onComplete(meta => {
