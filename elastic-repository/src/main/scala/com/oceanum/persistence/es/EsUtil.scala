@@ -1,7 +1,7 @@
 package com.oceanum.persistence.es
 
 import com.oceanum.common.Environment
-import com.oceanum.expr.{Evaluator, JavaHashMap}
+import com.oceanum.expr.{Evaluator, JavaHashMap, JavaMap}
 import com.oceanum.serialize.Serialization
 import org.apache.http.HttpHost
 import org.elasticsearch.action.ActionListener
@@ -73,7 +73,6 @@ object EsUtil {
     val promise = Promise[Option[T]]()
     client.getAsync(req, RequestOptions.DEFAULT, Listener[GetResponse, Option[T]](promise) { res =>
       if (res.isExists) {
-        println(res.getSourceAsString)
         Some(serialization.deSerializeRaw(res.getSourceAsString)(mf))
       } else {
         None
@@ -98,11 +97,11 @@ object EsUtil {
     promise.future
   }
 
-  def find[T<:AnyRef](idx: String, expr: String)(implicit mf: Manifest[T]): Future[Seq[T]] = {
+  def find[T<:AnyRef](idx: String, expr: String, env: JavaMap[String, AnyRef])(implicit mf: Manifest[T]): Future[Seq[T]] = {
     val req = new SearchRequest(idx)
       .indices(idx)
       .types(typ)
-      .source(parseExpr(expr))
+      .source(parseExpr(expr, env))
     val promise = Promise[Seq[T]]()
     client.searchAsync(req, RequestOptions.DEFAULT, Listener[SearchResponse, Seq[T]](promise) { res =>
       res.getHits
@@ -112,8 +111,9 @@ object EsUtil {
     promise.future
   }
 
-  def parseExpr(expr: String): SearchSourceBuilder = {
-    Evaluator.rawExecute(expr, new JavaHashMap(0)) match {
+  def parseExpr(expr: String, env: JavaMap[String, AnyRef] = new JavaHashMap(0)): SearchSourceBuilder = {
+    val obj = Evaluator.rawExecute(expr, env)
+    obj match {
       case searchSourceBuilder: SearchSourceBuilder => searchSourceBuilder
       case queryBuilder: QueryBuilder => new SearchSourceBuilder().query(queryBuilder)
     }

@@ -37,7 +37,7 @@ object HttpServer extends Log {
               .map(_.utf8String)
               .map(serialization.deSerializeRaw[WorkflowDefine])
               .map(_.copy(name = name))
-              .mapAsync(1)(restService.executeWorkflow)
+              .mapAsync(1)(restService.submitWorkflow)
               .runForeach(unit => unit)
             returnResponse(future)
           }
@@ -63,7 +63,7 @@ object HttpServer extends Log {
                 .map(_.utf8String)
                 .map(serialization.deSerializeRaw[Coordinator])
                 .map(_.copy(name = name))
-                .mapAsync(1)(restService.executeCoordinator)
+                .mapAsync(1)(restService.submitCoordinator)
                 .runForeach(unit => unit)
               returnResponse(future)
             }

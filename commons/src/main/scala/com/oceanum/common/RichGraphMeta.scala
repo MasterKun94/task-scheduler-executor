@@ -6,7 +6,7 @@ import com.oceanum.annotation.ISerializationMessage
 
 @SerialVersionUID(1L)
 @ISerializationMessage("RICH_GRAPH_META")
-sealed class RichGraphMeta(id: Int = 0,
+sealed class RichGraphMeta(id: Int = -1,
                     name: String = UUID.randomUUID().toString,
                     reRunId: Int = 0,
                     tasks: Map[Int, RichTaskMeta] = Map.empty,

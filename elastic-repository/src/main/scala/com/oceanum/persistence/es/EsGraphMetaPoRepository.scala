@@ -2,6 +2,7 @@ package com.oceanum.persistence.es
 
 import com.oceanum.annotation.IRepository
 import com.oceanum.api.entities.WorkflowMetaInfo
+import com.oceanum.expr.{JavaHashMap, JavaMap}
 import com.oceanum.persistence.AbstractRepository
 
 import scala.concurrent.Future
@@ -18,5 +19,5 @@ class EsGraphMetaPoRepository extends AbstractRepository[WorkflowMetaInfo] {
 
   override def findByIdIn(ids: Seq[String]): Future[Seq[WorkflowMetaInfo]] = EsUtil.findByIdIn(index, ids)
 
-  override def find(expr: String): Future[Seq[WorkflowMetaInfo]] = EsUtil.find(index, expr)
+  override def find(expr: String, env: JavaMap[String, AnyRef] = new JavaHashMap(0)): Future[Seq[WorkflowMetaInfo]] = EsUtil.find(index, expr, env)
 }

@@ -45,25 +45,33 @@ object Workflow {
 
       override def close(): Unit = actor ! PoisonPill
     }
-    val atomicInteger = new AtomicInteger(0)
+    val idOffset = new AtomicInteger(-1)
     val source0 = Source
       .queue[Message](Environment.GRAPH_SOURCE_QUEUE_BUFFER_SIZE, OverflowStrategy.backpressure)
       .map { message =>
         val meta = message.meta
+
         val start =
           if (meta.reRunStrategy == ReRunStrategy.NONE) {
-            meta.copy(
-              createTime = createTime,
-              scheduleTime = new Date(),
-              startTime = new Date(),
-              endTime = null,
-              graphStatus = GraphStatus.RUNNING,
-              id = atomicInteger.getAndIncrement(),
-              reRunId = 0,
-              reRunFlag = false,
-              env = env ++ meta.env,
-              latestTaskId = -1
-            )
+            if (idOffset.get() >= meta.id) {
+              meta.copy(
+                error = new IllegalArgumentException("id is not legal, must higher than " + idOffset.get()),
+                graphStatus = GraphStatus.FAILED
+              )
+            } else {
+              idOffset.set(meta.id)
+              meta.copy(
+                createTime = createTime,
+                scheduleTime = new Date(),
+                startTime = new Date(),
+                endTime = null,
+                graphStatus = GraphStatus.RUNNING,
+                reRunId = 0,
+                reRunFlag = false,
+                env = env ++ meta.env,
+                latestTaskId = -1
+              )
+            }
           } else {
             meta.copy(
               createTime = createTime,
@@ -91,11 +99,11 @@ object Workflow {
     new Workflow(RunnableGraph.fromGraph(graph), metaHandler)
   }
 
-  def create(builder: GraphBuilder => Unit)(implicit taskClient: TaskClient, graphMetaHandler: GraphMetaHandler = GraphMetaHandler.default): Workflow = {
+  def create(builder: GraphBuilder => Unit)(implicit taskClient: TaskClient, graphMetaHandler: GraphMetaHandler = GraphMetaHandler.empty): Workflow = {
     create(Map.empty, builder)
   }
 
-  def fromGraph(workflowDefine: WorkflowDefine)(implicit taskClient: TaskClient, graphMetaHandler: GraphMetaHandler = GraphMetaHandler.default): Workflow = {
+  def fromGraph(workflowDefine: WorkflowDefine)(implicit taskClient: TaskClient, graphMetaHandler: GraphMetaHandler = GraphMetaHandler.empty): Workflow = {
     create(workflowDefine.env, implicit builder => {
       val dag = workflowDefine.dag
       val operators = dag.vertexes.mapValues(Operators.from)
@@ -109,7 +117,7 @@ object Workflow {
     )
   }
 
-  def fromJson(json: String)(implicit taskClient: TaskClient, graphMetaHandler: GraphMetaHandler = GraphMetaHandler.default): Workflow = {
+  def fromJson(json: String)(implicit taskClient: TaskClient, graphMetaHandler: GraphMetaHandler = GraphMetaHandler.empty): Workflow = {
     fromGraph(Serialization.default.deSerialize(json).asInstanceOf[WorkflowDefine])
   }
 }

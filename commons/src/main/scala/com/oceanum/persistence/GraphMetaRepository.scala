@@ -3,6 +3,7 @@ package com.oceanum.persistence
 import com.oceanum.annotation.IRepository
 import com.oceanum.api.entities.WorkflowMetaInfo
 import com.oceanum.common.{Environment, GraphMeta, TaskMeta}
+import com.oceanum.expr.{JavaHashMap, JavaMap}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -46,7 +47,7 @@ class GraphMetaRepository extends AbstractRepository[GraphMeta] {
 
   override def findByIdIn(ids: Seq[String]): Future[Seq[GraphMeta]] = convert(repo.findByIdIn(ids))
 
-  override def find(expr: String): Future[Seq[GraphMeta]] = convert(repo.find(expr))
+  override def find(expr: String, env: JavaMap[String, AnyRef] = new JavaHashMap(0)): Future[Seq[GraphMeta]] = convert(repo.find(expr, env))
 
   private def convert(future: Future[Seq[WorkflowMetaInfo]]): Future[Seq[GraphMeta]] = {
     future.flatMap { seq =>

@@ -8,11 +8,11 @@ import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
 trait GraphMetaHandler {
-  def onStart(graphMeta: GraphMeta): Unit
+  def onStart(graphMeta: GraphMeta): Unit = {}
 
-  def onRunning(graphMeta: GraphMeta, taskState: State): Unit
+  def onRunning(graphMeta: GraphMeta, taskState: State): Unit = {}
 
-  def onComplete(graphMeta: GraphMeta): Unit
+  def onComplete(graphMeta: GraphMeta): Unit = {}
 
   def close(): Unit = {}
 }

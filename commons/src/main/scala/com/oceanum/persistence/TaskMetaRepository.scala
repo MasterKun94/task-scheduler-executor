@@ -3,6 +3,7 @@ package com.oceanum.persistence
 import com.oceanum.annotation.IRepository
 import com.oceanum.api.entities.TaskMetaInfo
 import com.oceanum.common.{Environment, TaskMeta}
+import com.oceanum.expr.{JavaHashMap, JavaMap}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -23,5 +24,5 @@ class TaskMetaRepository extends AbstractRepository[TaskMeta] {
 
   override def findByIdIn(ids: Seq[String]): Future[Seq[TaskMeta]] = repo.findByIdIn(ids).map(_.map(_.toMeta))
 
-  override def find(expr: String): Future[Seq[TaskMeta]] = repo.find(expr).map(_.map(_.toMeta))
+  override def find(expr: String, env: JavaMap[String, AnyRef] = new JavaHashMap(0)): Future[Seq[TaskMeta]] = repo.find(expr, env).map(_.map(_.toMeta))
 }
