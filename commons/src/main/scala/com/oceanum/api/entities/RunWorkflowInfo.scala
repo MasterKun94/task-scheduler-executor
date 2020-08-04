@@ -2,8 +2,10 @@ package com.oceanum.api.entities
 
 import java.util.Date
 
+import com.oceanum.annotation.ISerializationMessage
 import com.oceanum.common.{FallbackStrategy, GraphMeta, ReRunStrategy}
 
+@ISerializationMessage("RUN_WORKFLOW_INFO")
 case class RunWorkflowInfo(id: Int,
                            name: String,
                            reRunId: Int,
