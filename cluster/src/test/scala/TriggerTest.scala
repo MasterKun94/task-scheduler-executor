@@ -6,7 +6,7 @@ object TriggerTest {
     Environment.loadEnv(Array("--conf=cluster/src/main/resources/application.properties"))
     SystemInit.initAnnotatedClass()
     val trigger = Triggers.getTrigger("quartz")
-    trigger.start("test1", Map("cron" -> "*/5 * * ? * *")) {
+    trigger.start("test1", Map("cron" -> "*/5 * * ? * *")) { date =>
       println("hello")
     }
   }

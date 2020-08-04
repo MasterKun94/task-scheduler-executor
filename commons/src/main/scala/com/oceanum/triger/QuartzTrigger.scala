@@ -28,6 +28,7 @@ class QuartzTrigger extends Trigger {
     val startTime = config.get("startTime").map(str => new Date(str.toLong))
     val calendar = config.get("calendar")
     val description = config.get("description")
+    stop(name)
     quartz.createSchedule(name, description, cron, calendar, Environment.TIME_ZONE)
     quartz.schedule(name, receiver, MessageRequireFireTime(msg), startTime)
   }

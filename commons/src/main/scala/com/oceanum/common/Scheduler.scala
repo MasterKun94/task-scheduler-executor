@@ -11,7 +11,7 @@ import Implicits._
  * @date 2020/6/29
  */
 object Scheduler {
-  implicit val ec: ExecutionContext = Environment.SCHEDULE_EXECUTION_CONTEXT
+  import Environment.NONE_BLOCKING_EXECUTION_CONTEXT
 
   def schedule(initialDelay: String, interval: String)(f: => Unit)(implicit context: ActorRefFactory): Cancellable = {
     schedule(fd"$initialDelay", fd"$interval")(f)

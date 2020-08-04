@@ -52,7 +52,6 @@ class ExecutionInstance(task: Task, actor: ActorRef) extends Actor with ActorLog
   var clientCheckTime: Long = System.currentTimeMillis()
 
   override def preStart(): Unit = {
-    implicit val executor: ExecutionContext = Environment.CLUSTER_NODE_TASK_INIT_EXECUTOR
     val interval = task.checkStateInterval
     log.info("receive operator: [{}], receive schedule check state request from [{}], start schedule with duration [{}]", executionTask, sender, interval)
     val cancelable: Cancellable = schedule(interval, interval) {

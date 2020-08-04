@@ -4,11 +4,14 @@ import com.oceanum.common.Environment
 import com.oceanum.expr.{Evaluator, JavaHashMap, JavaMap}
 import com.oceanum.serialize.Serialization
 import org.apache.http.HttpHost
+import org.apache.http.client.config.RequestConfig
+import org.apache.http.impl.nio.client.HttpAsyncClientBuilder
 import org.elasticsearch.action.ActionListener
 import org.elasticsearch.action.bulk.{BulkRequest, BulkResponse}
 import org.elasticsearch.action.get.{GetRequest, GetResponse, MultiGetAction, MultiGetRequest, MultiGetRequestBuilder, MultiGetResponse}
 import org.elasticsearch.action.index.{IndexRequest, IndexResponse}
 import org.elasticsearch.action.search.{SearchRequest, SearchResponse}
+import org.elasticsearch.client.RestClientBuilder.{HttpClientConfigCallback, RequestConfigCallback}
 import org.elasticsearch.client.{RequestOptions, RestClient, RestHighLevelClient}
 import org.elasticsearch.common.xcontent.XContentType
 import org.elasticsearch.index.query.{QueryBuilder, QueryBuilders}

@@ -3,14 +3,15 @@ package com.oceanum.api
 import akka.Done
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.server.Directives.{path, _}
+import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
+import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import com.oceanum.api.entities.{Coordinator, RunWorkflowInfo, WorkflowDefine}
-import com.oceanum.common.{Environment, FallbackStrategy, GraphMeta, Log, RichGraphMeta, SystemInit}
-
+import com.oceanum.common._
+import com.oceanum.common.Environment.NONE_BLOCKING_EXECUTION_CONTEXT
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
@@ -20,7 +21,7 @@ import scala.util.{Failure, Success}
  */
 object HttpServer extends Log {
   private lazy val host = Environment.HOST
-  private lazy val port = Environment.FILE_SERVER_PORT
+  private lazy val port = Environment.REST_SERVER_PORT
   private implicit lazy val httpMat: ActorMaterializer = ActorMaterializer()
   private lazy val restService = SystemInit.restService
   private lazy val serialization = SystemInit.serialization
@@ -34,14 +35,14 @@ object HttpServer extends Log {
         }
         returnResponseWithEntity(future)
       } ~
-        (pathPrefix("run") & parameterMap & extractDataBytes) { (map, bytes) =>
-            val future = deserializeAndRun[RichGraphMeta, RunWorkflowInfo](bytes) { meta =>
+        (pathPrefix("run") & parameterMap & extractRequestEntity) { (map, entity) =>
+            val future = deserializeAndRun[RichGraphMeta, RunWorkflowInfo](entity) { meta =>
               restService.runWorkflow(name, meta.fallbackStrategy, meta.env, map.get("keepAlive").forall(_.toBoolean), Option(meta.scheduleTime))
             }
             returnResponseWithEntity(future)
         } ~
-        (pathPrefix("rerun") & parameterMap & extractDataBytes) { (map, bytes) =>
-            val future = deserializeAndRun[RichGraphMeta, RunWorkflowInfo](bytes) { meta =>
+        (pathPrefix("rerun") & parameterMap & extractRequestEntity) { (map, entity) =>
+            val future = deserializeAndRun[RichGraphMeta, RunWorkflowInfo](entity) { meta =>
               restService.reRunWorkflow(name, meta.reRunStrategy, meta.env, map.get("keepAlive").forall(_.toBoolean))
             }
             returnResponseWithEntity(future)
@@ -58,21 +59,21 @@ object HttpServer extends Log {
         val future = restService.getWorkflow(name)
         returnResponseWithEntity(future)
       } ~
-        (post & put & extractDataBytes) { bytes =>
-          val future = deserializeAndRun[WorkflowDefine, Unit](bytes) { define =>
+        (post & put & extractRequestEntity) { entity =>
+          val future = deserializeAndRun[WorkflowDefine, Unit](entity) { define =>
             restService.submitWorkflow(define.copy(name = name))
           }
           returnResponse(future)
         }
-
-    } ~ {
+    } ~
+      {
       pathPrefix("coordinator" / Segment) { name =>
         get {
           val future = restService.getCoordinator(name)
           returnResponseWithEntity(future)
         } ~
-          (post & put & extractDataBytes) { bytes =>
-            val future = deserializeAndRun[Coordinator, Unit](bytes) { define =>
+          (post & put & extractRequestEntity) { entity =>
+            val future = deserializeAndRun[Coordinator, Unit](entity) { define =>
               restService.submitCoordinator(define.copy(name = name))
             }
               returnResponse(future)
@@ -101,11 +102,10 @@ object HttpServer extends Log {
     }
   }
 
-  def deserializeAndRun[T<:AnyRef, P](byteString: Source[ByteString, _])(func: T => Future[P])(implicit mf: Manifest[T]): Future[P] = {
-    byteString.map(_.utf8String)
+  def deserializeAndRun[T<:AnyRef, P](entity: RequestEntity)(func: T => Future[P])(implicit mf: Manifest[T]): Future[P] = {
+    Unmarshal(entity).to[String]
       .map(serialization.deSerializeRaw(_)(mf))
-      .mapAsync(1)(func)
-      .runReduce((f1, _) => f1)
+      .flatMap(func)
   }
 
   def returnResponse[T](future: Future[T]): Route = {

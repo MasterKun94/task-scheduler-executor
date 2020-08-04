@@ -29,6 +29,16 @@
             <version>${akka.version}</version>
         </dependency>
         <dependency>
+            <groupId>com.typesafe.akka</groupId>
+            <artifactId>akka-http_${scala.binary.version}</artifactId>
+            <version>${akka.http.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.typesafe.akka</groupId>
+            <artifactId>akka-stream_${scala.binary.version}</artifactId>
+            <version>${akka.version}</version>
+        </dependency>
+        <dependency>
             <groupId>com.enragedginger</groupId>
             <artifactId>akka-quartz-scheduler_${scala.binary.version}</artifactId>
             <version>1.8.1-akka-2.5.x</version>

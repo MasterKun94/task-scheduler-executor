@@ -19,7 +19,7 @@ import scala.util.{Failure, Success, Try}
 @IRestService(priority = 1)
 class RestServiceImpl extends AbstractRestService {
   import Environment.NONE_BLOCKING_EXECUTION_CONTEXT
-  private implicit val client: TaskClient = TaskClient.create(actorSystem(), Environment.CLUSTER_NODE_SEEDS)
+  private implicit val client: TaskClient = TaskClient.create(actorSystem, Environment.CLUSTER_NODE_SEEDS)
   private val workflows: TrieMap[String, WorkflowInstance] = TrieMap()
   private val hooks: TrieMap[(String, Int), GraphHook] = TrieMap()
 

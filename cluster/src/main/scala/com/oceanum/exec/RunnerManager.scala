@@ -117,8 +117,8 @@ object RunnerManager extends Log {
 
   private def run(prop: Prop): ExitCode = {
     val queue = new ArrayBlockingQueue[Try[Prop]](1)
-    prop.prepareStart(ExecutionContext.global)
-      .onComplete(queue.put)(Environment.CLUSTER_NODE_TASK_INIT_EXECUTOR)
+    prop.prepareStart(Environment.FILE_SYSTEM_EXECUTION_CONTEXT)
+      .onComplete(queue.put)(Environment.NONE_BLOCKING_EXECUTION_CONTEXT)
     queue.take() match {
       case Success(task) =>
         runners.find(_.executable(task)) match {

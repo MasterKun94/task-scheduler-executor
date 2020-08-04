@@ -112,7 +112,7 @@ abstract class AbstractRestService extends RestService {
   }
 
   override def runCoordinator(name: String): Future[Unit] = {
-    getCoordinator(name).map[Unit] { coord =>
+    getCoordinator(name).flatMap[Unit] { coord =>
       val trigger = Triggers.getTrigger(coord.trigger.name)
       trigger
         .start(name, coord.trigger.config) { date =>
@@ -129,10 +129,8 @@ abstract class AbstractRestService extends RestService {
           }(actorSystem)
         case None => // do nothing
       }
+      coordinatorStateRepo.save(name, CoordinatorState(name, CoordinatorState.RUNNING))
     }
-      .andThen {
-        case Success(_) => coordinatorStateRepo.save(name, CoordinatorState(name, CoordinatorState.RUNNING))
-      }
   }
 
   def updateCoordinatorLog(coordinator: Coordinator, workflowInfo: Try[RunWorkflowInfo]): Future[Unit] = {
@@ -161,33 +159,36 @@ abstract class AbstractRestService extends RestService {
 
   override def suspendCoordinator(name: String): Future[Boolean] = {
     getCoordinator(name)
-      .map { coord =>
-        Triggers.getTrigger(coord.trigger.name).suspend(name)
-      }
-      .andThen {
-        case Success(true) => coordinatorStateRepo.save(name, CoordinatorState(name, CoordinatorState.SUSPENDED))
+      .flatMap { coord =>
+        if (Triggers.getTrigger(coord.trigger.name).suspend(name)) {
+          coordinatorStateRepo.save(name, CoordinatorState(name, CoordinatorState.SUSPENDED)).map(_ => true)
+        } else {
+          Future(false)
+        }
       }
   }
 
   override def stopCoordinator(name: String): Future[Boolean] = {
     getCoordinator(name).flatMap { coord =>
       stopWorkflow(coord.workflowDefine.name)
-        .map { _ =>
-          Triggers.getTrigger(coord.trigger.name).stop(name)
-        }
-        .andThen {
-          case Success(true) => coordinatorStateRepo.save(name, CoordinatorState(name, CoordinatorState.STOPPED))
+        .flatMap { _ =>
+          if (Triggers.getTrigger(coord.trigger.name).stop(name)) {
+            coordinatorStateRepo.save(name, CoordinatorState(name, CoordinatorState.STOPPED)).map(_ => true)
+          } else {
+            Future(false)
+          }
         }
     }
   }
 
   override def resumeCoordinator(name: String, discardFormerWorkflows: Boolean): Future[Boolean] = {
     getCoordinator(name)
-      .map { coord =>
-        Triggers.getTrigger(coord.trigger.name).resume(name)
-      }
-      .andThen {
-        case Success(true) => coordinatorStateRepo.save(name, CoordinatorState(name, CoordinatorState.RUNNING))
+      .flatMap { coord =>
+        if (Triggers.getTrigger(coord.trigger.name).resume(name)) {
+          coordinatorStateRepo.save(name, CoordinatorState(name, CoordinatorState.RUNNING)).map(_ => true)
+        } else {
+          Future(false)
+        }
       }
   }
 

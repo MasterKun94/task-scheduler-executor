@@ -46,7 +46,6 @@ object Environment {
   lazy val EXEC_UN_REACH_TIMEOUT: Long = fd"100s".toMillis
 
   lazy val HOST: String = getProperty(Key.HOST, "127.0.0.1")
-  lazy val CLUSTER_NODE_TASK_INIT_EXECUTOR: ExecutionContext = ExecutionContext.global
   lazy val CLUSTER_NODE_SYSTEM_NAME: String = getProperty(Key.CLUSTER_NODE_SYSTEM_NAME, "cluster")
   lazy val CLUSTER_NODE_PORT: Int = getProperty(Key.CLUSTER_NODE_PORT, "4551").toInt
   lazy val CLUSTER_NODE_SEEDS: Seq[String] = getProperty(Key.CLUSTER_NODE_SEEDS, s"$HOST:$CLUSTER_NODE_PORT").split(",").map(node => s"akka.tcp://$CLUSTER_NODE_SYSTEM_NAME@$node").toSeq
@@ -64,23 +63,9 @@ object Environment {
 
   lazy val GRAPH_FLOW_DEFAULT_PARALLELISM: Int = 1
   lazy val GRAPH_SOURCE_QUEUE_BUFFER_SIZE: Int = 100
-  lazy val GRAPH_DEFAULT_EXECUTOR: ExecutionContext = ExecutionContext.global
 
   lazy val FILE_CLIENT_DEFAULT_SCHEME: String = getProperty(Key.FILE_CLIENT_DEFAULT_SCHEME, "hdfs")
-  lazy val FILE_SERVER_CONTEXT_PATH: String = getProperty(Key.FILE_SERVER_CONTEXT_PATH, "file")
-  lazy val FILE_SERVER_PORT: Int = getProperty(Key.FILE_SERVER_PORT, "7011").toInt
-  lazy val FILE_SERVER_SYSTEM_NAME: String = getProperty(Key.FILE_SERVER_SYSTEM_NAME, "file-server")
-  lazy val FILE_SERVER_CHUNK_SIZE: Int = getProperty(Key.FILE_SERVER_CHUNK_SIZE, "8192").toInt
-  lazy val FILE_SERVER_BASE_PATH: String = fileServerBasePath(getProperty(Key.FILE_SERVER_BASE_PATH, if (OS == WINDOWS) "" else "/"))
-  lazy val FILE_SERVER_RECURSIVE_TRANSFER_MAX: Int = getProperty(Key.FILE_SERVER_RECURSIVE_TRANSFER_MAX, "100").toInt
-  lazy val FILE_SERVER_DISPATCHER_CORE_POOL_SIZE_MIN: Int = getProperty(Key.FILE_SERVER_DISPATCHER_CORE_POOL_SIZE_MIN, "6").toInt
-  lazy val FILE_SERVER_DISPATCHER_CORE_POOL_SIZE_MAX: Int = getProperty(Key.FILE_SERVER_DISPATCHER_CORE_POOL_SIZE_MAX, "60").toInt
-  lazy val FILE_SERVER_DISPATCHER_CORE_POOL_SIZE_FACTOR: Int = getProperty(Key.FILE_SERVER_DISPATCHER_CORE_POOL_SIZE_MIN, "5").toInt
-  lazy val FILE_SERVER_HOST_CONNECTION_POOL_MAX_RETRIES: Int = getProperty(Key.FILE_SERVER_HOST_CONNECTION_POOL_MAX_RETRIES, "5").toInt
-  lazy val FILE_SERVER_HOST_CONNECTION_POOL_MAX_CONNECTIONS: Int = getProperty(Key.FILE_SERVER_HOST_CONNECTION_POOL_MAX_CONNECTIONS, "12").toInt
-  lazy val FILE_SERVER_HOST_CONNECTION_POOL_MIN_CONNECTIONS: Int = getProperty(Key.FILE_SERVER_HOST_CONNECTION_POOL_MIN_CONNECTIONS, "1").toInt
-  lazy val FILE_SERVER_HOST_CONNECTION_POOL_MAX_OPEN_REQUESTS: Int = getProperty(Key.FILE_SERVER_HOST_CONNECTION_POOL_MAX_OPEN_REQUESTS, "64").toInt
-  lazy val FILE_SERVER_LOGGER: String = getProperty(Key.FILE_SERVER_LOGGER, logger)
+  lazy val REST_SERVER_PORT: Int = getProperty(Key.REST_SERVER_PORT, "7011").toInt
   lazy val TASK_INFO_TRIGGER_INTERVAL: FiniteDuration = fd"${getProperty(Key.CLUSTER_NODE_TASK_INFO_TRIGGER_INTERVAL, "20s")}"
 
   lazy val PATH_SEPARATOR: String = File.separator
@@ -99,7 +84,6 @@ object Environment {
   lazy val HADOOP_BUFFER_SIZE: Int = getProperty(Key.HADOOP_BUFFER_SIZE, "8192").toInt
   lazy val DEV_MODE: Boolean = getProperty(Key.DEV_MODE, "false").toBoolean
   lazy val logger = "akka.event.slf4j.Slf4jLogger"
-  lazy val SCHEDULE_EXECUTION_CONTEXT: ExecutionContext = ExecutionContext.global
   lazy val AVIATOR_CACHE_ENABLED: Boolean = true
   lazy val AVIATOR_CACHE_CAPACITY: Int = 10000
   lazy val OS: OS = {
@@ -110,6 +94,7 @@ object Environment {
   }
 
   implicit lazy val NONE_BLOCKING_EXECUTION_CONTEXT: ExecutionContextExecutor = ActorSystems.SYSTEM.dispatcher
+  implicit lazy val FILE_SYSTEM_EXECUTION_CONTEXT: ExecutionContext = ExecutionContext.global
 
   def printEnv(): Unit = {
     import scala.collection.JavaConversions.asScalaSet
@@ -259,21 +244,7 @@ object Environment {
     val CLIENT_NODE_PORT: String = "client-node.port"
     val CLIENT_NODE_LOGGER: String = "client-node.logger"
     val FILE_CLIENT_DEFAULT_SCHEME: String = "file-client.default-scheme"
-    val FILE_CLIENT_CLASSES: String = "file-client.classes"
-    val FILE_SERVER_PORT = "file-server.port"
-    val FILE_SERVER_SYSTEM_NAME = "file-server.system-name"
-    val FILE_SERVER_CHUNK_SIZE: String = "file-server.chunk-size"
-    val FILE_SERVER_BASE_PATH: String = "file-server.base-path"
-    val FILE_SERVER_CONTEXT_PATH = "file-server.context-path"
-    val FILE_SERVER_RECURSIVE_TRANSFER_MAX = "file-server.recursive-transfer-max"
-    val FILE_SERVER_DISPATCHER_CORE_POOL_SIZE_MIN = "file-server.dispatcher.core-pool-size-min"
-    val FILE_SERVER_DISPATCHER_CORE_POOL_SIZE_FACTOR = "file-server.dispatcher.core-pool-size-factor"
-    val FILE_SERVER_DISPATCHER_CORE_POOL_SIZE_MAX = "file-server.dispatcher.core-pool-size-max"
-    val FILE_SERVER_HOST_CONNECTION_POOL_MAX_CONNECTIONS = "file-server.host-connection.pool.max-connections"
-    val FILE_SERVER_HOST_CONNECTION_POOL_MIN_CONNECTIONS = "file-server.host-connection.pool.min-connections"
-    val FILE_SERVER_HOST_CONNECTION_POOL_MAX_RETRIES = "file-server.host-connection.pool.max-retries"
-    val FILE_SERVER_HOST_CONNECTION_POOL_MAX_OPEN_REQUESTS = "file-server.host-connection.pool.max-open-requests"
-    val FILE_SERVER_LOGGER = "file-server.logger"
+    val REST_SERVER_PORT = "rest-server.port"
     val DEV_MODE: String = "dev-mode"
     val LOG_LOGBACK = "log.logback"
     val LOG_FILE_DIR = "log.file.dir"
