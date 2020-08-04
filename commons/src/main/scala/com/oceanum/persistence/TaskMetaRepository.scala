@@ -18,6 +18,8 @@ class TaskMetaRepository extends AbstractRepository[TaskMeta] {
 
   override def save(id: String, obj: TaskMeta): Future[Unit] = repo.save(id, TaskMetaInfo.from(obj))
 
+  override def save(obj: TaskMeta): Future[String] = repo.save(TaskMetaInfo.from(obj))
+
   override def saveAll(objs: Seq[(String, TaskMeta)]): Future[Unit] = repo.saveAll(objs.map(kv => (kv._1, TaskMetaInfo.from(kv._2))))
 
   override def findById(id: String): Future[Option[TaskMeta]] = repo.findById(id).map(_.map(_.toMeta))

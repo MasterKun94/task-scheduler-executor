@@ -3,7 +3,6 @@ package com.oceanum.cluster
 import akka.actor.{Actor, ActorRef, Props}
 import akka.cluster.pubsub.DistributedPubSub
 import akka.cluster.pubsub.DistributedPubSubMediator.{Publish, Subscribe, Unsubscribe}
-import com.oceanum.common.ActorSystems.SYSTEM
 import com.oceanum.common._
 import com.oceanum.exec.RunnerManager
 

@@ -10,6 +10,7 @@ import com.oceanum.expr.Evaluator
 import com.oceanum.file.FileSystem
 import com.oceanum.persistence.{Catalog, Repository, RepositoryFactory}
 import com.oceanum.serialize.{Serialization, WrappedObject}
+import com.oceanum.triger.{Trigger, Triggers}
 import org.reflections.Reflections
 
 import scala.collection.JavaConversions.asScalaSet
@@ -48,6 +49,9 @@ object SystemInit {
 
         case InjectType.FUNCTION =>
           Evaluator.addFunction(func().asInstanceOf[AviatorFunction])
+
+        case InjectType.TRIGGER =>
+          Triggers.addTrigger(func().asInstanceOf[Trigger])
 
         case InjectType.OPERATOR_FUNCTION =>
           val operatorFunction = clazz.getAnnotation(classOf[IOpFunction])

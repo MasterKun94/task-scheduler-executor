@@ -13,6 +13,8 @@ class EsTaskMetaPoRepository extends AbstractRepository[TaskMetaInfo] {
 
   override def save(id: String, obj: TaskMetaInfo): Future[Unit] = EsUtil.save(index, id, obj)
 
+  override def save(obj: TaskMetaInfo): Future[String] = EsUtil.save(index, obj)
+
   override def saveAll(objs: Seq[(String, TaskMetaInfo)]): Future[Unit] = EsUtil.saveAll(index, objs)
 
   override def findById(id: String): Future[Option[TaskMetaInfo]] = EsUtil.findById(index, id)

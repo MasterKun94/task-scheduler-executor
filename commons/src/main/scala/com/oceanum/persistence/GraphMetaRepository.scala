@@ -25,7 +25,11 @@ class GraphMetaRepository extends AbstractRepository[GraphMeta] {
     f1.flatMap(_ => f2)
   }
 
-  override def saveAll(objs: Seq[(String, GraphMeta)]): Future[Unit] = {
+  override def save(obj: GraphMeta): Future[String] = {
+    throw new UnsupportedOperationException
+  }
+
+    override def saveAll(objs: Seq[(String, GraphMeta)]): Future[Unit] = {
     val pos = objs.map(kv => (kv._1, WorkflowMetaInfo.from(kv._2)))
     val tms = objs
       .flatMap(t => t._2.tasks.map(m => (t._2, m._2)))

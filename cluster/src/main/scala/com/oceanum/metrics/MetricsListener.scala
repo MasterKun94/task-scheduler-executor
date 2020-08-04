@@ -7,7 +7,6 @@ import akka.cluster.pubsub.DistributedPubSub
 import akka.cluster.pubsub.DistributedPubSubMediator.{Subscribe, SubscribeAck, Unsubscribe}
 import akka.cluster.singleton.{ClusterSingletonManager, ClusterSingletonManagerSettings}
 import akka.cluster.{Cluster, ClusterEvent}
-import com.oceanum.common.ActorSystems.SYSTEM
 import com.oceanum.common.Scheduler.schedule
 import com.oceanum.common._
 

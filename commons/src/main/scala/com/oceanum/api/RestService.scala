@@ -1,6 +1,6 @@
 package com.oceanum.api
 
-import com.oceanum.api.entities.{Coordinator, CoordinatorMeta, RunWorkflowInfo, WorkflowDefine}
+import com.oceanum.api.entities.{Coordinator, CoordinatorLog, CoordinatorState, RunWorkflowInfo, WorkflowDefine}
 import com.oceanum.common.{FallbackStrategy, GraphMeta, ReRunStrategy}
 
 import scala.concurrent.Future
@@ -22,9 +22,11 @@ trait RestService {
 
   def checkWorkflowState(name: String, id: Int): Future[GraphMeta]
 
-  def killWorkflow(name: String): Future[Unit]
+  def killWorkflow(name: String, id: Int): Future[Unit]
 
   def stopWorkflow(name: String): Future[Unit]
+
+  def isWorkflowAlive(name: String): Future[Boolean]
 
   def submitCoordinator(coordinator: Coordinator): Future[Unit]
 
@@ -32,12 +34,12 @@ trait RestService {
 
   def getCoordinator(name: String): Future[Coordinator]
 
-  def checkCoordinatorState(name: String): Future[CoordinatorMeta]
+  def checkCoordinatorState(name: String): Future[CoordinatorState.value]
 
-  def stopCoordinator(name: String): Future[Unit]
+  def stopCoordinator(name: String): Future[Boolean]
 
-  def suspendCoordinator(name: String): Future[Unit]
+  def suspendCoordinator(name: String): Future[Boolean]
 
-  def resumeCoordinator(name: String, discardFormerWorkflows: Boolean): Future[Unit]
+  def resumeCoordinator(name: String, discardFormerWorkflows: Boolean): Future[Boolean]
 
 }

@@ -20,7 +20,8 @@ case class WorkflowMetaInfo(id: Int,
                             scheduleTime: Date,
                             startTime: Date,
                             endTime: Date,
-                            env: Map[String, Any]) {
+                            env: Map[String, Any],
+                            host: String) {
 
   def toMeta(taskMetas: Seq[TaskMeta]): RichGraphMeta = new RichGraphMeta (
     id = id,
@@ -36,7 +37,8 @@ case class WorkflowMetaInfo(id: Int,
     scheduleTime = scheduleTime,
     startTime = startTime,
     endTime = endTime,
-    env = env
+    env = env,
+    host = host
   )
 }
 
@@ -55,6 +57,7 @@ object WorkflowMetaInfo {
     scheduleTime = graphMeta.scheduleTime,
     startTime = graphMeta.startTime,
     endTime = graphMeta.endTime,
-    env = graphMeta.env
+    env = graphMeta.env,
+    host = graphMeta.host
   )
 }

@@ -23,6 +23,8 @@ class EsRepositoryFactory extends RepositoryFactory {
 
     override def save(id: String, obj: T): Future[Unit] = EsUtil.save(index, id, obj)
 
+    override def save(obj: T): Future[String] = EsUtil.save(index, obj)
+
     override def saveAll(objs: Seq[(String, T)]): Future[Unit] = EsUtil.saveAll(index, objs)
 
     override def findById(id: String): Future[Option[T]] = EsUtil.findById(index, id)

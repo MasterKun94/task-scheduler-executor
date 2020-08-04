@@ -13,6 +13,8 @@ class EsGraphMetaPoRepository extends AbstractRepository[WorkflowMetaInfo] {
 
   override def save(id: String, obj: WorkflowMetaInfo): Future[Unit] = EsUtil.save(index, id, obj)
 
+  override def save(obj: WorkflowMetaInfo): Future[String] = EsUtil.save(index, obj)
+
   override def saveAll(objs: Seq[(String, WorkflowMetaInfo)]): Future[Unit] = EsUtil.saveAll(index, objs)
 
   override def findById(id: String): Future[Option[WorkflowMetaInfo]] = EsUtil.findById(index, id)

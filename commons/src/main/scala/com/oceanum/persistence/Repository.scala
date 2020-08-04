@@ -9,6 +9,8 @@ trait Repository[T<:AnyRef] {
 
   def save(id: String, obj: T): Future[Unit]
 
+  def save(obj: T): Future[String]
+
   def saveAll(objs: Seq[(String, T)]): Future[Unit]
 
   def findById(id: String): Future[Option[T]]

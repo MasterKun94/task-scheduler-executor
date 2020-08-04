@@ -34,32 +34,20 @@ object HttpServer extends Log {
         }
         returnResponseWithEntity(future)
       } ~
-        (pathPrefix("run") & parameterMap) { map =>
-          extractDataBytes { bytes =>
-            val future: Future[RunWorkflowInfo] = bytes
-              .map(_.utf8String)
-              .map(serialization.deSerializeRaw[RichGraphMeta])
-              .mapAsync(1)(meta => {
-                restService.runWorkflow(name, meta.fallbackStrategy, meta.env, map.get("keepAlive").forall(_.toBoolean))
-              })
-              .runReduce((f1, _) => f1)
+        (pathPrefix("run") & parameterMap & extractDataBytes) { (map, bytes) =>
+            val future = deserializeAndRun[RichGraphMeta, RunWorkflowInfo](bytes) { meta =>
+              restService.runWorkflow(name, meta.fallbackStrategy, meta.env, map.get("keepAlive").forall(_.toBoolean))
+            }
             returnResponseWithEntity(future)
-          }
         } ~
-        (pathPrefix("rerun") & parameterMap) { map =>
-          extractDataBytes { bytes =>
-            val future: Future[RunWorkflowInfo] = bytes
-              .map(_.utf8String)
-              .map(serialization.deSerializeRaw[RichGraphMeta])
-              .mapAsync(1)(meta => {
-                restService.reRunWorkflow(name, meta.reRunStrategy, meta.env, map.get("keepAlive").forall(_.toBoolean))
-              })
-              .runReduce((f1, _) => f1)
+        (pathPrefix("rerun") & parameterMap & extractDataBytes) { (map, bytes) =>
+            val future = deserializeAndRun[RichGraphMeta, RunWorkflowInfo](bytes) { meta =>
+              restService.reRunWorkflow(name, meta.reRunStrategy, meta.env, map.get("keepAlive").forall(_.toBoolean))
+            }
             returnResponseWithEntity(future)
-          }
         } ~
-        pathPrefix("kill") {
-          val future = restService.killWorkflow(name)
+        (pathPrefix("kill") & parameterMap) { map =>
+          val future = restService.killWorkflow(name, map.get("id").map(_.toInt).getOrElse(-1))
           returnResponse(future)
         } ~
         pathPrefix("stop") {
@@ -70,16 +58,11 @@ object HttpServer extends Log {
         val future = restService.getWorkflow(name)
         returnResponseWithEntity(future)
       } ~
-        (post & put) {
-          extractDataBytes { bytes =>
-            val future = bytes
-              .map(_.utf8String)
-              .map(serialization.deSerializeRaw[WorkflowDefine])
-              .map(_.copy(name = name))
-              .mapAsync(1)(restService.submitWorkflow)
-              .runForeach(unit => unit)
-            returnResponse(future)
+        (post & put & extractDataBytes) { bytes =>
+          val future = deserializeAndRun[WorkflowDefine, Unit](bytes) { define =>
+            restService.submitWorkflow(define.copy(name = name))
           }
+          returnResponse(future)
         }
 
     } ~ {
@@ -88,16 +71,11 @@ object HttpServer extends Log {
           val future = restService.getCoordinator(name)
           returnResponseWithEntity(future)
         } ~
-          (post & put) {
-            extractDataBytes { bytes =>
-              val future = bytes
-                .map(_.utf8String)
-                .map(serialization.deSerializeRaw[Coordinator])
-                .map(_.copy(name = name))
-                .mapAsync(1)(restService.submitCoordinator)
-                .runForeach(unit => unit)
-              returnResponse(future)
+          (post & put & extractDataBytes) { bytes =>
+            val future = deserializeAndRun[Coordinator, Unit](bytes) { define =>
+              restService.submitCoordinator(define.copy(name = name))
             }
+              returnResponse(future)
           } ~
           path("run") {
             val future = restService.runCoordinator(name)
@@ -121,6 +99,13 @@ object HttpServer extends Log {
           }
       }
     }
+  }
+
+  def deserializeAndRun[T<:AnyRef, P](byteString: Source[ByteString, _])(func: T => Future[P])(implicit mf: Manifest[T]): Future[P] = {
+    byteString.map(_.utf8String)
+      .map(serialization.deSerializeRaw(_)(mf))
+      .mapAsync(1)(func)
+      .runReduce((f1, _) => f1)
   }
 
   def returnResponse[T](future: Future[T]): Route = {

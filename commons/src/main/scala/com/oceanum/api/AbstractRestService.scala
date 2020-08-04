@@ -1,10 +1,17 @@
 package com.oceanum.api
-import com.oceanum.api.entities.{Coordinator, CoordinatorMeta, RunWorkflowInfo, WorkflowDefine}
-import com.oceanum.common.{FallbackStrategy, GraphMeta, ReRunStrategy, RichGraphMeta, RichTaskMeta, TaskMeta}
-import com.oceanum.persistence.Catalog
+import java.util.Date
+import java.util.concurrent.TimeUnit
 
-import scala.concurrent.Future
+import akka.actor.ActorSystem
+import com.oceanum.api.entities.{Coordinator, CoordinatorLog, CoordinatorState, RunWorkflowInfo, WorkflowDefine}
+import com.oceanum.common._
+import com.oceanum.persistence.Catalog
+import com.oceanum.triger.Triggers
+
 import scala.collection.JavaConversions.mapAsJavaMap
+import scala.concurrent.Future
+import scala.concurrent.duration.FiniteDuration
+import scala.util.{Failure, Success, Try}
 
 /**
  * @author chenmingkun
@@ -14,8 +21,11 @@ abstract class AbstractRestService extends RestService {
   private val workflowDefineRepo = Catalog.getRepository[WorkflowDefine]
   private val coordinatorRepo = Catalog.getRepository[Coordinator]
   private val graphMetaRepo = Catalog.getRepository[GraphMeta]
-  private val coordinatorMetaRepo = Catalog.getRepository[CoordinatorMeta]
+  private val coordinatorLogRepo = Catalog.getRepository[CoordinatorLog]
+  private val coordinatorStateRepo = Catalog.getRepository[CoordinatorState]
   import com.oceanum.common.Environment.NONE_BLOCKING_EXECUTION_CONTEXT
+
+  def actorSystem: ActorSystem
 
   override def submitWorkflow(workflowDefine: WorkflowDefine): Future[Unit] = {
     workflowDefineRepo.save(workflowDefine.name, workflowDefine)
@@ -26,7 +36,14 @@ abstract class AbstractRestService extends RestService {
       val newMeta = RichGraphMeta(meta).copy(
         id = meta.id + 1,
         reRunStrategy = ReRunStrategy.NONE,
-        env = meta.env ++ env)
+        env = meta.env ++ env,
+        createTime = new Date(),
+        scheduleTime = null,
+        startTime = null,
+        endTime = null,
+        reRunId = 0,
+        reRunFlag = false,
+        host = Environment.HOST)
       runWorkflow(name, newMeta, keepAlive)
     })
   }
@@ -36,7 +53,14 @@ abstract class AbstractRestService extends RestService {
   override def reRunWorkflow(name: String, reRunStrategy: ReRunStrategy.value, env: Map[String, Any], keepAlive: Boolean): Future[RunWorkflowInfo] = {
     if (reRunStrategy == ReRunStrategy.NONE) Future.failed(new IllegalArgumentException("reRunStrategy can not be none"))
     checkWorkflowState(name)
-      .map(meta => RichGraphMeta(meta).copy(reRunStrategy = reRunStrategy, env = meta.env ++ env))
+      .map(meta => RichGraphMeta(meta).copy(
+        reRunStrategy = reRunStrategy,
+        env = meta.env ++ env,
+        startTime = null,
+        endTime = null,
+        reRunFlag = false,
+        host = Environment.HOST
+      ))
       .flatMap(runWorkflow(name, _, keepAlive))
   }
 
@@ -82,7 +106,89 @@ abstract class AbstractRestService extends RestService {
   }
 
   override def submitCoordinator(coordinator: Coordinator): Future[Unit] = {
-    coordinatorRepo.save(coordinator.name, coordinator)
+    coordinatorRepo.save(coordinator.name, coordinator).flatMap { _ =>
+      submitWorkflow(coordinator.workflowDefine)
+    }
+  }
+
+  override def runCoordinator(name: String): Future[Unit] = {
+    getCoordinator(name).map[Unit] { coord =>
+      val trigger = Triggers.getTrigger(coord.trigger.name)
+      trigger
+        .start(name, coord.trigger.config) {
+          runWorkflow(name, coord.fallbackStrategy, coord.workflowDefine.env, keepAlive = true)
+            .onComplete {
+              updateCoordinatorLog(coord, _)
+            }
+        }
+      coord.endTime match {
+        case Some(date) =>
+          val duration = FiniteDuration(date.getTime - System.currentTimeMillis(), TimeUnit.MILLISECONDS)
+          Scheduler.scheduleOnce(duration) {
+            stopCoordinator(name)
+          }(actorSystem)
+        case None => // do nothing
+      }
+    }
+      .andThen {
+        case Success(_) => coordinatorStateRepo.save(name, CoordinatorState(name, CoordinatorState.RUNNING))
+      }
+  }
+
+  def updateCoordinatorLog(coordinator: Coordinator, workflowInfo: Try[RunWorkflowInfo]): Future[Unit] = {
+    val log = workflowInfo match {
+      case Success(value) =>
+        CoordinatorLog(
+          name = coordinator.name,
+          workflowName = coordinator.workflowDefine.name,
+          workflowId = Some(value.id),
+          workflowSubmitted = true,
+          timestamp = new Date(),
+          error = None
+        )
+      case Failure(exception) =>
+        CoordinatorLog(
+          name = coordinator.name,
+          workflowName = coordinator.workflowDefine.name,
+          workflowId = None,
+          workflowSubmitted = false,
+          timestamp = new Date(),
+          error = Some(exception)
+        )
+    }
+    coordinatorLogRepo.save(log).map(_ => Unit)
+  }
+
+  override def suspendCoordinator(name: String): Future[Boolean] = {
+    getCoordinator(name)
+      .map { coord =>
+        Triggers.getTrigger(coord.trigger.name).suspend(name)
+      }
+      .andThen {
+        case Success(true) => coordinatorStateRepo.save(name, CoordinatorState(name, CoordinatorState.SUSPENDED))
+      }
+  }
+
+  override def stopCoordinator(name: String): Future[Boolean] = {
+    getCoordinator(name).flatMap { coord =>
+      stopWorkflow(coord.workflowDefine.name)
+        .map { _ =>
+          Triggers.getTrigger(coord.trigger.name).stop(name)
+        }
+        .andThen {
+          case Success(true) => coordinatorStateRepo.save(name, CoordinatorState(name, CoordinatorState.STOPPED))
+        }
+    }
+  }
+
+  override def resumeCoordinator(name: String, discardFormerWorkflows: Boolean): Future[Boolean] = {
+    getCoordinator(name)
+      .map { coord =>
+        Triggers.getTrigger(coord.trigger.name).resume(name)
+      }
+      .andThen {
+        case Success(true) => coordinatorStateRepo.save(name, CoordinatorState(name, CoordinatorState.RUNNING))
+      }
   }
 
   override def getCoordinator(name: String): Future[Coordinator] = {
@@ -96,7 +202,7 @@ abstract class AbstractRestService extends RestService {
       )
   }
 
-  override def checkCoordinatorState(name: String): Future[CoordinatorMeta] = {
-    coordinatorMetaRepo.findById(name).map(_.get)
+  override def checkCoordinatorState(name: String): Future[CoordinatorState.value] = {
+    coordinatorStateRepo.findById(name).map(_.get.status)
   }
 }

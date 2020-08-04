@@ -20,7 +20,8 @@ sealed class RichGraphMeta(id: Int = -1,
                     startTime: Date = null,
                     endTime: Date = null,
                     env: Map[String, Any] = Map.empty,
-                    reRunFlag: Boolean = false)
+                    reRunFlag: Boolean = false,
+                    host: String = Environment.HOST)
   extends GraphMeta(
     id = id,
     name = name,
@@ -35,7 +36,8 @@ sealed class RichGraphMeta(id: Int = -1,
     scheduleTime = scheduleTime,
     startTime = startTime,
     endTime = endTime,
-    env = env) {
+    env = env,
+    host = host) {
 
   def copy(id: Int = id,
            name: String = name,
@@ -51,7 +53,8 @@ sealed class RichGraphMeta(id: Int = -1,
            startTime: Date = startTime,
            endTime: Date = endTime,
            env: Map[String, Any] = env,
-           reRunFlag: Boolean = reRunFlag): RichGraphMeta = {
+           reRunFlag: Boolean = reRunFlag,
+           host: String = host): RichGraphMeta = {
     new RichGraphMeta(
       id = id,
       name = name,
@@ -67,7 +70,8 @@ sealed class RichGraphMeta(id: Int = -1,
       startTime = startTime,
       endTime = endTime,
       env = env,
-      reRunFlag = reRunFlag)
+      reRunFlag = reRunFlag,
+      host = host)
   }
 
   def isReRun: Boolean = reRunFlag

@@ -1,21 +1,27 @@
 package com.oceanum.api
-import akka.stream.QueueOfferResult.{Dropped, Enqueued, Failure, QueueClosed}
+
+import java.util.concurrent.TimeUnit
+
+import akka.actor.ActorSystem
+import akka.stream.QueueOfferResult.{Dropped, Enqueued, QueueClosed, Failure => QFailure}
 import com.oceanum.annotation.IRestService
-import com.oceanum.api.entities.RunWorkflowInfo
+import com.oceanum.api.entities.{Coordinator, RunWorkflowInfo}
 import com.oceanum.client.TaskClient
-import com.oceanum.common.{ActorSystems, Environment, GraphMeta}
+import com.oceanum.common.{ActorSystems, Environment, GraphMeta, Scheduler}
 import com.oceanum.graph.{GraphHook, GraphMetaHandler, Workflow, WorkflowInstance}
+import com.oceanum.triger.Triggers
 
 import scala.collection.concurrent.TrieMap
 import scala.concurrent.Future
-import scala.util.Success
+import scala.concurrent.duration.FiniteDuration
+import scala.util.{Failure, Success, Try}
 
 @IRestService(priority = 1)
 class RestServiceImpl extends AbstractRestService {
   import Environment.NONE_BLOCKING_EXECUTION_CONTEXT
-  private implicit val client: TaskClient = TaskClient.create(ActorSystems.SYSTEM, Environment.CLUSTER_NODE_SEEDS)
+  private implicit val client: TaskClient = TaskClient.create(actorSystem(), Environment.CLUSTER_NODE_SEEDS)
   private val workflows: TrieMap[String, WorkflowInstance] = TrieMap()
-  private val hooks: TrieMap[String, GraphHook] = TrieMap()
+  private val hooks: TrieMap[(String, Int), GraphHook] = TrieMap()
 
   override protected def runWorkflow(name: String, graphMeta: GraphMeta, keepAlive: Boolean): Future[RunWorkflowInfo] = {
     val future = workflows.get(name) match {
@@ -23,11 +29,8 @@ class RestServiceImpl extends AbstractRestService {
         Future.successful(workflow)
       case None =>
         implicit val graphMetaHandler: GraphMetaHandler = new GraphMetaHandler {
-          override def onComplete(graphMeta: GraphMeta): Unit = {
-            if (!keepAlive) {
-              stopWorkflow(name)
-            }
-          }
+          override def onComplete(graphMeta: GraphMeta): Unit = if (!keepAlive) stopWorkflow(name)
+          override def close(): Unit = workflows.remove(name)
         }
         getWorkflow(name)
           .map(Workflow.fromGraph)
@@ -42,13 +45,13 @@ class RestServiceImpl extends AbstractRestService {
     future.flatMap { instance =>
       instance.offer(graphMeta).map {
         case (Enqueued, hook) =>
-          hooks += (name -> hook)
+          hooks += ((name, graphMeta.id) -> hook)
           RunWorkflowInfo.from(graphMeta)
 
         case (Dropped, _) =>
           throw new Exception("message been dropped")
 
-        case (Failure(e), _) =>
+        case (QFailure(e), _) =>
           throw e
 
         case (QueueClosed, _) =>
@@ -57,23 +60,29 @@ class RestServiceImpl extends AbstractRestService {
     }
   }
 
-  override def killWorkflow(name: String): Future[Unit] = {
-    Future.sequence(hooks.remove(name).map(_.kill()).toSeq).map(_ => Unit)
-  }
-
-  override def stopWorkflow(name: String): Future[Unit] = {
-    killWorkflow(name).andThen {
-      case _ =>
-        workflows.remove(name).foreach(_.complete())
-        hooks.remove(name)
+  override def killWorkflow(name: String, id: Int): Future[Unit] = {
+    if (id == -1) {
+      Future
+        .sequence(hooks
+          .takeWhile(_._1._1.equals(name))
+          .keys
+          .map(key => killWorkflow(key._1, key._2))
+        )
+        .map(_ => Unit)
+    } else {
+      Future.sequence(hooks.remove((name, id)).map(_.kill()).toSeq).map(_ => Unit)
     }
   }
 
-  override def runCoordinator(name: String): Future[Unit] = ???
+  override def stopWorkflow(name: String): Future[Unit] = {
+    killWorkflow(name, -1)
+      .andThen {
+        case _ =>
+          workflows.remove(name).foreach(_.complete())
+      }
+  }
 
-  override def stopCoordinator(name: String): Future[Unit] = ???
+  override def actorSystem(): ActorSystem = ActorSystems.SYSTEM
 
-  override def suspendCoordinator(name: String): Future[Unit] = ???
-
-  override def resumeCoordinator(name: String, discardFormerWorkflows: Boolean): Future[Unit] = ???
+  override def isWorkflowAlive(name: String): Future[Boolean] = Future.successful(workflows.contains(name))
 }
