@@ -36,7 +36,7 @@ object HttpServer extends Log {
       } ~
         (pathPrefix("run") & parameterMap & extractDataBytes) { (map, bytes) =>
             val future = deserializeAndRun[RichGraphMeta, RunWorkflowInfo](bytes) { meta =>
-              restService.runWorkflow(name, meta.fallbackStrategy, meta.env, map.get("keepAlive").forall(_.toBoolean))
+              restService.runWorkflow(name, meta.fallbackStrategy, meta.env, map.get("keepAlive").forall(_.toBoolean), Option(meta.scheduleTime))
             }
             returnResponseWithEntity(future)
         } ~
