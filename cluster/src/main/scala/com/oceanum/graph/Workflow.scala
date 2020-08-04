@@ -62,7 +62,6 @@ object Workflow {
               idOffset.set(meta.id)
               meta.copy(
                 createTime = createTime,
-                scheduleTime = new Date(),
                 startTime = new Date(),
                 endTime = null,
                 graphStatus = GraphStatus.RUNNING,

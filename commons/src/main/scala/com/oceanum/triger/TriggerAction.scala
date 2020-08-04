@@ -1,3 +1,5 @@
 package com.oceanum.triger
 
-case class TriggerAction(action: () => Unit)
+import java.util.Date
+
+case class TriggerAction(action: Date => Unit)

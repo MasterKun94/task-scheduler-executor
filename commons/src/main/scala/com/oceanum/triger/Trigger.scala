@@ -1,13 +1,13 @@
 package com.oceanum.triger
 
-import akka.actor.ActorRef
+import java.util.Date
 
 /**
  * @author chenmingkun
  * @date 2020/7/26
  */
 trait Trigger {
-  def start(name: String, config: Map[String, String])(action: => Unit): Unit
+  def start(name: String, config: Map[String, String])(action: Date => Unit): Unit
 
   def stop(name: String): Boolean
 

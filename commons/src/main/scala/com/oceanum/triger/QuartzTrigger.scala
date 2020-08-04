@@ -5,7 +5,7 @@ import java.util.Date
 import akka.actor.{ActorRef, ActorSystem, Props}
 import com.oceanum.annotation.ITrigger
 import com.oceanum.common.{ActorSystems, Environment}
-import com.typesafe.akka.extension.quartz.QuartzSchedulerExtension
+import com.typesafe.akka.extension.quartz.{MessageRequireFireTime, QuartzSchedulerExtension}
 import org.quartz.impl.DirectSchedulerFactory
 
 /**
@@ -19,8 +19,8 @@ class QuartzTrigger extends Trigger {
   private val quartz: QuartzSchedulerExtension = QuartzSchedulerExtension(system)
   private val receiver: ActorRef = system.actorOf(Props[TriggerActor])
 
-  override def start(name: String, config: Map[String, String])(action: => Unit): Unit = {
-    startTrigger(name, config, receiver, TriggerAction(() => action))
+  override def start(name: String, config: Map[String, String])(action: Date => Unit): Unit = {
+    startTrigger(name, config, receiver, TriggerAction(action))
   }
 
   private def startTrigger(name: String, config: Map[String, String], receiver: ActorRef, msg: TriggerAction): Unit = {
@@ -29,7 +29,7 @@ class QuartzTrigger extends Trigger {
     val calendar = config.get("calendar")
     val description = config.get("description")
     quartz.createSchedule(name, description, cron, calendar, Environment.TIME_ZONE)
-    quartz.schedule(name, receiver, msg, startTime)
+    quartz.schedule(name, receiver, MessageRequireFireTime(msg), startTime)
   }
 
   override def stop(name: String): Boolean = {

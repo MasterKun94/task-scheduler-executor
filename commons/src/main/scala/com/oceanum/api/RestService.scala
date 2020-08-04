@@ -1,5 +1,7 @@
 package com.oceanum.api
 
+import java.util.Date
+
 import com.oceanum.api.entities.{Coordinator, CoordinatorLog, CoordinatorState, RunWorkflowInfo, WorkflowDefine}
 import com.oceanum.common.{FallbackStrategy, GraphMeta, ReRunStrategy}
 
@@ -12,7 +14,7 @@ import scala.concurrent.Future
 trait RestService {
   def submitWorkflow(workflowDefine: WorkflowDefine): Future[Unit]
 
-  def runWorkflow(name: String, fallbackStrategy: FallbackStrategy.value, env: Map[String, Any], keepAlive: Boolean): Future[RunWorkflowInfo]
+  def runWorkflow(name: String, fallbackStrategy: FallbackStrategy.value, env: Map[String, Any], keepAlive: Boolean, scheduleTime: Option[Date] = None): Future[RunWorkflowInfo]
 
   def reRunWorkflow(name: String, reRunStrategy: ReRunStrategy.value, env: Map[String, Any], keepAlive: Boolean): Future[RunWorkflowInfo]
 

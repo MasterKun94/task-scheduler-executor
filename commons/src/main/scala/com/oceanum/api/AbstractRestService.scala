@@ -31,14 +31,14 @@ abstract class AbstractRestService extends RestService {
     workflowDefineRepo.save(workflowDefine.name, workflowDefine)
   }
 
-  override def runWorkflow(name: String, fallbackStrategy: FallbackStrategy.value, env: Map[String, Any], keepAlive: Boolean): Future[RunWorkflowInfo] = {
+  override def runWorkflow(name: String, fallbackStrategy: FallbackStrategy.value, env: Map[String, Any], keepAlive: Boolean, scheduleTime: Option[Date]): Future[RunWorkflowInfo] = {
     checkWorkflowState(name).flatMap(meta => {
       val newMeta = RichGraphMeta(meta).copy(
         id = meta.id + 1,
         reRunStrategy = ReRunStrategy.NONE,
         env = meta.env ++ env,
         createTime = new Date(),
-        scheduleTime = null,
+        scheduleTime = scheduleTime.getOrElse(new Date()),
         startTime = null,
         endTime = null,
         reRunId = 0,
@@ -115,8 +115,8 @@ abstract class AbstractRestService extends RestService {
     getCoordinator(name).map[Unit] { coord =>
       val trigger = Triggers.getTrigger(coord.trigger.name)
       trigger
-        .start(name, coord.trigger.config) {
-          runWorkflow(name, coord.fallbackStrategy, coord.workflowDefine.env, keepAlive = true)
+        .start(name, coord.trigger.config) { date =>
+          runWorkflow(name, coord.fallbackStrategy, coord.workflowDefine.env, keepAlive = true, scheduleTime = Some(date))
             .onComplete {
               updateCoordinatorLog(coord, _)
             }

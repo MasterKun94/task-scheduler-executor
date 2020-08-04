@@ -82,7 +82,7 @@ class RestServiceImpl extends AbstractRestService {
       }
   }
 
-  override def actorSystem(): ActorSystem = ActorSystems.SYSTEM
+  override def actorSystem: ActorSystem = ActorSystems.SYSTEM
 
   override def isWorkflowAlive(name: String): Future[Boolean] = Future.successful(workflows.contains(name))
 }
