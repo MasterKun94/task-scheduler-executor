@@ -9,7 +9,7 @@ import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import com.oceanum.api.entities.{Coordinator, RunWorkflowInfo, WorkflowDefine}
-import com.oceanum.common.{Environment, FallbackStrategy, GraphMeta, Log, SystemInit}
+import com.oceanum.common.{Environment, FallbackStrategy, GraphMeta, Log, RichGraphMeta, SystemInit}
 
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
@@ -37,7 +37,7 @@ object HttpServer extends Log {
         (pathPrefix("run") & parameterMap & extractDataBytes) { (map, bytes) =>
           val future: Future[RunWorkflowInfo] = bytes
             .map(_.utf8String)
-            .map(serialization.deSerializeRaw[GraphMeta])
+            .map(serialization.deSerializeRaw[RichGraphMeta])
             .mapAsync(0)(meta => {
               restService.runWorkflow(name, meta.fallbackStrategy, meta.env, map.get("keepAlive").forall(_.toBoolean))
             })
@@ -47,7 +47,7 @@ object HttpServer extends Log {
         (pathPrefix("rerun") & parameterMap & extractDataBytes) { (map, bytes) =>
           val future: Future[RunWorkflowInfo] = bytes
             .map(_.utf8String)
-            .map(serialization.deSerializeRaw[GraphMeta])
+            .map(serialization.deSerializeRaw[RichGraphMeta])
             .mapAsync(0)(meta => {
               restService.reRunWorkflow(name, meta.reRunStrategy, meta.env, map.get("keepAlive").forall(_.toBoolean))
             })
