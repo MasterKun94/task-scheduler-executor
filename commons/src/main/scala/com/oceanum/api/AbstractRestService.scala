@@ -202,7 +202,7 @@ abstract class AbstractRestService extends RestService {
       )
   }
 
-  override def checkCoordinatorState(name: String): Future[CoordinatorState.value] = {
-    coordinatorStateRepo.findById(name).map(_.get.status)
+  override def checkCoordinatorState(name: String): Future[CoordinatorState] = {
+    coordinatorStateRepo.findById(name).map(_.get)
   }
 }

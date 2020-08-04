@@ -34,7 +34,7 @@ trait RestService {
 
   def getCoordinator(name: String): Future[Coordinator]
 
-  def checkCoordinatorState(name: String): Future[CoordinatorState.value]
+  def checkCoordinatorState(name: String): Future[CoordinatorState]
 
   def stopCoordinator(name: String): Future[Boolean]
 
