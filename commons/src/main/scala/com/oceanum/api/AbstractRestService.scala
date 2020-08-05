@@ -26,10 +26,8 @@ abstract class AbstractRestService extends RestService {
   private val coordinatorLogRepo = Catalog.getRepository[CoordinatorLog]
   private val coordinatorStateRepo = Catalog.getRepository[CoordinatorState]
   import com.oceanum.common.Environment.NONE_BLOCKING_EXECUTION_CONTEXT
-  private val remoteRestServices: TrieMap[String, RemoteRestService] = TrieMap()
 
   def actorSystem: ActorSystem
-  private def getRemote(host: String): RemoteRestService = remoteRestServices.getOrElseUpdate(host, new RemoteRestService(host))
   private def isLocal(host: String): Boolean = host.equals(Environment.HOST)
   override def submitWorkflow(workflowDefine: WorkflowDefine): Future[Unit] = {
     workflowDefineRepo.save(workflowDefine.name, workflowDefine.copy(host = Environment.HOST))
@@ -58,7 +56,7 @@ abstract class AbstractRestService extends RestService {
         })
 
       } else {
-        getRemote(wf.host).runWorkflow(name, fallbackStrategy, env, keepAlive, scheduleTime, version)
+        RemoteRestServices.get(wf.host).runWorkflow(name, fallbackStrategy, env, keepAlive, scheduleTime, version)
       }
     }
   }
@@ -81,7 +79,7 @@ abstract class AbstractRestService extends RestService {
           ))
           .flatMap(runWorkflowLocally(name, _, wf, keepAlive))
       } else {
-        getRemote(wf.host)
+        RemoteRestServices.get(wf.host)
           .reRunWorkflow(name, reRunStrategy, env, keepAlive)
       }
     }
@@ -92,7 +90,7 @@ abstract class AbstractRestService extends RestService {
       if (isLocal(wf.host)) {
         killWorkflowLocally(name, id)
       } else {
-        getRemote(wf.host).killWorkflow(name, id)
+        RemoteRestServices.get(wf.host).killWorkflow(name, id)
       }
     }
   }
@@ -104,7 +102,7 @@ abstract class AbstractRestService extends RestService {
       if (isLocal(wf.host)) {
         stopWorkflowLocally(name)
       } else {
-        getRemote(wf.host).stopWorkflow(name)
+        RemoteRestServices.get(wf.host).stopWorkflow(name)
       }
     }
   }
@@ -189,7 +187,7 @@ abstract class AbstractRestService extends RestService {
 
         coordinatorStateRepo.save(name, CoordinatorState(name, CoordinatorState.RUNNING))
       } else {
-        getRemote(coord.host).runCoordinator(name)
+        RemoteRestServices.get(coord.host).runCoordinator(name)
       }
     }
   }
@@ -227,7 +225,7 @@ abstract class AbstractRestService extends RestService {
           Future(false)
         }
       } else {
-        getRemote(coord.host).suspendCoordinator(name)
+        RemoteRestServices.get(coord.host).suspendCoordinator(name)
       }
     }
   }
@@ -244,7 +242,7 @@ abstract class AbstractRestService extends RestService {
             }
           }
       } else {
-        getRemote(coord.host).suspendCoordinator(name)
+        RemoteRestServices.get(coord.host).suspendCoordinator(name)
       }
     }
   }
@@ -259,7 +257,7 @@ abstract class AbstractRestService extends RestService {
             Future(false)
           }
         } else {
-          getRemote(coord.host).suspendCoordinator(name)
+          RemoteRestServices.get(coord.host).suspendCoordinator(name)
         }
       }
   }
