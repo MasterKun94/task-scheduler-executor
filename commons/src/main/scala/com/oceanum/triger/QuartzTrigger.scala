@@ -15,9 +15,9 @@ import org.quartz.impl.DirectSchedulerFactory
 @ITrigger
 class QuartzTrigger extends Trigger {
 
-  private implicit val system: ActorSystem = ActorSystems.SYSTEM
-  private val quartz: QuartzSchedulerExtension = QuartzSchedulerExtension(system)
-  private val receiver: ActorRef = system.actorOf(Props[TriggerActor])
+  private lazy implicit val system: ActorSystem = ActorSystems.SYSTEM
+  private lazy val quartz: QuartzSchedulerExtension = QuartzSchedulerExtension(system)
+  private lazy val receiver: ActorRef = system.actorOf(Props[TriggerActor])
 
   override def start(name: String, config: Map[String, String])(action: Date => Unit): Unit = {
     startTrigger(name, config, receiver, TriggerAction(action))
