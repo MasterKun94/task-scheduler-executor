@@ -3,14 +3,11 @@ package com.oceanum.api
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.client.RequestBuilding
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.ActorMaterializer
-import akka.stream.scaladsl.Sink
 import com.oceanum.common.{ActorSystems, Environment, SystemInit}
 
 import scala.concurrent.{ExecutionContextExecutor, Future}
-import scala.util.{Failure, Success}
 
 /**
  * @author chenmingkun
@@ -37,13 +34,13 @@ object HttpClient {
       .flatMap { res =>
         if (res.status.isFailure()) {
           Future.failed(new Exception(res.toString()))
-
-        } else if (mf.equals(Manifest.Nothing)) {
-            Future.successful(null.asInstanceOf[P])
-
+        } else if (mf.runtimeClass.equals(classOf[String])) {
+          Unmarshal(res.entity).to[String].map(_.asInstanceOf[P])
         } else {
-          Unmarshal(res.entity).to[String]
-            .map(serialization.deSerializeRaw(_)(mf))
+          mf match {
+            case Manifest.Nothing => Future.successful(null.asInstanceOf[P])
+            case _ => Unmarshal(res.entity).to[String].map(serialization.deSerializeRaw(_)(mf))
+          }
         }
       }
   }

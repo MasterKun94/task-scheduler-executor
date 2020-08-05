@@ -3,6 +3,7 @@ package com.oceanum.common
 import akka.actor.ActorRef
 import akka.cluster.ClusterEvent.CurrentClusterState
 import akka.cluster.metrics.NodeMetrics
+import com.oceanum.api.entities.NodeTaskInfo
 import com.oceanum.client.{StateHandler, Task}
 
 @SerialVersionUID(1L)
@@ -68,8 +69,6 @@ case object NodeTaskInfoRequest extends ClusterMessage
 case class NodeTaskInfoRequest(initialDelay: String, interval: String) extends ClusterMessage
 @SerialVersionUID(1L)
 case class NodeTaskInfoStopRequest(handler: ActorRef) extends ClusterMessage
-@SerialVersionUID(1L)
-case class NodeTaskInfo(preparing: Int, running: Int, success: Int, failed: Int, retry: Int, killed: Int, complete: Int) extends ClusterMessage
 @SerialVersionUID(1L)
 case class StopRequest(handler: ActorRef) extends ClusterMessage
 

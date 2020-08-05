@@ -4,12 +4,12 @@ import java.util.Date
 import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.atomic.AtomicInteger
 
+import com.oceanum.api.entities.NodeTaskInfo
 import com.oceanum.cluster.TaskInfoTrigger
 import com.oceanum.common.Scheduler.scheduleOnce
-import com.oceanum.common.{Environment, Log, NodeTaskInfo, RichTaskMeta}
+import com.oceanum.common.{Environment, Log, RichTaskMeta}
 import com.oceanum.exec.runners.ProcessRunner
 
-import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 import scala.util.{Failure, Success, Try}
 
@@ -31,6 +31,8 @@ object RunnerManager extends Log {
 
   def getTaskInfo: NodeTaskInfo = {
     NodeTaskInfo(
+      host = Environment.HOST,
+      topics = Environment.CLUSTER_NODE_TOPICS,
       preparing = priorityMailbox.queueSize,
       running = runningNum.get(),
       success = successNum.get(),

@@ -1,18 +1,17 @@
 package com.oceanum.api
 
 import akka.Done
-import akka.cluster.{Cluster, MemberStatus}
+import akka.cluster.Cluster
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.ActorMaterializer
-import akka.stream.scaladsl.Source
-import akka.util.ByteString
-import com.oceanum.api.entities.{ClusterNode, ClusterNodes, Coordinator, RunWorkflowInfo, WorkflowDefine}
-import com.oceanum.common._
+import com.oceanum.api.entities.{BoolValue, Coordinator, CoordinatorState, NodeTaskInfos, RunWorkflowInfo, WorkflowDefine}
 import com.oceanum.common.Environment.NONE_BLOCKING_EXECUTION_CONTEXT
+import com.oceanum.common._
+import com.oceanum.exec.RunnerManager
 
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
@@ -27,7 +26,6 @@ object HttpServer extends Log {
   private implicit lazy val httpMat: ActorMaterializer = ActorMaterializer()
   private lazy val restService = SystemInit.restService
   private lazy val serialization = SystemInit.serialization
-  private val cluster = Cluster(system)
 
   private val route: Route = pathPrefix("api") {
     pathPrefix("workflow"/Segment) { name =>
@@ -79,6 +77,14 @@ object HttpServer extends Log {
     pathPrefix("cluster") {
       path("nodes") {
         clusterNodes()    //cluster/nodes
+      } ~
+      path("task-infos") {
+        clusterTaskInfo()
+      }
+    } ~
+    pathPrefix("node") {
+      path("task-info") {
+        taskInfo()
       }
     }
   }
@@ -95,7 +101,7 @@ object HttpServer extends Log {
 
   def runWorkflow(name: String): Route = {
     (parameterMap & extractRequestEntity) { (map, entity) =>
-      val future = deserializeAndRun[RichGraphMeta, RunWorkflowInfo](entity) { meta =>
+      val future: Future[RunWorkflowInfo] = deserializeAndRun[RichGraphMeta, RunWorkflowInfo](entity) { meta =>
         restService.runWorkflow(name, meta.fallbackStrategy, meta.env, map.get("keepAlive").forall(_.toBoolean), Option(meta.scheduleTime), map.get("version").map(_.toInt))
       }
       returnResponseWithEntity(future)
@@ -104,7 +110,7 @@ object HttpServer extends Log {
 
   def reRunWorkflow(name: String): Route = {
     (parameterMap & extractRequestEntity) { (map, entity) =>
-      val future = deserializeAndRun[RichGraphMeta, RunWorkflowInfo](entity) { meta =>
+      val future: Future[RunWorkflowInfo] = deserializeAndRun[RichGraphMeta, RunWorkflowInfo](entity) { meta =>
         restService.reRunWorkflow(name, meta.reRunStrategy, meta.env, map.get("keepAlive").forall(_.toBoolean))
       }
       returnResponseWithEntity(future)
@@ -113,18 +119,18 @@ object HttpServer extends Log {
 
   def killWorkflow(name: String): Route = {
     parameterMap { map =>
-      val future = restService.killWorkflow(name, map.get("id").map(_.toInt).getOrElse(-1))
+      val future: Future[Unit] = restService.killWorkflow(name, map.get("id").map(_.toInt).getOrElse(-1))
       returnResponse(future)
     }
   }
 
   def stopWorkflow(name: String): Route = {
-    val future = restService.stopWorkflow(name)
+    val future: Future[Unit] = restService.stopWorkflow(name)
     returnResponse(future)
   }
 
   def getWorkflow(name: String): Route = {
-    val future = restService.getWorkflow(name)
+    val future: Future[WorkflowDefine] = restService.getWorkflow(name)
     returnResponseWithEntity(future)
   }
 
@@ -138,29 +144,29 @@ object HttpServer extends Log {
   }
 
   def runCoordinator(name: String): Route = {
-    val future = restService.runCoordinator(name)
+    val future: Future[Unit] = restService.runCoordinator(name)
     returnResponse(future)
   }
 
   def checkCoordinatorStatus(name: String): Route = {
-    val future = restService.checkCoordinatorState(name)
+    val future: Future[CoordinatorState] = restService.checkCoordinatorState(name)
     returnResponseWithEntity(future)
   }
 
   def stopCoordinator(name: String): Route = {
-    val future = restService.stopCoordinator(name)
-    returnResponse(future)
+    val future: Future[Boolean] = restService.stopCoordinator(name)
+    returnResponseWithEntity(future.map(BoolValue))
   }
 
   def suspendCoordinator(name: String): Route = {
-    val future = restService.suspendCoordinator(name)
-    returnResponse(future)
+    val future: Future[Boolean] = restService.suspendCoordinator(name)
+    returnResponseWithEntity(future.map(BoolValue))
   }
 
   def resumeCoordinator(name: String): Route = {
     parameterMap { parameter =>
-      val future = restService.resumeCoordinator(name, parameter.get("discard").exists(_.toBoolean))
-      returnResponse(future)
+      val future: Future[Boolean] = restService.resumeCoordinator(name, parameter.get("discard").exists(_.toBoolean))
+      returnResponseWithEntity(future.map(BoolValue))
     }
   }
 
@@ -182,6 +188,18 @@ object HttpServer extends Log {
     parameterMap { map =>
       val nodes = restService.getClusterNodes(map.get("status"), map.get("host"), map.get("role"))
       returnResponseWithEntity(nodes)
+    }
+  }
+
+  def taskInfo(): Route = {
+    val taskInfo = restService.getNodeTaskInfo
+    returnResponseWithEntity(taskInfo)
+  }
+
+  def clusterTaskInfo(): Route = {
+    parameterMap { map =>
+      val future = restService.getClusterTaskInfos(map.get("host"))
+      returnResponseWithEntity(future)
     }
   }
 
@@ -211,13 +229,7 @@ object HttpServer extends Log {
     }
   }
 
-  def start(): Future[Http.ServerBinding] = Http().bindAndHandle(route, host, port)
-
-  def main(args: Array[String]): Unit = {
-    Environment.loadEnv(Array("--conf=cluster/src/main/resources/application.properties"))
-    Environment.initSystem()
-    println(host)
-    println(port)
-    start()
+  def start(): Future[Http.ServerBinding] = Http().bindAndHandle(route, host, port).andThen {
+    case Failure(e) => e.printStackTrace()
   }
 }

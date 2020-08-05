@@ -3,16 +3,15 @@ package com.oceanum.client
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 
-import akka.pattern.ask
 import akka.actor.{Actor, ActorPaths, ActorRef, ActorSystem, PoisonPill, Props}
 import akka.cluster.client.ClusterClient.Publish
 import akka.cluster.client.{ClusterClient, ClusterClientSettings}
+import akka.pattern.ask
 import akka.util.Timeout
+import com.oceanum.api.entities.NodeTaskInfo
 import com.oceanum.client.actors.{ClientEndpoint, ClientInstance, ClientListener, HandlerActor}
-import com.oceanum.common.{ActorSystems, AvailableExecutorRequest, AvailableExecutorResponse, AvailableExecutorsRequest, ClusterInfoMessageHolder, ClusterMessage, ClusterMetrics, ClusterMetricsRequest, ClusterState, ClusterStateRequest, Environment, Message, NodeTaskInfo, NodeTaskInfoRequest, StopRequest, SystemInit}
+import com.oceanum.common._
 import com.oceanum.exec.State
-import com.oceanum.expr.Evaluator
-import com.oceanum.serialize.DefaultJsonSerialization
 
 import scala.collection.concurrent.TrieMap
 import scala.concurrent.{ExecutionContext, Future, Promise}

@@ -32,7 +32,7 @@ class FallbackListener extends Actor with ActorLogging {
         .flatMap { value: Seq[String] =>
           coordinatorRepo.find(
             expr = "!repo.fieldIn('host', values)",
-            env = Map("env" -> value)
+            env = Map("values" -> value)
           )
             .flatMap { coordinators =>
               val hash = ConsistentHash(value, 17)

@@ -2,7 +2,7 @@ package com.oceanum.api
 
 import java.util.Date
 
-import com.oceanum.api.entities.{ClusterNodes, Coordinator, CoordinatorLog, CoordinatorState, RunWorkflowInfo, WorkflowDefine}
+import com.oceanum.api.entities.{ClusterNodes, Coordinator, CoordinatorLog, CoordinatorState, NodeTaskInfo, NodeTaskInfos, RunWorkflowInfo, WorkflowDefine}
 import com.oceanum.common.{FallbackStrategy, GraphMeta, ReRunStrategy}
 
 import scala.concurrent.Future
@@ -45,4 +45,8 @@ trait RestService {
   def resumeCoordinator(name: String, discardFormerWorkflows: Boolean): Future[Boolean]
 
   def getClusterNodes(status: Option[String], host: Option[String], role: Option[String]): Future[ClusterNodes]
+
+  def getClusterTaskInfos(host: Option[String]): Future[NodeTaskInfos]
+
+  def getNodeTaskInfo: Future[NodeTaskInfo]
 }

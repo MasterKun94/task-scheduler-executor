@@ -185,7 +185,7 @@ abstract class AbstractRestService extends RestService {
               }
           }
 
-        coordinatorStateRepo.save(name, CoordinatorState(name, CoordinatorState.RUNNING))
+        updateCoordinatorState(name, CoordinatorState.RUNNING)
       } else {
         RemoteRestServices.get(coord.host).runCoordinator(name)
       }
@@ -220,7 +220,7 @@ abstract class AbstractRestService extends RestService {
     getCoordinator(name).flatMap { coord =>
       if (isLocal(coord.host)) {
         if (Triggers.getTrigger(coord.trigger.name).suspend(name)) {
-          coordinatorStateRepo.save(name, CoordinatorState(name, CoordinatorState.SUSPENDED)).map(_ => true)
+          updateCoordinatorState(name, CoordinatorState.SUSPENDED).map(_ => true)
         } else {
           Future(false)
         }
@@ -236,7 +236,7 @@ abstract class AbstractRestService extends RestService {
         stopWorkflow(coord.workflowDefine.name)
           .flatMap { _ =>
             if (Triggers.getTrigger(coord.trigger.name).stop(name)) {
-              coordinatorStateRepo.save(name, CoordinatorState(name, CoordinatorState.STOPPED)).map(_ => true)
+              updateCoordinatorState(name, CoordinatorState.STOPPED).map(_ => true)
             } else {
               Future(false)
             }
@@ -252,7 +252,7 @@ abstract class AbstractRestService extends RestService {
       .flatMap { coord =>
         if (isLocal(coord.host)) {
           if (Triggers.getTrigger(coord.trigger.name).resume(name)) {
-            coordinatorStateRepo.save(name, CoordinatorState(name, CoordinatorState.RUNNING)).map(_ => true)
+            updateCoordinatorState(name, CoordinatorState.RUNNING).map(_ => true)
           } else {
             Future(false)
           }
@@ -275,5 +275,9 @@ abstract class AbstractRestService extends RestService {
 
   override def checkCoordinatorState(name: String): Future[CoordinatorState] = {
     coordinatorStateRepo.findById(name).map(_.get)
+  }
+
+  private def updateCoordinatorState(name: String, state: CoordinatorState.value): Future[Unit] = {
+    coordinatorStateRepo.save(name, CoordinatorState(name, state))
   }
 }

@@ -1,13 +1,14 @@
 import java.util.Date
 
 import com.oceanum.Test.Test
-import com.oceanum.api.RemoteRestService
+import com.oceanum.api.{HttpClient, RemoteRestService}
 import com.oceanum.api.entities.{ConvergeVertex, Dag, DecisionVertex, EndVertex, ForkVertex, JoinVertex, StartVertex, TaskVertex, WorkflowDefine}
 import com.oceanum.common.{Environment, FallbackStrategy, GraphContext, GraphMeta, ReRunStrategy, RichGraphMeta, RichTaskMeta, SystemInit}
 import com.oceanum.persistence.Catalog
 import com.oceanum.persistence.es.EsUtil
 import com.oceanum.serialize.Serialization
 
+import scala.io.{Source, StdIn}
 import scala.util.{Failure, Success, Try}
 
 /**
@@ -23,7 +24,7 @@ object Test0 {
 //    val restService = SystemInit.restService
     val serialization = SystemInit.serialization
     val restService = new RemoteRestService("192.168.10.131")
-    val name = "graph-define-test-4"
+    val name = "graph-define-test-5"
     val workflowDefine = WorkflowDefine(
       version = 1,
       name = name,
@@ -68,13 +69,17 @@ object Test0 {
     import Environment.NONE_BLOCKING_EXECUTION_CONTEXT
 
 //    restService.submitWorkflow(workflowDefine).onComplete(println)
-
+//    StdIn.readLine()
 //    restService.getWorkflow(workflowDefine.name).onComplete(printResult)
-//
+//    StdIn.readLine()
 //    restService.runWorkflow(workflowDefine.name, FallbackStrategy.CONTINUE, version = None).onComplete(printResult)
-//
+//    StdIn.readLine()
 //    restService.reRunWorkflow(workflowDefine.name, ReRunStrategy.RUN_ALL_AFTER_FAILED).onComplete(printResult)
-//
-    restService.checkWorkflowState(workflowDefine.name).onComplete(printResult)
+//    StdIn.readLine()
+//    restService.checkWorkflowState(workflowDefine.name).onComplete(printResult)
+
+    HttpClient.get[Nothing, String](
+      url = "http://192.168.10.131:6551/api/workflow/" + name + "/status"
+    ).onComplete(println)
   }
 }

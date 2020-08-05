@@ -101,32 +101,32 @@ class RemoteRestService(host: String) extends RestService {
   }
 
   override def checkCoordinatorState(name: String): Future[CoordinatorState] = {
-    HttpClient.get(
+    HttpClient.get[Nothing, CoordinatorState](
       url = hostPort + "/api/workflow/" + name + "/status"
     )
   }
 
   override def stopCoordinator(name: String): Future[Boolean] = {
-    HttpClient.post(
+    HttpClient.post[Nothing, BoolValue](
       url = hostPort + "/api/workflow/" + name + "/stop"
-    )
+    ).map(_.value)
   }
 
   override def suspendCoordinator(name: String): Future[Boolean] = {
-    HttpClient.post(
+    HttpClient.post[Nothing, BoolValue](
       url = hostPort + "/api/workflow/" + name + "/suspend"
-    )
+    ).map(_.value)
   }
 
   override def resumeCoordinator(name: String, discardFormerWorkflows: Boolean): Future[Boolean] = {
-    HttpClient.post(
+    HttpClient.post[Nothing, BoolValue](
       url = hostPort + "/api/workflow/" + name + "/resume"
-    )
+    ).map(_.value)
   }
 
   override def getClusterNodes(status: Option[String], host: Option[String], role: Option[String]): Future[ClusterNodes] = {
-    HttpClient.get(
-      url = hostPort + "/cluster/nodes",
+    HttpClient.get[Nothing, ClusterNodes](
+      url = hostPort + "/api/cluster/nodes",
       param = Map(
         "status" -> status,
         "host" -> host,
@@ -134,6 +134,19 @@ class RemoteRestService(host: String) extends RestService {
       )
         .filter(_._2.isDefined)
         .mapValues(_.get)
+    )
+  }
+
+  override def getClusterTaskInfos(host: Option[String]): Future[NodeTaskInfos] = {
+    HttpClient.get[Nothing, NodeTaskInfos](
+      url = hostPort + "/api/cluster/task-infos",
+      param = host.map(s => "host" -> s).toMap
+    )
+  }
+
+  override def getNodeTaskInfo: Future[NodeTaskInfo] = {
+    HttpClient.get[Nothing, NodeTaskInfo](
+      url = hostPort + "/api/node/task-info"
     )
   }
 }
