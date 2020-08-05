@@ -19,8 +19,7 @@ class GraphMeta(val id: Int,
                 val scheduleTime: Date,
                 val startTime: Date,
                 val endTime: Date,
-                val env: Map[String, Any],
-                val host: String = Environment.HOST) extends Serializable {
+                val env: Map[String, Any]) extends Serializable {
 
   def latestTask: TaskMeta = if (latestTaskId < 0) null else tasks(latestTaskId)
 

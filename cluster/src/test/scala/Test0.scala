@@ -1,11 +1,14 @@
 import java.util.Date
 
 import com.oceanum.Test.Test
+import com.oceanum.api.RemoteRestService
 import com.oceanum.api.entities.{ConvergeVertex, Dag, DecisionVertex, EndVertex, ForkVertex, JoinVertex, StartVertex, TaskVertex, WorkflowDefine}
-import com.oceanum.common.{Environment, GraphContext, RichGraphMeta, RichTaskMeta, SystemInit}
+import com.oceanum.common.{Environment, FallbackStrategy, GraphContext, GraphMeta, ReRunStrategy, RichGraphMeta, RichTaskMeta, SystemInit}
+import com.oceanum.persistence.Catalog
+import com.oceanum.persistence.es.EsUtil
 import com.oceanum.serialize.Serialization
 
-import scala.util.{Failure, Success}
+import scala.util.{Failure, Success, Try}
 
 /**
  * @author chenmingkun
@@ -17,9 +20,12 @@ object Test0 {
   def main(args: Array[String]): Unit = {
     Environment.loadEnv(Array("--conf=cluster/src/main/resources/application.properties"))
     SystemInit.initAnnotatedClass()
-    val restService = SystemInit.restService
-    val name = "graph-define-test"
+//    val restService = SystemInit.restService
+    val serialization = SystemInit.serialization
+    val restService = new RemoteRestService("192.168.10.131")
+    val name = "graph-define-test-4"
     val workflowDefine = WorkflowDefine(
+      version = 1,
       name = name,
       Dag(
         vertexes = Map(
@@ -51,10 +57,24 @@ object Test0 {
       ,
       env = Map("file_name" -> "python")
     )
-    import Environment.NONE_BLOCKING_EXECUTION_CONTEXT
-    restService.submitWorkflow(workflowDefine).onComplete {
-      case Success(value) => println(value)
+
+    def printResult[T<:AnyRef](value: Try[T]): Unit = value match {
+      case Success(value) => println(serialization.serialize(value, pretty = true))
       case Failure(exception) => exception.printStackTrace()
     }
+//    Catalog.save[GraphMeta]("test", new RichGraphMeta())
+//    Thread.sleep(3000)
+
+    import Environment.NONE_BLOCKING_EXECUTION_CONTEXT
+
+//    restService.submitWorkflow(workflowDefine).onComplete(println)
+
+//    restService.getWorkflow(workflowDefine.name).onComplete(printResult)
+//
+//    restService.runWorkflow(workflowDefine.name, FallbackStrategy.CONTINUE, version = None).onComplete(printResult)
+//
+//    restService.reRunWorkflow(workflowDefine.name, ReRunStrategy.RUN_ALL_AFTER_FAILED).onComplete(printResult)
+//
+    restService.checkWorkflowState(workflowDefine.name).onComplete(printResult)
   }
 }

@@ -1,10 +1,12 @@
 package com.oceanum.expr
 
+import java.util
+
 import com.googlecode.aviator.lexer.token.OperatorType
-import com.googlecode.aviator.runtime.`type`.{AviatorObject, AviatorRuntimeJavaType}
+import com.googlecode.aviator.runtime.`type`.AviatorObject
 import com.googlecode.aviator.runtime.function.{AbstractFunction, FunctionUtils}
 
-abstract class RepoFindByFunction extends AbstractFunction {
+abstract class RepoFieldFunction extends AbstractFunction {
   override def getName: String = "repo.field"
 
   override def call(env: JavaMap[String, AnyRef], field: AviatorObject, value: AviatorObject): AviatorObject = {
@@ -14,6 +16,22 @@ abstract class RepoFindByFunction extends AbstractFunction {
   }
 
   def call(field: String, value: Object): AviatorObject
+}
+
+abstract class RepoFieldInFunction extends AbstractFunction {
+  import scala.collection.JavaConversions._
+  override def getName: String = "repo.fieldIn"
+
+  override def call(env: JavaMap[String, AnyRef], field: AviatorObject, value: AviatorObject): AviatorObject = {
+    val fieldString = FunctionUtils.getStringValue(field, env)
+    val valueObject: util.Collection[_] = value.getValue(env) match {
+      case collection: util.Collection[_] => collection
+      case traversable: TraversableOnce[_] => traversable.toSeq
+    }
+    call(fieldString, valueObject)
+  }
+
+  def call(field: String, value: java.util.Collection[_]): AviatorObject
 }
 
 abstract class RepoSortFunction extends AbstractFunction {

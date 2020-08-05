@@ -157,6 +157,7 @@ object Graph3 {
   def main(args: Array[String]): Unit = {
 
     val instance = Workflow.fromGraph(WorkflowDefine(
+      version = 1,
       name = "",
       Dag(
         vertexes = Map(

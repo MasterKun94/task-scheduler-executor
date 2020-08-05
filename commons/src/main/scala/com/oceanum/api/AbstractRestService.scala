@@ -2,13 +2,15 @@ package com.oceanum.api
 import java.util.Date
 import java.util.concurrent.TimeUnit
 
-import akka.actor.ActorSystem
+import akka.actor.{ActorSystem, Cancellable}
 import com.oceanum.api.entities.{Coordinator, CoordinatorLog, CoordinatorState, RunWorkflowInfo, WorkflowDefine}
 import com.oceanum.common._
+import com.oceanum.exceptions.VersionOutdatedException
 import com.oceanum.persistence.Catalog
 import com.oceanum.triger.Triggers
 
 import scala.collection.JavaConversions.mapAsJavaMap
+import scala.collection.concurrent.TrieMap
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 import scala.util.{Failure, Success, Try}
@@ -24,48 +26,95 @@ abstract class AbstractRestService extends RestService {
   private val coordinatorLogRepo = Catalog.getRepository[CoordinatorLog]
   private val coordinatorStateRepo = Catalog.getRepository[CoordinatorState]
   import com.oceanum.common.Environment.NONE_BLOCKING_EXECUTION_CONTEXT
+  private val remoteRestServices: TrieMap[String, RemoteRestService] = TrieMap()
 
   def actorSystem: ActorSystem
-
+  private def getRemote(host: String): RemoteRestService = remoteRestServices.getOrElseUpdate(host, new RemoteRestService(host))
+  private def isLocal(host: String): Boolean = host.equals(Environment.HOST)
   override def submitWorkflow(workflowDefine: WorkflowDefine): Future[Unit] = {
-    workflowDefineRepo.save(workflowDefine.name, workflowDefine)
+    workflowDefineRepo.save(workflowDefine.name, workflowDefine.copy(host = Environment.HOST))
   }
 
-  override def runWorkflow(name: String, fallbackStrategy: FallbackStrategy.value, env: Map[String, Any], keepAlive: Boolean, scheduleTime: Option[Date]): Future[RunWorkflowInfo] = {
-    checkWorkflowState(name).flatMap(meta => {
-      val newMeta = RichGraphMeta(meta).copy(
-        id = meta.id + 1,
-        reRunStrategy = ReRunStrategy.NONE,
-        env = meta.env ++ env,
-        createTime = new Date(),
-        scheduleTime = scheduleTime.getOrElse(new Date()),
-        startTime = null,
-        endTime = null,
-        reRunId = 0,
-        reRunFlag = false,
-        host = Environment.HOST)
-      runWorkflow(name, newMeta, keepAlive)
-    })
+  override def runWorkflow(name: String, fallbackStrategy: FallbackStrategy.value, env: Map[String, Any], keepAlive: Boolean, scheduleTime: Option[Date], version: Option[Int]): Future[RunWorkflowInfo] = {
+    getWorkflow(name).flatMap { wf =>
+
+      if (version.getOrElse(Int.MaxValue) < wf.version) {
+        stopWorkflowLocally(name)
+        Future.failed(new VersionOutdatedException("workflow version is " + version.get + ", lower than " + wf.version))
+
+      } else if (isLocal(wf.host)) {
+        checkWorkflowState(name).flatMap(meta => {
+          val newMeta = RichGraphMeta(meta).copy(
+            id = meta.id + 1,
+            reRunStrategy = ReRunStrategy.NONE,
+            env = meta.env ++ env,
+            createTime = new Date(),
+            scheduleTime = scheduleTime.getOrElse(new Date()),
+            startTime = null,
+            endTime = null,
+            reRunId = 0,
+            reRunFlag = false)
+          runWorkflowLocally(name, newMeta, wf, keepAlive)
+        })
+
+      } else {
+        getRemote(wf.host).runWorkflow(name, fallbackStrategy, env, keepAlive, scheduleTime, version)
+      }
+    }
   }
 
-  protected def runWorkflow(name: String, graphMeta: GraphMeta, keepAlive: Boolean): Future[RunWorkflowInfo]
+  protected def runWorkflowLocally(name: String, graphMeta: GraphMeta, workflowDefine: WorkflowDefine, keepAlive: Boolean): Future[RunWorkflowInfo]
 
   override def reRunWorkflow(name: String, reRunStrategy: ReRunStrategy.value, env: Map[String, Any], keepAlive: Boolean): Future[RunWorkflowInfo] = {
-    if (reRunStrategy == ReRunStrategy.NONE) Future.failed(new IllegalArgumentException("reRunStrategy can not be none"))
-    checkWorkflowState(name)
-      .map(meta => RichGraphMeta(meta).copy(
-        reRunStrategy = reRunStrategy,
-        env = meta.env ++ env,
-        startTime = null,
-        endTime = null,
-        reRunFlag = false,
-        host = Environment.HOST
-      ))
-      .flatMap(runWorkflow(name, _, keepAlive))
+    if (reRunStrategy == ReRunStrategy.NONE) {
+      Future.failed(new IllegalArgumentException("reRunStrategy can not be none"))
+    }
+    getWorkflow(name).flatMap { wf =>
+      if (isLocal(wf.host)) {
+        checkWorkflowState(name)
+          .map(meta => RichGraphMeta(meta).copy(
+            reRunStrategy = reRunStrategy,
+            env = meta.env ++ env,
+            startTime = null,
+            endTime = null,
+            reRunFlag = false
+          ))
+          .flatMap(runWorkflowLocally(name, _, wf, keepAlive))
+      } else {
+        getRemote(wf.host)
+          .reRunWorkflow(name, reRunStrategy, env, keepAlive)
+      }
+    }
   }
 
+  override def killWorkflow(name: String, id: Int): Future[Unit] = {
+    getWorkflow(name).flatMap { wf =>
+      if (isLocal(wf.host)) {
+        killWorkflowLocally(name, id)
+      } else {
+        getRemote(wf.host).killWorkflow(name, id)
+      }
+    }
+  }
+
+  protected def killWorkflowLocally(name: String, id: Int): Future[Unit]
+
+  override def stopWorkflow(name: String): Future[Unit] = {
+    getWorkflow(name).flatMap { wf =>
+      if (isLocal(wf.host)) {
+        stopWorkflowLocally(name)
+      } else {
+        getRemote(wf.host).stopWorkflow(name)
+      }
+    }
+  }
+
+  protected def stopWorkflowLocally(name: String): Future[Unit]
+
   override def getWorkflow(name: String): Future[WorkflowDefine] = {
-    workflowDefineRepo.findById(name).map(_.get)
+    isWorkflowAlive(name).flatMap { bool =>
+      workflowDefineRepo.findById(name).map(_.get).map(_.copy(alive = bool))
+    }
   }
 
   override def checkWorkflowState(name: String): Future[GraphMeta] = {
@@ -106,30 +155,42 @@ abstract class AbstractRestService extends RestService {
   }
 
   override def submitCoordinator(coordinator: Coordinator): Future[Unit] = {
-    coordinatorRepo.save(coordinator.name, coordinator).flatMap { _ =>
-      submitWorkflow(coordinator.workflowDefine)
-    }
+    coordinatorRepo.save(coordinator.name, coordinator.copy(host = Environment.HOST))
+      .flatMap { _ =>
+        submitWorkflow(coordinator.workflowDefine.copy(version = coordinator.version))
+      }
   }
 
   override def runCoordinator(name: String): Future[Unit] = {
     getCoordinator(name).flatMap[Unit] { coord =>
-      val trigger = Triggers.getTrigger(coord.trigger.name)
-      trigger
-        .start(name, coord.trigger.config) { date =>
-          runWorkflow(name, coord.fallbackStrategy, coord.workflowDefine.env, keepAlive = true, scheduleTime = Some(date))
-            .onComplete {
-              updateCoordinatorLog(coord, _)
-            }
-        }
-      coord.endTime match {
+      val cancellable = coord.endTime match {
         case Some(date) =>
           val duration = FiniteDuration(date.getTime - System.currentTimeMillis(), TimeUnit.MILLISECONDS)
           Scheduler.scheduleOnce(duration) {
             stopCoordinator(name)
           }(actorSystem)
-        case None => // do nothing
+        case None =>
+          Cancellable.alreadyCancelled
       }
-      coordinatorStateRepo.save(name, CoordinatorState(name, CoordinatorState.RUNNING))
+      if (isLocal(coord.host)) {
+        val trigger = Triggers.getTrigger(coord.trigger.name)
+        trigger
+          .start(name, coord.trigger.config) { date =>
+            runWorkflow(name, coord.fallbackStrategy, coord.workflowDefine.env, keepAlive = true, scheduleTime = Some(date), Some(coord.version))
+              .andThen {
+                case Failure(_: VersionOutdatedException) =>
+                  trigger.stop(name)
+                  cancellable.cancel()
+              }
+              .onComplete {
+                updateCoordinatorLog(coord, _)
+              }
+          }
+
+        coordinatorStateRepo.save(name, CoordinatorState(name, CoordinatorState.RUNNING))
+      } else {
+        getRemote(coord.host).runCoordinator(name)
+      }
     }
   }
 
@@ -158,36 +219,47 @@ abstract class AbstractRestService extends RestService {
   }
 
   override def suspendCoordinator(name: String): Future[Boolean] = {
-    getCoordinator(name)
-      .flatMap { coord =>
+    getCoordinator(name).flatMap { coord =>
+      if (isLocal(coord.host)) {
         if (Triggers.getTrigger(coord.trigger.name).suspend(name)) {
           coordinatorStateRepo.save(name, CoordinatorState(name, CoordinatorState.SUSPENDED)).map(_ => true)
         } else {
           Future(false)
         }
+      } else {
+        getRemote(coord.host).suspendCoordinator(name)
       }
+    }
   }
 
   override def stopCoordinator(name: String): Future[Boolean] = {
     getCoordinator(name).flatMap { coord =>
-      stopWorkflow(coord.workflowDefine.name)
-        .flatMap { _ =>
-          if (Triggers.getTrigger(coord.trigger.name).stop(name)) {
-            coordinatorStateRepo.save(name, CoordinatorState(name, CoordinatorState.STOPPED)).map(_ => true)
-          } else {
-            Future(false)
+      if (isLocal(coord.host)) {
+        stopWorkflow(coord.workflowDefine.name)
+          .flatMap { _ =>
+            if (Triggers.getTrigger(coord.trigger.name).stop(name)) {
+              coordinatorStateRepo.save(name, CoordinatorState(name, CoordinatorState.STOPPED)).map(_ => true)
+            } else {
+              Future(false)
+            }
           }
-        }
+      } else {
+        getRemote(coord.host).suspendCoordinator(name)
+      }
     }
   }
 
   override def resumeCoordinator(name: String, discardFormerWorkflows: Boolean): Future[Boolean] = {
     getCoordinator(name)
       .flatMap { coord =>
-        if (Triggers.getTrigger(coord.trigger.name).resume(name)) {
-          coordinatorStateRepo.save(name, CoordinatorState(name, CoordinatorState.RUNNING)).map(_ => true)
+        if (isLocal(coord.host)) {
+          if (Triggers.getTrigger(coord.trigger.name).resume(name)) {
+            coordinatorStateRepo.save(name, CoordinatorState(name, CoordinatorState.RUNNING)).map(_ => true)
+          } else {
+            Future(false)
+          }
         } else {
-          Future(false)
+          getRemote(coord.host).suspendCoordinator(name)
         }
       }
   }

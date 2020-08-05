@@ -24,15 +24,43 @@ object HttpClient {
 
   private val port: Int = Environment.REST_SERVER_PORT
 
-  def execute[T<:AnyRef, P<:AnyRef](url: String, method: HttpMethod = HttpMethods.GET, param: Map[String, String] = Map.empty, entity: T)(implicit mf: Manifest[P]): Future[P] = {
+  def execute[T<:AnyRef, P<:AnyRef](path: String, method: HttpMethod = HttpMethods.GET, param: Map[String, String] = Map.empty, entity: Option[T] = None)(implicit mf: Manifest[P]): Future[P] = {
     Http().singleRequest(HttpRequest(
-      uri = Uri(url).withQuery(Uri.Query(param)),
+      uri = Uri(path)
+        .withQuery(Uri.Query(param)),
       method = method,
-      entity = HttpEntity(ContentTypes.`application/json`, serialization.serialize(entity))
+      entity = entity match {
+        case Some(t) => HttpEntity(ContentTypes.`application/json`, serialization.serialize(t))
+        case None => HttpEntity.empty(ContentTypes.`application/json`)
+      }
     ))
       .flatMap { res =>
-        Unmarshal(res.entity).to[String]
-          .map(serialization.deSerializeRaw(_)(mf))
+        if (res.status.isFailure()) {
+          Future.failed(new Exception(res.toString()))
+
+        } else if (mf.equals(Manifest.Nothing)) {
+            Future.successful(null.asInstanceOf[P])
+
+        } else {
+          Unmarshal(res.entity).to[String]
+            .map(serialization.deSerializeRaw(_)(mf))
+        }
       }
+  }
+
+  def get[T<:AnyRef, P<:AnyRef](url: String, param: Map[String, String] = Map.empty, entity: Option[T] = None)(implicit mf: Manifest[P]): Future[P] = {
+    execute(url, HttpMethods.GET, param, entity)
+  }
+
+  def post[T<:AnyRef, P<:AnyRef](url: String, param: Map[String, String] = Map.empty, entity: Option[T] = None)(implicit mf: Manifest[P]): Future[P] = {
+    execute(url, HttpMethods.POST, param, entity)
+  }
+
+  def put[T<:AnyRef, P<:AnyRef](url: String, param: Map[String, String] = Map.empty, entity: Option[T] = None)(implicit mf: Manifest[P]): Future[P] = {
+    execute(url, HttpMethods.PUT, param, entity)
+  }
+
+  def delete[T<:AnyRef, P<:AnyRef](url: String, param: Map[String, String] = Map.empty, entity: Option[T] = None)(implicit mf: Manifest[P]): Future[P] = {
+    execute(url, HttpMethods.DELETE, param, entity)
   }
 }

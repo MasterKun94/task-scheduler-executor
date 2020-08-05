@@ -7,21 +7,20 @@ import com.oceanum.annotation.ISerializationMessage
 @SerialVersionUID(1L)
 @ISerializationMessage("RICH_GRAPH_META")
 sealed class RichGraphMeta(id: Int = -1,
-                    name: String = UUID.randomUUID().toString,
-                    reRunId: Int = 0,
-                    tasks: Map[Int, RichTaskMeta] = Map.empty,
-                    latestTaskId: Int = -1,
-                    fallbackStrategy: FallbackStrategy.value = FallbackStrategy.CONTINUE,
-                    reRunStrategy: ReRunStrategy.value = ReRunStrategy.NONE,
-                    graphStatus: GraphStatus.value = GraphStatus.OFFLINE,
-                    error: Throwable = null,
-                    createTime: Date = null,
-                    scheduleTime: Date = null,
-                    startTime: Date = null,
-                    endTime: Date = null,
-                    env: Map[String, Any] = Map.empty,
-                    reRunFlag: Boolean = false,
-                    host: String = Environment.HOST)
+                           name: String = UUID.randomUUID().toString,
+                           reRunId: Int = 0,
+                           tasks: Map[Int, RichTaskMeta] = Map.empty,
+                           latestTaskId: Int = -1,
+                           fallbackStrategy: FallbackStrategy.value = FallbackStrategy.CONTINUE,
+                           reRunStrategy: ReRunStrategy.value = ReRunStrategy.NONE,
+                           graphStatus: GraphStatus.value = GraphStatus.OFFLINE,
+                           error: Throwable = null,
+                           createTime: Date = null,
+                           scheduleTime: Date = null,
+                           startTime: Date = null,
+                           endTime: Date = null,
+                           env: Map[String, Any] = Map.empty,
+                           reRunFlag: Boolean = false)
   extends GraphMeta(
     id = id,
     name = name,
@@ -36,8 +35,7 @@ sealed class RichGraphMeta(id: Int = -1,
     scheduleTime = scheduleTime,
     startTime = startTime,
     endTime = endTime,
-    env = env,
-    host = host) {
+    env = env) {
 
   def copy(id: Int = id,
            name: String = name,
@@ -53,8 +51,7 @@ sealed class RichGraphMeta(id: Int = -1,
            startTime: Date = startTime,
            endTime: Date = endTime,
            env: Map[String, Any] = env,
-           reRunFlag: Boolean = reRunFlag,
-           host: String = host): RichGraphMeta = {
+           reRunFlag: Boolean = reRunFlag): RichGraphMeta = {
     new RichGraphMeta(
       id = id,
       name = name,
@@ -70,8 +67,7 @@ sealed class RichGraphMeta(id: Int = -1,
       startTime = startTime,
       endTime = endTime,
       env = env,
-      reRunFlag = reRunFlag,
-      host = host)
+      reRunFlag = reRunFlag)
   }
 
   def isReRun: Boolean = reRunFlag

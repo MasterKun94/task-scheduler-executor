@@ -8,11 +8,19 @@ import org.elasticsearch.search.builder.SearchSourceBuilder
 import org.elasticsearch.search.sort.{SortBuilder, SortBuilders, SortOrder}
 
 @IFunction
-class EsRepoFindByFunction extends RepoFindByFunction {
+class EsRepoFieldFunction extends RepoFieldFunction {
   override def call(field: String, value: Object): AviatorObject = {
-    AviatorRuntimeJavaType.valueOf(QueryBuilders.matchQuery(field, value))
+    AviatorRuntimeJavaType.valueOf(QueryBuilders.termQuery(field, value))
   }
 }
+
+@IFunction
+class EsRepoFieldInFunction extends RepoFieldInFunction {
+  override def call(field: String, value: java.util.Collection[_]): AviatorObject = {
+    AviatorRuntimeJavaType.valueOf(QueryBuilders.termsQuery(field, value))
+  }
+}
+
 @IFunction
 class EsRepoFSortFunction extends RepoSortFunction {
   override def call(field: String): AviatorObject = {
