@@ -1,12 +1,13 @@
-package com.oceanum.triger
+package com.oceanum.trigger
 
+import java.text.SimpleDateFormat
 import java.util.Date
 
 import akka.actor.{ActorRef, ActorSystem, Props}
 import com.oceanum.annotation.ITrigger
 import com.oceanum.common.{ActorSystems, Environment}
+import com.oceanum.expr.{ExprParser, JavaHashMap}
 import com.typesafe.akka.extension.quartz.{MessageRequireFireTime, QuartzSchedulerExtension}
-import org.quartz.impl.DirectSchedulerFactory
 
 /**
  * @author chenmingkun
@@ -24,10 +25,14 @@ class QuartzTrigger extends Trigger {
   }
 
   private def startTrigger(name: String, config: Map[String, String], receiver: ActorRef, msg: TriggerAction): Unit = {
-    val cron = config("cron")
-    val startTime = config.get("startTime").map(str => new Date(str.toLong))
+    val cron = ExprParser.parse(config("cron"))(new JavaHashMap(0))
     val calendar = config.get("calendar")
+      .map(str => ExprParser.parse(str)(new JavaHashMap(0)))
     val description = config.get("description")
+      .map(str => ExprParser.parse(str)(new JavaHashMap(0)))
+    val startTime = config.get("startTime")
+      .map(str => new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
+        .parse(ExprParser.parse(str)(new JavaHashMap(0))))
     stop(name)
     quartz.createSchedule(name, description, cron, calendar, Environment.TIME_ZONE)
     quartz.schedule(name, receiver, MessageRequireFireTime(msg), startTime)

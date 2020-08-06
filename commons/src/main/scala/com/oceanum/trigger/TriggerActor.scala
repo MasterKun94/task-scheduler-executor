@@ -1,4 +1,4 @@
-package com.oceanum.triger
+package com.oceanum.trigger
 
 import akka.actor.Actor
 import com.typesafe.akka.extension.quartz.MessageWithFireTime

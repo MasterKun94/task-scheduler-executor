@@ -1,4 +1,4 @@
-package com.oceanum.triger
+package com.oceanum.trigger
 
 import java.util.Date
 

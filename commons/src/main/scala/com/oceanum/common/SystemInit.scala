@@ -10,7 +10,7 @@ import com.oceanum.expr.Evaluator
 import com.oceanum.file.FileSystem
 import com.oceanum.persistence.{Catalog, Repository, RepositoryFactory}
 import com.oceanum.serialize.{Serialization, WrappedObject}
-import com.oceanum.triger.{Trigger, Triggers}
+import com.oceanum.trigger.{Trigger, Triggers}
 import org.reflections.Reflections
 
 import scala.collection.JavaConversions.asScalaSet

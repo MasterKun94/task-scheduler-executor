@@ -3,11 +3,11 @@ import java.util.Date
 import java.util.concurrent.TimeUnit
 
 import akka.actor.{ActorSystem, Cancellable}
-import com.oceanum.api.entities.{Coordinator, CoordinatorLog, CoordinatorState, RunWorkflowInfo, WorkflowDefine}
+import com.oceanum.api.entities.{Coordinator, CoordinatorLog, CoordinatorStatus, RunWorkflowInfo, WorkflowDefine}
 import com.oceanum.common._
 import com.oceanum.exceptions.VersionOutdatedException
 import com.oceanum.persistence.Catalog
-import com.oceanum.triger.Triggers
+import com.oceanum.trigger.Triggers
 
 import scala.collection.JavaConversions.mapAsJavaMap
 import scala.collection.concurrent.TrieMap
@@ -19,12 +19,12 @@ import scala.util.{Failure, Success, Try}
  * @author chenmingkun
  * @date 2020/8/2
  */
-abstract class AbstractRestService extends RestService {
+abstract class AbstractRestService extends Log with RestService {
   private val workflowDefineRepo = Catalog.getRepository[WorkflowDefine]
   private val coordinatorRepo = Catalog.getRepository[Coordinator]
   private val graphMetaRepo = Catalog.getRepository[GraphMeta]
   private val coordinatorLogRepo = Catalog.getRepository[CoordinatorLog]
-  private val coordinatorStateRepo = Catalog.getRepository[CoordinatorState]
+  private val coordinatorStateRepo = Catalog.getRepository[CoordinatorStatus]
   import com.oceanum.common.Environment.NONE_BLOCKING_EXECUTION_CONTEXT
 
   def actorSystem: ActorSystem
@@ -41,7 +41,7 @@ abstract class AbstractRestService extends RestService {
         Future.failed(new VersionOutdatedException("workflow version is " + version.get + ", lower than " + wf.version))
 
       } else if (isLocal(wf.host)) {
-        checkWorkflowState(name).flatMap(meta => {
+        checkWorkflowStatus(name).flatMap(meta => {
           val newMeta = RichGraphMeta(meta).copy(
             id = meta.id + 1,
             reRunStrategy = ReRunStrategy.NONE,
@@ -69,7 +69,7 @@ abstract class AbstractRestService extends RestService {
     }
     getWorkflow(name).flatMap { wf =>
       if (isLocal(wf.host)) {
-        checkWorkflowState(name)
+        checkWorkflowStatus(name)
           .map(meta => RichGraphMeta(meta).copy(
             reRunStrategy = reRunStrategy,
             env = meta.env ++ env,
@@ -115,7 +115,7 @@ abstract class AbstractRestService extends RestService {
     }
   }
 
-  override def checkWorkflowState(name: String): Future[GraphMeta] = {
+  override def checkWorkflowStatus(name: String): Future[GraphMeta] = {
     val env = Map[String, AnyRef]("name" -> name)
     val expr =
       """
@@ -134,7 +134,7 @@ abstract class AbstractRestService extends RestService {
     }
   }
 
-  override def checkWorkflowState(name: String, id: Int): Future[GraphMeta] = {
+  override def checkWorkflowStatus(name: String, id: Int): Future[GraphMeta] = {
     val env = Map[String, AnyRef]("name" -> name, "id" -> id.asInstanceOf[AnyRef])
     val expr =
       """
@@ -155,7 +155,7 @@ abstract class AbstractRestService extends RestService {
   override def submitCoordinator(coordinator: Coordinator): Future[Unit] = {
     coordinatorRepo.save(coordinator.name, coordinator.copy(host = Environment.HOST))
       .flatMap { _ =>
-        submitWorkflow(coordinator.workflowDefine.copy(version = coordinator.version))
+        submitWorkflow(coordinator.workflowDefine.copy(version = coordinator.version, name = coordinator.name, host = Environment.HOST))
       }
   }
 
@@ -174,18 +174,22 @@ abstract class AbstractRestService extends RestService {
         val trigger = Triggers.getTrigger(coord.trigger.name)
         trigger
           .start(name, coord.trigger.config) { date =>
+            log.info("trigger running Workflow: " + name)
             runWorkflow(name, coord.fallbackStrategy, coord.workflowDefine.env, keepAlive = true, scheduleTime = Some(date), Some(coord.version))
               .andThen {
-                case Failure(_: VersionOutdatedException) =>
+                case Failure(e: VersionOutdatedException) =>
+                  log.warning("coordinator outdated: " + coord)
                   trigger.stop(name)
                   cancellable.cancel()
+                case Failure(e) =>
+                  log.error(e, "trigger workflow failed: " + name)
               }
               .onComplete {
                 updateCoordinatorLog(coord, _)
               }
           }
 
-        updateCoordinatorState(name, CoordinatorState.RUNNING)
+        updateCoordinatorStatus(name, CoordinatorStatus.RUNNING)
       } else {
         RemoteRestServices.get(coord.host).runCoordinator(name)
       }
@@ -220,7 +224,7 @@ abstract class AbstractRestService extends RestService {
     getCoordinator(name).flatMap { coord =>
       if (isLocal(coord.host)) {
         if (Triggers.getTrigger(coord.trigger.name).suspend(name)) {
-          updateCoordinatorState(name, CoordinatorState.SUSPENDED).map(_ => true)
+          updateCoordinatorStatus(name, CoordinatorStatus.SUSPENDED).map(_ => true)
         } else {
           Future(false)
         }
@@ -236,7 +240,7 @@ abstract class AbstractRestService extends RestService {
         stopWorkflow(coord.workflowDefine.name)
           .flatMap { _ =>
             if (Triggers.getTrigger(coord.trigger.name).stop(name)) {
-              updateCoordinatorState(name, CoordinatorState.STOPPED).map(_ => true)
+              updateCoordinatorStatus(name, CoordinatorStatus.STOPPED).map(_ => true)
             } else {
               Future(false)
             }
@@ -247,12 +251,12 @@ abstract class AbstractRestService extends RestService {
     }
   }
 
-  override def resumeCoordinator(name: String, discardFormerWorkflows: Boolean): Future[Boolean] = {
+  override def resumeCoordinator(name: String): Future[Boolean] = {
     getCoordinator(name)
       .flatMap { coord =>
         if (isLocal(coord.host)) {
           if (Triggers.getTrigger(coord.trigger.name).resume(name)) {
-            updateCoordinatorState(name, CoordinatorState.RUNNING).map(_ => true)
+            updateCoordinatorStatus(name, CoordinatorStatus.RUNNING).map(_ => true)
           } else {
             Future(false)
           }
@@ -273,11 +277,11 @@ abstract class AbstractRestService extends RestService {
       )
   }
 
-  override def checkCoordinatorState(name: String): Future[CoordinatorState] = {
+  override def checkCoordinatorStatus(name: String): Future[CoordinatorStatus] = {
     coordinatorStateRepo.findById(name).map(_.get)
   }
 
-  private def updateCoordinatorState(name: String, state: CoordinatorState.value): Future[Unit] = {
-    coordinatorStateRepo.save(name, CoordinatorState(name, state))
+  private def updateCoordinatorStatus(name: String, state: CoordinatorStatus.value): Future[Unit] = {
+    coordinatorStateRepo.save(name, CoordinatorStatus(name, state))
   }
 }

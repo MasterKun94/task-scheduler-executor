@@ -49,8 +49,8 @@ object ProcessRunner extends TypedRunner[ProcessTaskConfig]("SHELL", "SHELL_SCRI
     }
     val input = process.getInputStream
     val error = process.getErrorStream
-    streamOutput.send((input, prop.propStdoutHandler))
-    streamOutput.send((error, prop.propStderrHandler))
+    streamOutput.send(input -> prop.propStdoutHandler)
+    streamOutput.send(error -> prop.propStderrHandler)
     sendRunEvent(task, new ShellExecutionHook(process))
     val value: ExitCode =
       try {

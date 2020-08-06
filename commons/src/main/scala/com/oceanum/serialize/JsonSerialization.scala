@@ -1,6 +1,6 @@
 package com.oceanum.serialize
 
-import com.oceanum.api.entities.CoordinatorState
+import com.oceanum.api.entities.CoordinatorStatus
 import com.oceanum.common.{FallbackStrategy, GraphStatus, ReRunStrategy, TaskStatus}
 import org.json4s._
 import org.json4s.ext.EnumNameSerializer
@@ -76,7 +76,7 @@ object JsonSerialization {
     new EnumNameSerializer(ReRunStrategy) +
     new EnumNameSerializer(GraphStatus) +
     new EnumNameSerializer(TaskStatus) +
-    new EnumNameSerializer(CoordinatorState) +
+    new EnumNameSerializer(CoordinatorStatus) +
     new ThrowableSerializer() +
     new StackTraceElementSerializer()
 }
