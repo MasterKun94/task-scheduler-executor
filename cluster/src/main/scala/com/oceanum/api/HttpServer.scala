@@ -8,7 +8,7 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.ActorMaterializer
-import com.oceanum.api.entities.{BoolValue, Coordinator, CoordinatorState, NodeTaskInfos, RunWorkflowInfo, WorkflowDefine}
+import com.oceanum.api.entities.{BoolValue, Coordinator, CoordinatorStatus, NodeTaskInfos, RunWorkflowInfo, WorkflowDefine}
 import com.oceanum.common.Environment.NONE_BLOCKING_EXECUTION_CONTEXT
 import com.oceanum.common._
 import com.oceanum.exec.RunnerManager
@@ -70,7 +70,7 @@ object HttpServer extends Log {
         get {
           getCoordinator(name)   //api/coordinator/{name}
         } ~
-        (post & put) {
+        (post | put) {
           submitCoordinator(name)   //api/coordinator/{name}
         }
     } ~
@@ -92,8 +92,8 @@ object HttpServer extends Log {
   def checkWorkflowStatus(name: String): Route = {
     parameterMap { map =>
       val future: Future[GraphMeta] = map.get("id") match {
-        case Some(id) => restService.checkWorkflowState(name, id.toInt)
-        case None => restService.checkWorkflowState(name)
+        case Some(id) => restService.checkWorkflowStatus(name, id.toInt)
+        case None => restService.checkWorkflowStatus(name)
       }
       returnResponseWithEntity(future)
     }
@@ -149,7 +149,7 @@ object HttpServer extends Log {
   }
 
   def checkCoordinatorStatus(name: String): Route = {
-    val future: Future[CoordinatorState] = restService.checkCoordinatorState(name)
+    val future: Future[CoordinatorStatus] = restService.checkCoordinatorStatus(name)
     returnResponseWithEntity(future)
   }
 
@@ -164,10 +164,8 @@ object HttpServer extends Log {
   }
 
   def resumeCoordinator(name: String): Route = {
-    parameterMap { parameter =>
-      val future: Future[Boolean] = restService.resumeCoordinator(name, parameter.get("discard").exists(_.toBoolean))
-      returnResponseWithEntity(future.map(BoolValue))
-    }
+    val future: Future[Boolean] = restService.resumeCoordinator(name)
+    returnResponseWithEntity(future.map(BoolValue))
   }
 
   def submitCoordinator(name: String): Route = {
@@ -192,8 +190,10 @@ object HttpServer extends Log {
   }
 
   def taskInfo(): Route = {
-    val taskInfo = restService.getNodeTaskInfo
-    returnResponseWithEntity(taskInfo)
+    parameterMap { map =>
+      val taskInfo = restService.getNodeTaskInfo(map.getOrElse("host", Environment.HOST))
+      returnResponseWithEntity(taskInfo)
+    }
   }
 
   def clusterTaskInfo(): Route = {

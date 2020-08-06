@@ -122,10 +122,16 @@ class RestServiceImpl extends AbstractRestService {
     val nodes = getClusterNodes(status = Some("up"), host, None)
     nodes
       .flatMap { nodes =>
-        Future.sequence(nodes.nodes.map(node => RemoteRestServices.get(node.host).getNodeTaskInfo))
+        Future.sequence(nodes.nodes.map(node => getNodeTaskInfo(node.host)))
       }
       .map(NodeTaskInfos)
   }
 
-  override def getNodeTaskInfo: Future[NodeTaskInfo] = Future(RunnerManager.getTaskInfo)
+  override def getNodeTaskInfo(host: String): Future[NodeTaskInfo] = {
+    if (host.equals(Environment.HOST)) {
+      Future(RunnerManager.getTaskInfo)
+    } else {
+      RemoteRestServices.get(host).getNodeTaskInfo(host)
+    }
+  }
 }

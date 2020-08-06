@@ -51,13 +51,13 @@ class RemoteRestService(host: String) extends RestService {
     )
   }
 
-  override def checkWorkflowState(name: String): Future[GraphMeta] = {
+  override def checkWorkflowStatus(name: String): Future[GraphMeta] = {
     HttpClient.get[Nothing, GraphMeta](
       url = hostPort + "/api/workflow/" + name + "/status"
     )
   }
 
-  override def checkWorkflowState(name: String, id: Int): Future[GraphMeta] = {
+  override def checkWorkflowStatus(name: String, id: Int): Future[GraphMeta] = {
     HttpClient.get[Nothing, GraphMeta](
       url = hostPort + "/api/workflow/" + name + "/status",
       param = Map("id" -> id.toString)
@@ -90,37 +90,37 @@ class RemoteRestService(host: String) extends RestService {
 
   override def runCoordinator(name: String): Future[Unit] = {
     HttpClient.post[Nothing, Nothing](
-      url = hostPort + "/api/workflow/" + name + "/run"
+      url = hostPort + "/api/coordinator/" + name + "/run"
     )
   }
 
   override def getCoordinator(name: String): Future[Coordinator] = {
     HttpClient.get[Nothing, Coordinator](
-      url = hostPort + "/api/workflow/" + name
+      url = hostPort + "/api/coordinator/" + name
     )
   }
 
-  override def checkCoordinatorState(name: String): Future[CoordinatorState] = {
-    HttpClient.get[Nothing, CoordinatorState](
-      url = hostPort + "/api/workflow/" + name + "/status"
+  override def checkCoordinatorStatus(name: String): Future[CoordinatorStatus] = {
+    HttpClient.get[Nothing, CoordinatorStatus](
+      url = hostPort + "/api/coordinator/" + name + "/status"
     )
   }
 
   override def stopCoordinator(name: String): Future[Boolean] = {
     HttpClient.post[Nothing, BoolValue](
-      url = hostPort + "/api/workflow/" + name + "/stop"
+      url = hostPort + "/api/coordinator/" + name + "/stop"
     ).map(_.value)
   }
 
   override def suspendCoordinator(name: String): Future[Boolean] = {
     HttpClient.post[Nothing, BoolValue](
-      url = hostPort + "/api/workflow/" + name + "/suspend"
+      url = hostPort + "/api/coordinator/" + name + "/suspend"
     ).map(_.value)
   }
 
-  override def resumeCoordinator(name: String, discardFormerWorkflows: Boolean): Future[Boolean] = {
+  override def resumeCoordinator(name: String): Future[Boolean] = {
     HttpClient.post[Nothing, BoolValue](
-      url = hostPort + "/api/workflow/" + name + "/resume"
+      url = hostPort + "/api/coordinator/" + name + "/resume"
     ).map(_.value)
   }
 
@@ -144,9 +144,10 @@ class RemoteRestService(host: String) extends RestService {
     )
   }
 
-  override def getNodeTaskInfo: Future[NodeTaskInfo] = {
+  override def getNodeTaskInfo(host: String): Future[NodeTaskInfo] = {
     HttpClient.get[Nothing, NodeTaskInfo](
-      url = hostPort + "/api/node/task-info"
+      url = hostPort + "/api/node/task-info",
+      param = Map("host" -> host)
     )
   }
 }

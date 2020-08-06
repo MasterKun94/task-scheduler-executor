@@ -70,7 +70,8 @@ sealed class RichTaskMeta(id: Int = -1,
 
   def withTask(task: Task): RichTaskMeta = {
     val graphMeta = task.rawEnv.graphMeta
-    val dateFormat = DateUtil.format("yyyyMMdd").format(graphMeta.startTime)
+    val dateFormat = DateUtil.format("yyyyMMdd").format(graphMeta.scheduleTime)
+
     this.copy(
       id = task.id,
       name = task.name,

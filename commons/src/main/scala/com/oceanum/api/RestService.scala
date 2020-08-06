@@ -2,7 +2,7 @@ package com.oceanum.api
 
 import java.util.Date
 
-import com.oceanum.api.entities.{ClusterNodes, Coordinator, CoordinatorLog, CoordinatorState, NodeTaskInfo, NodeTaskInfos, RunWorkflowInfo, WorkflowDefine}
+import com.oceanum.api.entities.{ClusterNodes, Coordinator, CoordinatorLog, CoordinatorStatus, NodeTaskInfo, NodeTaskInfos, RunWorkflowInfo, WorkflowDefine}
 import com.oceanum.common.{FallbackStrategy, GraphMeta, ReRunStrategy}
 
 import scala.concurrent.Future
@@ -20,9 +20,9 @@ trait RestService {
 
   def getWorkflow(name: String): Future[WorkflowDefine]
 
-  def checkWorkflowState(name: String): Future[GraphMeta]
+  def checkWorkflowStatus(name: String): Future[GraphMeta]
 
-  def checkWorkflowState(name: String, id: Int): Future[GraphMeta]
+  def checkWorkflowStatus(name: String, id: Int): Future[GraphMeta]
 
   def killWorkflow(name: String, id: Int): Future[Unit]
 
@@ -36,17 +36,17 @@ trait RestService {
 
   def getCoordinator(name: String): Future[Coordinator]
 
-  def checkCoordinatorState(name: String): Future[CoordinatorState]
+  def checkCoordinatorStatus(name: String): Future[CoordinatorStatus]
 
   def stopCoordinator(name: String): Future[Boolean]
 
   def suspendCoordinator(name: String): Future[Boolean]
 
-  def resumeCoordinator(name: String, discardFormerWorkflows: Boolean): Future[Boolean]
+  def resumeCoordinator(name: String): Future[Boolean]
 
   def getClusterNodes(status: Option[String], host: Option[String], role: Option[String]): Future[ClusterNodes]
 
   def getClusterTaskInfos(host: Option[String]): Future[NodeTaskInfos]
 
-  def getNodeTaskInfo: Future[NodeTaskInfo]
+  def getNodeTaskInfo(host: String): Future[NodeTaskInfo]
 }

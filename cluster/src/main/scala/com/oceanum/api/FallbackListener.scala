@@ -1,16 +1,16 @@
 package com.oceanum.api
 
 import akka.actor.{Actor, ActorLogging}
-import akka.cluster.{Cluster, ClusterEvent}
 import akka.cluster.ClusterEvent.{MemberEvent, UnreachableMember}
+import akka.cluster.{Cluster, ClusterEvent}
 import akka.routing.ConsistentHash
-import com.oceanum.api.entities.Coordinator
+import com.oceanum.api.entities.{ClusterNodes, Coordinator}
 import com.oceanum.common.SystemInit
 import com.oceanum.persistence.Catalog
 
-import scala.util.{Failure, Success}
 import scala.collection.JavaConversions.mapAsJavaMap
 import scala.concurrent.Future
+import scala.util.{Failure, Success}
 
 class FallbackListener extends Actor with ActorLogging {
   private lazy val restService = SystemInit.restService
@@ -25,20 +25,18 @@ class FallbackListener extends Actor with ActorLogging {
 
   override def receive: Receive = {
     case _:MemberEvent|UnreachableMember =>
-      val future = restService
+      val future: Future[ClusterNodes] = restService
         .getClusterNodes(status = Some("up"), host = None, role = None)
-        .map(_.nodes.map(_.host))
       future
-        .flatMap { value: Seq[String] =>
+        .flatMap { value: ClusterNodes =>
           coordinatorRepo.find(
             expr = "!repo.fieldIn('host', values)",
-            env = Map("values" -> value)
+            env = Map("values" -> value.nodes.map(_.host))
           )
             .flatMap { coordinators =>
-              val hash = ConsistentHash(value, 17)
               val seq = coordinators
                 .map(coord => {
-                  val host = hash.nodeFor(coord.name)
+                  val host = value.consistentHashSelect(coord.name).host
                   log.info("fallback: moving coordinator: [{}] to host: [{}]", coord, host)
                   coord.copy(host = host, version = coord.version + 1)
                 }
@@ -53,7 +51,7 @@ class FallbackListener extends Actor with ActorLogging {
         }
         .andThen {
           case Success(_) =>
-              log.info("fallback complete")
+            log.info("fallback complete")
           case Failure(exception) =>
             log.error(exception, "fallback failed: " + exception.getMessage)
         }
