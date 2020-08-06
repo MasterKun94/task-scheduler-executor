@@ -18,13 +18,7 @@ object Catalog {
   }
 
   def getRepository[T<:AnyRef](implicit mf: Manifest[T]): Repository[T] = {
-    repositories.get(mf) match {
-      case Some(repo) => repo.asInstanceOf[Repository[T]]
-      case None =>
-        val repo = repositoryFactory.create(mf)
-        addRepository(repo)
-        repo
-    }
+    repositories.getOrElseUpdate(mf, repositoryFactory.create(mf)).asInstanceOf[Repository[T]]
   }
 
   def save[T<:AnyRef](id: String, obj: T)(implicit mf: Manifest[T]): Future[Unit] = getRepository(mf).save(id, obj)

@@ -145,7 +145,7 @@ class ExecutionInstance(task: Task, actor: ActorRef) extends Actor with ActorLog
 
   private def caseCheckState(stateReceive: StateReceive)(implicit holder: Holder): Receive = {
     case CheckState =>
-      log.info("send state: [{}] to sender: [{}]", stateReceive.state.name, sender)
+      log.debug("send state: [{}] to sender: [{}]", stateReceive.state.name, sender)
       sender ! stateReceive.state
       if ((System.currentTimeMillis() - clientCheckTime) > Environment.EXEC_UN_REACH_TIMEOUT
         && Array(TaskStatus.SUCCESS, TaskStatus.KILL, TaskStatus.FAILED).contains(stateReceive.state.name)) {

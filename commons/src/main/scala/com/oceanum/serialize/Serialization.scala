@@ -1,6 +1,5 @@
 package com.oceanum.serialize
 
-import com.oceanum.annotation.ISerialization
 import com.oceanum.common.SystemInit
 
 trait Serialization[W<:WrappedObject] {

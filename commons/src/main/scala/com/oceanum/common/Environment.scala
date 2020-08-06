@@ -21,7 +21,7 @@ object Environment {
   private val properties = new Properties()
   lazy val MODE: String = getProperty("mode", "client")
   lazy val LOCALE: Locale = Locale.ENGLISH
-  lazy val TIME_ZONE: TimeZone = TimeZone.getTimeZone(getProperty("timezone", TimeZone.getDefault.getDisplayName))
+  lazy val TIME_ZONE: TimeZone = TimeZone.getTimeZone(getProperty("timezone", "GMT+8"))
   lazy val BASE_PATH: String = getBasePath(getProperty(Key.BASE_PATH, scala.util.Properties.userDir))
   lazy val EXEC_PYTHON: String = getProperty(Key.EXEC_PYTHON, "python")
   lazy val EXEC_PYTHON_ENABLED: Boolean = getProperty(Key.EXEC_PYTHON_ENABLED, "true").toBoolean

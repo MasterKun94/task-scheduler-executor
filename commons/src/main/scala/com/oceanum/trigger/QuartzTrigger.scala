@@ -10,8 +10,9 @@ import com.oceanum.expr.{ExprParser, JavaHashMap}
 import com.typesafe.akka.extension.quartz.{MessageRequireFireTime, QuartzSchedulerExtension}
 
 /**
+ * Quartz触发器
+ *
  * @author chenmingkun
- * @date 2020/7/26
  */
 @ITrigger
 class QuartzTrigger extends Trigger {
@@ -20,6 +21,12 @@ class QuartzTrigger extends Trigger {
   private lazy val quartz: QuartzSchedulerExtension = QuartzSchedulerExtension(system)
   private lazy val receiver: ActorRef = system.actorOf(Props[TriggerActor])
 
+  /**
+   * @param config 任务配置, 有三个参数分别是：
+   *               cron：必须项，表示任务的执行计划；
+   *               startTime：可选，表示任务第一次启动的时间；
+   *               calendar：可选，暂未支持
+   */
   override def start(name: String, config: Map[String, String])(action: Date => Unit): Unit = {
     startTrigger(name, config, receiver, TriggerAction(action))
   }

@@ -44,7 +44,7 @@ class ClientInstance(executor: ActorRef, task: Task, handler: StateHandler, prom
       sender() ! "OK"
 
     case stat: State =>
-      log.info("receive stat from [{}], state: {}", sender(), stat)
+      log.debug("receive stat from [{}], state: {}", sender(), stat)
       stateHandler.handle(stat)
       stat match {
         case KILL(_) | SUCCESS(_) | FAILED(_) =>
