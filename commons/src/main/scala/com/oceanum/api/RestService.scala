@@ -32,6 +32,8 @@ trait RestService {
 
   def submitCoordinator(coordinator: Coordinator): Future[Unit]
 
+  def submitAndRunCoordinator(coordinator: Coordinator): Future[Unit]
+
   def runCoordinator(name: String): Future[Unit]
 
   def getCoordinator(name: String): Future[Coordinator]

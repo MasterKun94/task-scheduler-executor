@@ -159,40 +159,49 @@ abstract class AbstractRestService extends Log with RestService {
       }
   }
 
-  override def runCoordinator(name: String): Future[Unit] = {
-    getCoordinator(name).flatMap[Unit] { coord =>
-      val cancellable = coord.endTime match {
-        case Some(date) =>
-          val duration = FiniteDuration(date.getTime - System.currentTimeMillis(), TimeUnit.MILLISECONDS)
-          Scheduler.scheduleOnce(duration) {
-            stopCoordinator(name)
-          }(actorSystem)
-        case None =>
-          Cancellable.alreadyCancelled
-      }
-      if (isLocal(coord.host)) {
-        val trigger = Triggers.getTrigger(coord.trigger.name)
-        trigger
-          .start(name, coord.trigger.config) { date =>
-            log.info("trigger running Workflow: " + name)
-            runWorkflow(name, coord.fallbackStrategy, coord.workflowDefine.env, keepAlive = true, scheduleTime = Some(date), Some(coord.version))
-              .andThen {
-                case Failure(e: VersionOutdatedException) =>
-                  log.warning("coordinator outdated: " + coord)
-                  trigger.stop(name)
-                  cancellable.cancel()
-                case Failure(e) =>
-                  log.error(e, "trigger workflow failed: " + name)
-              }
-              .onComplete {
-                updateCoordinatorLog(coord, _)
-              }
-          }
+  override def submitAndRunCoordinator(coordinator: Coordinator): Future[Unit] = {
+    submitCoordinator(coordinator).flatMap { _ =>
+      runCoordinator(coordinator.copy(host = Environment.HOST))
+    }
+  }
 
-        updateCoordinatorStatus(name, CoordinatorStatus.RUNNING)
-      } else {
-        RemoteRestServices.get(coord.host).runCoordinator(name)
-      }
+  override def runCoordinator(name: String): Future[Unit] = {
+    getCoordinator(name).flatMap[Unit](runCoordinator)
+  }
+
+  private def runCoordinator(coordinator: Coordinator): Future[Unit] = {
+    val name = coordinator.name
+    val cancellable = coordinator.endTime match {
+      case Some(date) =>
+        val duration = FiniteDuration(date.getTime - System.currentTimeMillis(), TimeUnit.MILLISECONDS)
+        Scheduler.scheduleOnce(duration) {
+          stopCoordinator(name)
+        }(actorSystem)
+      case None =>
+        Cancellable.alreadyCancelled
+    }
+    if (isLocal(coordinator.host)) {
+      val trigger = Triggers.getTrigger(coordinator.trigger.name)
+      trigger
+        .start(name, coordinator.trigger.config) { date =>
+          log.info("trigger running Workflow: " + name)
+          runWorkflow(name, coordinator.fallbackStrategy, coordinator.workflowDefine.env, keepAlive = true, scheduleTime = Some(date), Some(coordinator.version))
+            .andThen {
+              case Failure(e: VersionOutdatedException) =>
+                log.warning("coordinator outdated: " + coordinator)
+                trigger.stop(name)
+                cancellable.cancel()
+              case Failure(e) =>
+                log.error(e, "trigger workflow failed: " + name)
+            }
+            .onComplete {
+              updateCoordinatorLog(coordinator, _)
+            }
+        }
+
+      updateCoordinatorStatus(name, CoordinatorStatus.RUNNING)
+    } else {
+      RemoteRestServices.get(coordinator.host).runCoordinator(name)
     }
   }
 

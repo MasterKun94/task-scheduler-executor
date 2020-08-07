@@ -144,8 +144,16 @@ object HttpServer extends Log {
   }
 
   def runCoordinator(name: String): Route = {
-    val future: Future[Unit] = restService.runCoordinator(name)
-    returnResponse(future)
+    extractRequestEntity { entity =>
+      val future: Future[Unit] = if (entity.isKnownEmpty()) {
+        restService.runCoordinator(name)
+      } else {
+        deserializeAndRun[Coordinator, Unit](entity) { coord =>
+          restService.submitAndRunCoordinator(coord.copy(name = name))
+        }
+      }
+      returnResponse(future)
+    }
   }
 
   def checkCoordinatorStatus(name: String): Route = {
