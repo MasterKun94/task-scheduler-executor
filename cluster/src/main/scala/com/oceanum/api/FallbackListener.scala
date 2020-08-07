@@ -47,12 +47,7 @@ class FallbackListener extends Actor with ActorLogging {
                 )
                 .map(coord => {
                   val remoteRestService = RemoteRestServices.get(coord.host)
-                  remoteRestService.submitCoordinator(coord)
-                    .map { _ =>
-                      Scheduler.scheduleOnce(FiniteDuration(5, TimeUnit.SECONDS)) {
-                        remoteRestService.runCoordinator(coord.name)
-                      }
-                    }
+                  remoteRestService.submitAndRunCoordinator(coord)
                 })
               Future.sequence(seq)
             }
