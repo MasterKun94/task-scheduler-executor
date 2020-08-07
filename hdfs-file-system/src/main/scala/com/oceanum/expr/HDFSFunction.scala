@@ -3,7 +3,7 @@ package com.oceanum.expr
 import com.googlecode.aviator.runtime.`type`.{AviatorBoolean, AviatorLong, AviatorObject, AviatorString}
 import com.googlecode.aviator.runtime.function.{AbstractFunction, FunctionUtils}
 import com.oceanum.annotation.IFunction
-import com.oceanum.file.HDFSFileSystem
+import com.oceanum.file.HadoopFileSystem
 
 /**
  * @author chenmingkun
@@ -15,7 +15,7 @@ class HDFSExistFunction extends AbstractFunction {
 
   override def call(env: JavaMap[String, AnyRef], path: AviatorObject): AviatorObject = {
     val str = FunctionUtils.getStringValue(path, env)
-    AviatorBoolean.valueOf(HDFSFileSystem.exist(str))
+    AviatorBoolean.valueOf(HadoopFileSystem.exist(str))
   }
 }
 
@@ -25,7 +25,7 @@ class HDFSIsDirFunction extends AbstractFunction {
 
   override def call(env: JavaMap[String, AnyRef], path: AviatorObject): AviatorObject = {
     val str = FunctionUtils.getStringValue(path, env)
-    AviatorBoolean.valueOf(HDFSFileSystem.isDir(str))
+    AviatorBoolean.valueOf(HadoopFileSystem.isDir(str))
   }
 }
 
@@ -35,7 +35,7 @@ class HDFSIsFileFunction extends AbstractFunction {
 
   override def call(env: JavaMap[String, AnyRef], path: AviatorObject): AviatorObject = {
     val str = FunctionUtils.getStringValue(path, env)
-    AviatorBoolean.valueOf(HDFSFileSystem.isFile(str))
+    AviatorBoolean.valueOf(HadoopFileSystem.isFile(str))
   }
 }
 
@@ -45,7 +45,7 @@ class HDFSSizeFunction extends AbstractFunction {
 
   override def call(env: JavaMap[String, AnyRef], path: AviatorObject): AviatorObject = {
     val str = FunctionUtils.getStringValue(path, env)
-    AviatorLong.valueOf(HDFSFileSystem.size(str))
+    AviatorLong.valueOf(HadoopFileSystem.size(str))
   }
 }
 
@@ -55,7 +55,7 @@ class HDFSBlockSizeFunction extends AbstractFunction {
 
   override def call(env: JavaMap[String, AnyRef], path: AviatorObject): AviatorObject = {
     val str = FunctionUtils.getStringValue(path, env)
-    AviatorLong.valueOf(HDFSFileSystem.blockSize(str))
+    AviatorLong.valueOf(HadoopFileSystem.blockSize(str))
   }
 }
 
@@ -65,7 +65,7 @@ class HDFSAccessTimeFunction extends AbstractFunction {
 
   override def call(env: JavaMap[String, AnyRef], path: AviatorObject): AviatorObject = {
     val str = FunctionUtils.getStringValue(path, env)
-    AviatorLong.valueOf(HDFSFileSystem.accessTime(str))
+    AviatorLong.valueOf(HadoopFileSystem.accessTime(str))
   }
 }
 
@@ -75,7 +75,7 @@ class HDFSModifiedTimeFunction extends AbstractFunction {
 
   override def call(env: JavaMap[String, AnyRef], path: AviatorObject): AviatorObject = {
     val str = FunctionUtils.getStringValue(path, env)
-    AviatorLong.valueOf(HDFSFileSystem.modifiedTime(str))
+    AviatorLong.valueOf(HadoopFileSystem.modifiedTime(str))
   }
 }
 
@@ -85,6 +85,6 @@ class HDFSOwnerTimeFunction extends AbstractFunction {
 
   override def call(env: JavaMap[String, AnyRef], path: AviatorObject): AviatorObject = {
     val str = FunctionUtils.getStringValue(path, env)
-    new AviatorString(HDFSFileSystem.owner(str))
+    new AviatorString(HadoopFileSystem.owner(str))
   }
 }

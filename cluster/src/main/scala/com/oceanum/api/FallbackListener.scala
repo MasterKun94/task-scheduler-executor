@@ -1,15 +1,17 @@
 package com.oceanum.api
 
+import java.util.concurrent.TimeUnit
+
 import akka.actor.{Actor, ActorLogging}
 import akka.cluster.ClusterEvent.{MemberEvent, UnreachableMember}
 import akka.cluster.{Cluster, ClusterEvent}
-import akka.routing.ConsistentHash
 import com.oceanum.api.entities.{ClusterNodes, Coordinator}
-import com.oceanum.common.SystemInit
+import com.oceanum.common.{Scheduler, SystemInit}
 import com.oceanum.persistence.Catalog
 
 import scala.collection.JavaConversions.mapAsJavaMap
 import scala.concurrent.Future
+import scala.concurrent.duration.FiniteDuration
 import scala.util.{Failure, Success}
 
 class FallbackListener extends Actor with ActorLogging {
@@ -29,10 +31,12 @@ class FallbackListener extends Actor with ActorLogging {
         .getClusterNodes(status = Some("up"), host = None, role = None)
       future
         .flatMap { value: ClusterNodes =>
-          coordinatorRepo.find(
-            expr = "!repo.fieldIn('host', values)",
-            env = Map("values" -> value.nodes.map(_.host))
-          )
+          coordinatorRepo
+            .find(
+              expr = "!repo.fieldIn('host', values)",
+              env = Map("values" -> value.nodes.map(_.host))
+            )
+            .map(_.filter(coord => coord.endTime.map(_.getTime).getOrElse(Long.MaxValue) > System.currentTimeMillis()))
             .flatMap { coordinators =>
               val seq = coordinators
                 .map(coord => {
@@ -42,9 +46,13 @@ class FallbackListener extends Actor with ActorLogging {
                 }
                 )
                 .map(coord => {
-                  RemoteRestServices
-                    .get(coord.host)
-                    .submitCoordinator(coord)
+                  val remoteRestService = RemoteRestServices.get(coord.host)
+                  remoteRestService.submitCoordinator(coord)
+                    .map { _ =>
+                      Scheduler.scheduleOnce(FiniteDuration(5, TimeUnit.SECONDS)) {
+                        remoteRestService.runCoordinator(coord.name)
+                      }
+                    }
                 })
               Future.sequence(seq)
             }

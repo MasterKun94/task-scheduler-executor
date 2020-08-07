@@ -15,22 +15,22 @@ import scala.concurrent.{ExecutionContext, Future}
  * @date 2020/7/5
  */
 @IFileSystem
-class HDFSFileSystem extends FileSystem("hdfs") {
+class HadoopFileSystem extends FileSystem("hdfs") {
 
   override def download(srcPath: String, destPath: String)(implicit ex: ExecutionContext): Future[Unit] = {
     Future {
-      HDFSFileSystem.download(srcPath, destPath)
+      HadoopFileSystem.download(srcPath, destPath)
     }
   }
 
   override def upload(srcPath: String, destPath: String)(implicit ex: ExecutionContext): Future[Unit] = {
     Future {
-      HDFSFileSystem.upload(srcPath, destPath)
+      HadoopFileSystem.upload(srcPath, destPath)
     }
   }
 }
 
-object HDFSFileSystem {
+object HadoopFileSystem {
   private val fileSystem = {
     System.setProperty("hadoop.home.dir", Environment.HADOOP_HOME)
     val configuration = new Configuration()
