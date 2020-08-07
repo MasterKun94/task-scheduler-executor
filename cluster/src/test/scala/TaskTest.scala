@@ -21,7 +21,7 @@ object TaskTest {
     .retryCount(3)
     .retryInterval("5 second")
     .priority(5)
-    .pyFile("hdfs:///tmp/task-test/python-err.py")
+    .pyFile("hdfs:///tmp/task-test/python.py")
     .args("hello")
     .waitForTimeout("100 second")
     .checkStateInterval("3s")
