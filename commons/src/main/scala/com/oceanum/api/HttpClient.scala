@@ -6,6 +6,8 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.ActorMaterializer
 import com.oceanum.common.{ActorSystems, Environment, SystemInit}
+import com.oceanum.exceptions.RemoteException
+import com.oceanum.serialize.WrappedException
 
 import scala.concurrent.{ExecutionContextExecutor, Future}
 
@@ -33,13 +35,23 @@ object HttpClient {
     ))
       .flatMap { res =>
         if (res.status.isFailure()) {
-          Future.failed(new Exception(res.toString()))
+          if (res.entity.isKnownEmpty() || res.entity.contentType != ContentTypes.`application/json`) {
+            Future.failed(new RemoteException(res.toString()))
+          } else {
+            Unmarshal(res.entity)
+              .to[String]
+              .map(serialization.deSerializeRaw[Throwable](_))
+              .map(e => throw new RemoteException(res.toString(), e))
+          }
+
+
         } else if (mf.runtimeClass.equals(classOf[String])) {
           Unmarshal(res.entity).to[String].map(_.asInstanceOf[P])
+
         } else {
           mf match {
             case Manifest.Nothing => Future.successful(null.asInstanceOf[P])
-            case _ => Unmarshal(res.entity).to[String].map(serialization.deSerializeRaw(_)(mf))
+            case _ => Unmarshal(res.entity).to[String].map(serialization.deSerializeRaw[P](_)(mf))
           }
         }
       }

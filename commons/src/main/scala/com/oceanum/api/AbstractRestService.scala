@@ -5,7 +5,7 @@ import java.util.concurrent.TimeUnit
 import akka.actor.{ActorSystem, Cancellable}
 import com.oceanum.api.entities.{Coordinator, CoordinatorLog, CoordinatorStatus, RunWorkflowInfo, WorkflowDefine}
 import com.oceanum.common._
-import com.oceanum.exceptions.VersionOutdatedException
+import com.oceanum.exceptions.{BadRequestException, VersionOutdatedException}
 import com.oceanum.persistence.Catalog
 import com.oceanum.trigger.Triggers
 
@@ -70,13 +70,19 @@ abstract class AbstractRestService extends Log with RestService {
     getWorkflow(name).flatMap { wf =>
       if (isLocal(wf.host)) {
         checkWorkflowStatus(name)
-          .map(meta => RichGraphMeta(meta).copy(
-            reRunStrategy = reRunStrategy,
-            env = meta.env ++ env,
-            startTime = null,
-            endTime = null,
-            reRunFlag = false
-          ))
+          .map(meta => meta.graphStatus match {
+            case GraphStatus.FAILED | GraphStatus.SUCCESS | GraphStatus.KILLED =>
+              RichGraphMeta(meta).copy(
+                reRunStrategy = reRunStrategy,
+                env = meta.env ++ env,
+                startTime = null,
+                endTime = null,
+                reRunFlag = false
+              )
+            case _ =>
+              throw new BadRequestException("workflow not complete")
+          }
+          )
           .flatMap(runWorkflowLocally(name, _, wf, keepAlive))
       } else {
         RemoteRestServices.get(wf.host)

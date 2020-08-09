@@ -5,16 +5,17 @@ import akka.cluster.Cluster
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.Directives._
-import akka.http.scaladsl.server.Route
+import akka.http.scaladsl.server.{Route, StandardRoute}
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.ActorMaterializer
 import com.oceanum.api.entities.{BoolValue, Coordinator, CoordinatorStatus, NodeTaskInfos, RunWorkflowInfo, WorkflowDefine}
 import com.oceanum.common.Environment.NONE_BLOCKING_EXECUTION_CONTEXT
 import com.oceanum.common._
+import com.oceanum.exceptions.BadRequestException
 import com.oceanum.exec.RunnerManager
 
 import scala.concurrent.Future
-import scala.util.{Failure, Success}
+import scala.util.{Failure, Success, Try}
 
 /**
  * @author chenmingkun
@@ -218,22 +219,40 @@ object HttpServer extends Log {
   }
 
   def returnResponse[T](future: Future[T]): Route = {
-    onComplete(future) {
-      case Success(_) => complete(Done)
-      case Failure(exception) => failWith(exception)
-    }
+    onComplete(future)(completeResponse(withEntity = false))
   }
 
   def returnResponseWithEntity[T<:AnyRef](future: Future[T]): Route = {
-    onComplete(future) {
-      case Success(t) =>
-        complete {
-          HttpEntity(
-            ContentTypes.`application/json`,
-            serialization.serialize(t)
-          )
+    onComplete(future)(completeResponse(withEntity = true))
+  }
+
+  def completeResponse[T](withEntity: Boolean)(obj: Try[T]): StandardRoute = {
+    obj match {
+      case Success(value) =>
+        if (withEntity) {
+          complete {
+            HttpEntity(
+              ContentTypes.`application/json`,
+              serialization.serialize(value.asInstanceOf[AnyRef])
+            )
+          }
+        } else {
+          complete(Done)
         }
-      case Failure(exception) => failWith(exception)
+
+      case Failure(exception) =>
+        val statusCode = exception match {
+          case _: RuntimeException => StatusCodes.InternalServerError
+          case _ => StatusCodes.BadRequest
+        }
+        complete {
+          HttpResponse(
+            status = statusCode,
+            entity = HttpEntity(
+              ContentTypes.`application/json`,
+              serialization.serialize(exception)
+            ))
+        }
     }
   }
 

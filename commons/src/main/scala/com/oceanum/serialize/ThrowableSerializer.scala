@@ -10,7 +10,7 @@ class ThrowableSerializer extends CustomSerializer[Throwable](implicit f =>
   (
     {
       case value: JObject =>
-        val e = new RemoteException(
+        val e = new WrappedException(
           realClassName = (value \ "className").extract[String],
           message = (value \ "message").extract[String],
           cause = (value \ "cause").extract[Throwable]
@@ -61,7 +61,7 @@ class StackTraceElementSerializer extends CustomSerializer[StackTraceElement](im
   )
 )
 
-class RemoteException(val realClassName: String, message: String, cause: Throwable)
+class WrappedException(val realClassName: String, message: String, cause: Throwable)
   extends Exception(message, cause) {
     override def toString: String = {
       "@" + realClassName + ": " + message

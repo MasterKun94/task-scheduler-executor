@@ -37,13 +37,13 @@ class RestServiceImpl extends AbstractRestService {
         RunWorkflowInfo.from(graphMeta)
 
       case (Dropped, _) =>
-        throw new Exception("message been dropped")
+        throw new RuntimeException("message been dropped")
 
       case (QFailure(e), _) =>
         throw e
 
       case (QueueClosed, _) =>
-        throw new Exception("queue closed")
+        throw new RuntimeException("queue closed")
     }
   }
 
