@@ -67,7 +67,7 @@ class TaskCreateTimeFunction extends AbstractFunction {
   override def getName: String = "task.createTime"
 
   override def call(env: JavaMap[String, AnyRef]): AviatorObject = {
-    val date: Date = env.get(GraphContext.taskKey).asInstanceOf[TaskMeta].createTime
+    val date: Date = env.get(GraphContext.taskKey).asInstanceOf[TaskMeta].createTime.get
     AviatorRuntimeJavaType.valueOf(date)
   }
 
@@ -85,7 +85,7 @@ class TaskStartTimeFunction extends AbstractFunction {
   override def getName: String = "task.startTime"
 
   override def call(env: JavaMap[String, AnyRef]): AviatorObject = {
-    val date: Date = env.get(GraphContext.taskKey).asInstanceOf[TaskMeta].startTime
+    val date: Date = env.get(GraphContext.taskKey).asInstanceOf[TaskMeta].startTime.get
     AviatorRuntimeJavaType.valueOf(date)
   }
 

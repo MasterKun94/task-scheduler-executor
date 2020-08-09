@@ -9,9 +9,9 @@ import com.oceanum.common.{FallbackStrategy, GraphMeta, ReRunStrategy}
 case class RunWorkflowInfo(id: Int,
                            name: String,
                            reRunId: Int,
-                           fallbackStrategy: FallbackStrategy.value,
-                           reRunStrategy: ReRunStrategy.value,
-                           createTime: Date)
+                           fallbackStrategy: FallbackStrategy,
+                           reRunStrategy: ReRunStrategy,
+                           createTime: Option[Date])
 
 object RunWorkflowInfo {
   def from(graphMeta: GraphMeta): RunWorkflowInfo = RunWorkflowInfo(

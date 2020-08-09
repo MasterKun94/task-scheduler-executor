@@ -11,14 +11,14 @@ sealed class RichGraphMeta(id: Int = -1,
                            reRunId: Int = 0,
                            tasks: Map[Int, RichTaskMeta] = Map.empty,
                            latestTaskId: Int = -1,
-                           fallbackStrategy: FallbackStrategy.value = FallbackStrategy.CONTINUE,
-                           reRunStrategy: ReRunStrategy.value = ReRunStrategy.NONE,
-                           graphStatus: GraphStatus.value = GraphStatus.OFFLINE,
-                           error: Throwable = null,
-                           createTime: Date = null,
-                           scheduleTime: Date = null,
-                           startTime: Date = null,
-                           endTime: Date = null,
+                           fallbackStrategy: FallbackStrategy = FallbackStrategy.CONTINUE,
+                           reRunStrategy: ReRunStrategy = ReRunStrategy.NONE,
+                           graphStatus: GraphStatus = GraphStatus.OFFLINE,
+                           error: Option[Throwable] = None,
+                           createTime: Option[Date] = None,
+                           scheduleTime: Option[Date] = None,
+                           startTime: Option[Date] = None,
+                           endTime: Option[Date] = None,
                            env: Map[String, Any] = Map.empty,
                            reRunFlag: Boolean = false)
   extends GraphMeta(
@@ -42,14 +42,14 @@ sealed class RichGraphMeta(id: Int = -1,
            reRunId: Int = reRunId,
            tasks: Map[Int, RichTaskMeta] = tasks,
            latestTaskId: Int = latestTaskId,
-           fallbackStrategy: FallbackStrategy.value = fallbackStrategy,
-           reRunStrategy: ReRunStrategy.value = reRunStrategy,
-           graphStatus: GraphStatus.value = graphStatus,
-           error: Throwable = error,
-           createTime: Date = createTime,
-           scheduleTime: Date = scheduleTime,
-           startTime: Date = startTime,
-           endTime: Date = endTime,
+           fallbackStrategy: FallbackStrategy = fallbackStrategy,
+           reRunStrategy: ReRunStrategy = reRunStrategy,
+           graphStatus: GraphStatus = graphStatus,
+           error: Option[Throwable] = error,
+           createTime: Option[Date] = createTime,
+           scheduleTime: Option[Date] = scheduleTime,
+           startTime: Option[Date] = startTime,
+           endTime: Option[Date] = endTime,
            env: Map[String, Any] = env,
            reRunFlag: Boolean = reRunFlag): RichGraphMeta = {
     new RichGraphMeta(
@@ -86,8 +86,8 @@ sealed class RichGraphMeta(id: Int = -1,
       updateGraphStatus(graphStatus).copy(tasks = this.tasks + tuple)
   }
 
-  def updateGraphStatus(status: GraphStatus.value): RichGraphMeta = {
-    this.copy(graphStatus = Seq(graphStatus, status).maxBy(_.id))
+  def updateGraphStatus(status: GraphStatus): RichGraphMeta = {
+    this.copy(graphStatus = Seq(graphStatus, status).maxBy(_.value))
   }
 
   def merge(meta: GraphMeta): RichGraphMeta = {
@@ -95,7 +95,7 @@ sealed class RichGraphMeta(id: Int = -1,
     val map: Map[Int, RichTaskMeta] = keys.map { key => {
       val task = (this.tasks.get(key), meta.tasks.get(key)) match {
         case (Some(o1), Some(o2)) =>
-          if (o1.createTime.before(o2.createTime)) o2 else o1
+          if (o1.createTime.get.before(o2.createTime.get)) o2 else o1
         case (None, Some(o2)) => o2
         case (Some(o1), None) => o1
         case (None, None) => throw new IllegalArgumentException
@@ -113,9 +113,9 @@ sealed class RichGraphMeta(id: Int = -1,
 
       case GraphStatus.EXCEPTION => this.updateGraphStatus(GraphStatus.FAILED)
 
-      case _: GraphStatus.value => this
+      case _ => this
     }
-    meta.copy(endTime = new Date())
+    meta.copy(endTime = Option(new Date()))
   }
 
   def addEnv(kv: (String, Any)): RichGraphMeta = this.copy(env = this.env + kv)

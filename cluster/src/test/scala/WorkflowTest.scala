@@ -1,3 +1,5 @@
+import java.util.Date
+
 import com.oceanum.api.RemoteRestService
 import com.oceanum.api.entities._
 import com.oceanum.client.Task
@@ -31,7 +33,7 @@ object WorkflowTest {
   val task4: Task = task.copy(name = "task4")
   val task5: Task = task.copy(name = "task5")
 
-  val workflowName = "graph-define-test-7"
+  val workflowName = "graph-define-test-9"
   val workflowDefine: WorkflowDefine = WorkflowDefine(
     version = 1,
     name = workflowName,
@@ -69,13 +71,13 @@ object WorkflowTest {
   def main(args: Array[String]): Unit = {
     Environment.loadEnv(Array("--conf=cluster/src/main/resources/application.properties"))
     Environment.initSystem()
-    val restService = new RemoteRestService("192.168.10.132")
-//
+    val restService = new RemoteRestService("192.168.10.131")
+
     restService.submitWorkflow(workflowDefine).onComplete(println)
     StdIn.readLine()
     restService.getWorkflow(workflowDefine.name).onComplete(printResult)
     StdIn.readLine()
-    restService.runWorkflow(workflowDefine.name, FallbackStrategy.CONTINUE, version = None).onComplete(printResult)
+    restService.runWorkflow(workflowDefine.name, FallbackStrategy.CONTINUE, version = None, scheduleTime = Option(new Date())).onComplete(printResult)
     StdIn.readLine()
     restService.checkWorkflowStatus(workflowDefine.name).onComplete(printResult)
     StdIn.readLine()

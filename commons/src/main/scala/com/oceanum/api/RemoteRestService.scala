@@ -18,12 +18,12 @@ class RemoteRestService(host: String) extends RestService {
     )
   }
 
-  override def runWorkflow(name: String, fallbackStrategy: FallbackStrategy.value, env: Map[String, Any] = Map.empty, keepAlive: Boolean = false, scheduleTime: Option[Date] = None, version: Option[Int]): Future[RunWorkflowInfo] = {
+  override def runWorkflow(name: String, fallbackStrategy: FallbackStrategy, env: Map[String, Any] = Map.empty, keepAlive: Boolean = false, scheduleTime: Option[Date] = None, version: Option[Int]): Future[RunWorkflowInfo] = {
     val graphMeta = new RichGraphMeta(
       name = name,
       fallbackStrategy = fallbackStrategy,
       env = env,
-      scheduleTime = scheduleTime.orNull
+      scheduleTime = scheduleTime.orElse(Option(new Date()))
     )
     HttpClient.post[GraphMeta, RunWorkflowInfo](
       url = hostPort + "/api/workflow/" + name + "/run",
@@ -32,7 +32,7 @@ class RemoteRestService(host: String) extends RestService {
     )
   }
 
-  override def reRunWorkflow(name: String, reRunStrategy: ReRunStrategy.value, env: Map[String, Any] = Map.empty, keepAlive: Boolean = false): Future[RunWorkflowInfo] = {
+  override def reRunWorkflow(name: String, reRunStrategy: ReRunStrategy, env: Map[String, Any] = Map.empty, keepAlive: Boolean = false): Future[RunWorkflowInfo] = {
     val graphMeta = new RichGraphMeta(
       name = name,
       reRunStrategy = reRunStrategy,

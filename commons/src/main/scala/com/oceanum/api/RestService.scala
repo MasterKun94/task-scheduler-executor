@@ -14,9 +14,9 @@ import scala.concurrent.Future
 trait RestService {
   def submitWorkflow(workflowDefine: WorkflowDefine): Future[Unit]
 
-  def runWorkflow(name: String, fallbackStrategy: FallbackStrategy.value, env: Map[String, Any], keepAlive: Boolean, scheduleTime: Option[Date] = None, version: Option[Int]): Future[RunWorkflowInfo]
+  def runWorkflow(name: String, fallbackStrategy: FallbackStrategy, env: Map[String, Any], keepAlive: Boolean, scheduleTime: Option[Date] = None, version: Option[Int]): Future[RunWorkflowInfo]
 
-  def reRunWorkflow(name: String, reRunStrategy: ReRunStrategy.value, env: Map[String, Any], keepAlive: Boolean): Future[RunWorkflowInfo]
+  def reRunWorkflow(name: String, reRunStrategy: ReRunStrategy, env: Map[String, Any], keepAlive: Boolean): Future[RunWorkflowInfo]
 
   def getWorkflow(name: String): Future[WorkflowDefine]
 

@@ -55,15 +55,15 @@ object Workflow {
           if (meta.reRunStrategy == ReRunStrategy.NONE) {
             if (idOffset.get() >= meta.id) {
               meta.copy(
-                error = new IllegalArgumentException("id is not legal, must higher than " + idOffset.get()),
+                error = Option(new IllegalArgumentException("id is not legal, must higher than " + idOffset.get())),
                 graphStatus = GraphStatus.FAILED
               )
             } else {
               idOffset.set(meta.id)
               meta.copy(
-                createTime = createTime,
-                startTime = new Date(),
-                endTime = null,
+                createTime = Some(createTime),
+                startTime = Some(new Date()),
+                endTime = None,
                 graphStatus = GraphStatus.RUNNING,
                 reRunId = 0,
                 reRunFlag = false,
@@ -73,9 +73,9 @@ object Workflow {
             }
           } else {
             meta.copy(
-              createTime = createTime,
-              startTime = new Date(),
-              endTime = null,
+              createTime = Some(createTime),
+              startTime = Some(new Date()),
+              endTime = None,
               graphStatus = GraphStatus.RUNNING,
               reRunId = meta.reRunId + 1,
               reRunFlag = false,

@@ -59,7 +59,7 @@ case class ExecutionTask[T <: TaskConfig](name: String,
 object ExecutionTask {
   def from(task: Task, listener: EventListener): ExecutionTask[_ <: TaskConfig] = {
     val env = task.env
-    val taskMeta = RichTaskMeta(env.taskMeta).copy(createTime = new Date())
+    val taskMeta = RichTaskMeta(env.taskMeta).copy(createTime = Option(new Date()))
     ExecutionTask(
       name = task.name,
       retryCount = task.retryCount,

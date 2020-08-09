@@ -28,7 +28,7 @@ case class Task(id: Int = -1,
   def env: GraphContext = rawEnv.copy(taskMeta = taskMeta)
 
   private def taskMeta: RichTaskMeta = {
-    if (rawEnv.taskMeta == null) new RichTaskMeta().withTask(this)
+    if (rawEnv.taskMeta == null) RichTaskMeta(this)
     else rawEnv.taskMeta.asInstanceOf[RichTaskMeta]
   }
 }

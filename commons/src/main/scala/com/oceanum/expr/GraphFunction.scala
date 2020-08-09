@@ -43,7 +43,7 @@ class GraphCreateTimeFunction extends AbstractFunction {
   override def getName: String = "graph.createTime"
 
   override def call(env: JavaMap[String, AnyRef]): AviatorObject = {
-    val date: Date = env.get(GraphContext.graphKey).asInstanceOf[GraphMeta].createTime
+    val date: Date = env.get(GraphContext.graphKey).asInstanceOf[GraphMeta].createTime.get
     AviatorRuntimeJavaType.valueOf(date)
   }
 }
@@ -53,7 +53,7 @@ class GraphScheduleTimeFunction extends AbstractFunction {
   override def getName: String = "graph.scheduleTime"
 
   override def call(env: JavaMap[String, AnyRef]): AviatorObject = {
-    val date: Date = env.get(GraphContext.graphKey).asInstanceOf[GraphMeta].scheduleTime
+    val date: Date = env.get(GraphContext.graphKey).asInstanceOf[GraphMeta].scheduleTime.get
     AviatorRuntimeJavaType.valueOf(date)
   }
 }
@@ -63,7 +63,7 @@ class GraphStartTimeFunction extends AbstractFunction {
   override def getName: String = "graph.startTime"
 
   override def call(env: JavaMap[String, AnyRef]): AviatorObject = {
-    val date: Date = env.get(GraphContext.graphKey).asInstanceOf[GraphMeta].startTime
+    val date: Date = env.get(GraphContext.graphKey).asInstanceOf[GraphMeta].startTime.get
     AviatorRuntimeJavaType.valueOf(date)
   }
 }
@@ -87,11 +87,9 @@ class GraphLatestTaskStateFunction extends AbstractFunction {
   override def getName: String = "graph.latestTask"
 
   override def call(env: JavaMap[String, AnyRef]): AviatorObject = {
-    val task = env.get(GraphContext.graphKey).asInstanceOf[GraphMeta].latestTask
-    if (task == null) {
-      AviatorNil.NIL
-    } else {
-      AviatorRuntimeJavaType.valueOf(task)
+    env.get(GraphContext.graphKey).asInstanceOf[GraphMeta].latestTask match {
+      case Some(value) => AviatorRuntimeJavaType.valueOf(value)
+      case None => AviatorNil.NIL
     }
   }
 }

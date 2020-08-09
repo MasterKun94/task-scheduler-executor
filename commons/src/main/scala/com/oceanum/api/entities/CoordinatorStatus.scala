@@ -1,11 +1,7 @@
 package com.oceanum.api.entities
 
 import com.oceanum.annotation.ISerializationMessage
+import com.oceanum.common.CoordStatus
 
 @ISerializationMessage("COORDINATOR_STATUS")
-case class CoordinatorStatus(name: String, status: CoordinatorStatus.value)
-
-object CoordinatorStatus extends Enumeration {
-  type value = Value
-  val RUNNING, SUSPENDED, STOPPED = Value
-}
+case class CoordinatorStatus(name: String, status: CoordStatus)

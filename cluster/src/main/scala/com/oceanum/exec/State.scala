@@ -7,7 +7,7 @@ import com.oceanum.common.{RichTaskMeta, TaskStatus}
  * @date 2020/5/30
  */
 @SerialVersionUID(1L)
-class State(val name: TaskStatus.value, meta: RichTaskMeta) extends Serializable {
+class State(val name: TaskStatus, meta: RichTaskMeta) extends Serializable {
   def metadata: RichTaskMeta = meta.copy(state = name)
 }
 

@@ -11,9 +11,10 @@ import com.oceanum.common.{Environment, FallbackStrategy}
  */
 @ISerializationMessage("COORDINATOR")
 case class Coordinator(name: String,
-                       fallbackStrategy: FallbackStrategy.value,
+                       fallbackStrategy: FallbackStrategy,
                        trigger: TriggerConfig,
                        workflowDefine: WorkflowDefine,
+                       startTime: Option[Date] = None,
                        endTime: Option[Date] = None,
                        host: String = Environment.HOST,
                        version: Int)

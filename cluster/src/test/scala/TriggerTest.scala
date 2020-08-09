@@ -16,9 +16,8 @@ object TriggerTest {
 
     Triggers.getTrigger("QUARTZ")
       .start("test", Map(
-        "cron" -> "0 * * * * ? *",
-        "startTime" -> "${date.format('yyyy-MM-dd HH:mm:ss', date.now() + duration.minute(1))}"
-      )) {
+        "cron" -> "0 * * * * ? *"
+      ), startTime = None) {
         println(_)
       }
   }

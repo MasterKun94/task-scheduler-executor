@@ -32,7 +32,7 @@ object FlowFactory {
           case FallbackStrategy.SHUTDOWN => Future.successful(graphMeta.updateGraphStatus(GraphStatus.FAILED))
         }
         case GraphStatus.FAILED | GraphStatus.KILLED => Future.successful(graphMeta)
-        case other: GraphStatus.value => Future.successful(graphMeta.copy(error = new IllegalArgumentException("this should never happen, unexpected graph state: " + other)))
+        case other: GraphStatus => Future.successful(graphMeta.copy(error = Option(new IllegalArgumentException("this should never happen, unexpected graph state: " + other))))
       }
     }
   }
@@ -90,7 +90,7 @@ object FlowFactory {
       case Some(meta) =>
         meta.state match {
         case TaskStatus.KILL | TaskStatus.FAILED | TaskStatus.OFFLINE => run(task)
-        case _: TaskStatus.value => Future.successful(metadata)
+        case _: TaskStatus => Future.successful(metadata)
       }
       case None => run(task)
     }
@@ -134,7 +134,7 @@ object FlowFactory {
       val promise = Promise[Message]()
       func(meta).onComplete {
         case Success(value) => promise.success(Message(value, message.instances))
-        case Failure(e) => promise.success(Message(meta.copy(error = e), message.instances))
+        case Failure(e) => promise.success(Message(meta.copy(error = Option(e)), message.instances))
       } (taskClient.system.dispatcher)
       promise.future
     }

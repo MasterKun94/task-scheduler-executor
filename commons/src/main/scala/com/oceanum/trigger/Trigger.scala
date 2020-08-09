@@ -18,8 +18,9 @@ trait Trigger {
    * @param name 触发器任务名称
    * @param config 任务配置
    * @param action 当任务被触发时执行的动作，输入参数为触发时间
+   * @param startTime 第一次触发时间在此之后
    */
-  def start(name: String, config: Map[String, String])(action: Date => Unit): Unit
+  def start(name: String, config: Map[String, String], startTime: Option[Date])(action: Date => Unit): Unit
 
   /**
    * 根据任务名称停止任务

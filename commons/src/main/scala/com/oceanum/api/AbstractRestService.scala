@@ -3,21 +3,19 @@ import java.util.Date
 import java.util.concurrent.TimeUnit
 
 import akka.actor.{ActorSystem, Cancellable}
-import com.oceanum.api.entities.{Coordinator, CoordinatorLog, CoordinatorStatus, RunWorkflowInfo, WorkflowDefine}
+import com.oceanum.api.entities._
 import com.oceanum.common._
 import com.oceanum.exceptions.{BadRequestException, VersionOutdatedException}
 import com.oceanum.persistence.Catalog
 import com.oceanum.trigger.Triggers
 
 import scala.collection.JavaConversions.mapAsJavaMap
-import scala.collection.concurrent.TrieMap
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 import scala.util.{Failure, Success, Try}
 
 /**
  * @author chenmingkun
- * @date 2020/8/2
  */
 abstract class AbstractRestService extends Log with RestService {
   private val workflowDefineRepo = Catalog.getRepository[WorkflowDefine]
@@ -28,12 +26,22 @@ abstract class AbstractRestService extends Log with RestService {
   import com.oceanum.common.Environment.NONE_BLOCKING_EXECUTION_CONTEXT
 
   def actorSystem: ActorSystem
+
   private def isLocal(host: String): Boolean = host.equals(Environment.HOST)
+
   override def submitWorkflow(workflowDefine: WorkflowDefine): Future[Unit] = {
-    workflowDefineRepo.save(workflowDefine.name, workflowDefine.copy(host = Environment.HOST))
+    selectHost(workflowDefine.name).flatMap(submitWorkflow(workflowDefine, _))
   }
 
-  override def runWorkflow(name: String, fallbackStrategy: FallbackStrategy.value, env: Map[String, Any], keepAlive: Boolean, scheduleTime: Option[Date], version: Option[Int]): Future[RunWorkflowInfo] = {
+  private def selectHost(key: String): Future[String] = {
+    getClusterNodes(status = Option("up"), None, None).map(_.consistentHashSelect(key).host)
+  }
+
+  private def submitWorkflow(workflowDefine: WorkflowDefine, host: String): Future[Unit] = {
+    workflowDefineRepo.save(workflowDefine.name, workflowDefine.copy(host = host))
+  }
+
+  override def runWorkflow(name: String, fallbackStrategy: FallbackStrategy, env: Map[String, Any], keepAlive: Boolean, scheduleTime: Option[Date], version: Option[Int]): Future[RunWorkflowInfo] = {
     getWorkflow(name).flatMap { wf =>
 
       if (version.getOrElse(Int.MaxValue) < wf.version) {
@@ -46,10 +54,10 @@ abstract class AbstractRestService extends Log with RestService {
             id = meta.id + 1,
             reRunStrategy = ReRunStrategy.NONE,
             env = meta.env ++ env,
-            createTime = new Date(),
-            scheduleTime = scheduleTime.getOrElse(new Date()),
-            startTime = null,
-            endTime = null,
+            createTime = Option(new Date()),
+            scheduleTime = scheduleTime,
+            startTime = None,
+            endTime = None,
             reRunId = 0,
             reRunFlag = false)
           runWorkflowLocally(name, newMeta, wf, keepAlive)
@@ -63,27 +71,31 @@ abstract class AbstractRestService extends Log with RestService {
 
   protected def runWorkflowLocally(name: String, graphMeta: GraphMeta, workflowDefine: WorkflowDefine, keepAlive: Boolean): Future[RunWorkflowInfo]
 
-  override def reRunWorkflow(name: String, reRunStrategy: ReRunStrategy.value, env: Map[String, Any], keepAlive: Boolean): Future[RunWorkflowInfo] = {
+  override def reRunWorkflow(name: String, reRunStrategy: ReRunStrategy, env: Map[String, Any], keepAlive: Boolean): Future[RunWorkflowInfo] = {
     if (reRunStrategy == ReRunStrategy.NONE) {
       Future.failed(new IllegalArgumentException("reRunStrategy can not be none"))
     }
     getWorkflow(name).flatMap { wf =>
       if (isLocal(wf.host)) {
         checkWorkflowStatus(name)
-          .map(meta => meta.graphStatus match {
-            case GraphStatus.FAILED | GraphStatus.SUCCESS | GraphStatus.KILLED =>
-              RichGraphMeta(meta).copy(
-                reRunStrategy = reRunStrategy,
-                env = meta.env ++ env,
-                startTime = null,
-                endTime = null,
-                reRunFlag = false
-              )
-            case _ =>
-              throw new BadRequestException("workflow not complete")
-          }
-          )
+          .map(meta => {
+            meta.graphStatus match {
+              case GraphStatus.SUCCESS | GraphStatus.FAILED | GraphStatus.KILLED =>
+                RichGraphMeta(meta).copy(
+                  reRunStrategy = reRunStrategy,
+                  env = meta.env ++ env,
+                  startTime = None,
+                  endTime = None,
+                  reRunFlag = false
+                )
+              case status =>
+                throw new BadRequestException("workflow not complete，status is: " + status)
+            }
+          })
           .flatMap(runWorkflowLocally(name, _, wf, keepAlive))
+          .andThen {
+            case Success(value) => log.info("rerun workflow: " + value.name)
+          }
       } else {
         RemoteRestServices.get(wf.host)
           .reRunWorkflow(name, reRunStrategy, env, keepAlive)
@@ -159,10 +171,15 @@ abstract class AbstractRestService extends Log with RestService {
   }
 
   override def submitCoordinator(coordinator: Coordinator): Future[Unit] = {
-    coordinatorRepo.save(coordinator.name, coordinator.copy(host = Environment.HOST))
-      .flatMap { _ =>
-        submitWorkflow(coordinator.workflowDefine.copy(version = coordinator.version, name = coordinator.name, host = Environment.HOST))
-      }
+    selectHost(coordinator.name).flatMap { host =>
+      coordinatorRepo.save(coordinator.name, coordinator.copy(host = host))
+        .flatMap { _ =>
+          submitWorkflow(
+            workflowDefine = coordinator.workflowDefine.copy(version = coordinator.version, name = coordinator.name),
+            host = host
+          )
+        }
+    }
   }
 
   override def submitAndRunCoordinator(coordinator: Coordinator): Future[Unit] = {
@@ -189,11 +206,11 @@ abstract class AbstractRestService extends Log with RestService {
     if (isLocal(coordinator.host)) {
       val trigger = Triggers.getTrigger(coordinator.trigger.name)
       trigger
-        .start(name, coordinator.trigger.config) { date =>
+        .start(name, coordinator.trigger.config, coordinator.startTime) { date =>
           log.info("trigger running Workflow: " + name)
           runWorkflow(name, coordinator.fallbackStrategy, coordinator.workflowDefine.env, keepAlive = true, scheduleTime = Some(date), Some(coordinator.version))
             .andThen {
-              case Failure(e: VersionOutdatedException) =>
+              case Failure(_: VersionOutdatedException) =>
                 log.warning("coordinator outdated: " + coordinator)
                 trigger.stop(name)
                 cancellable.cancel()
@@ -205,7 +222,7 @@ abstract class AbstractRestService extends Log with RestService {
             }
         }
 
-      updateCoordinatorStatus(name, CoordinatorStatus.RUNNING)
+      updateCoordinatorStatus(name, CoordStatus.RUNNING)
     } else {
       RemoteRestServices.get(coordinator.host).runCoordinator(name)
     }
@@ -239,7 +256,7 @@ abstract class AbstractRestService extends Log with RestService {
     getCoordinator(name).flatMap { coord =>
       if (isLocal(coord.host)) {
         if (Triggers.getTrigger(coord.trigger.name).suspend(name)) {
-          updateCoordinatorStatus(name, CoordinatorStatus.SUSPENDED).map(_ => true)
+          updateCoordinatorStatus(name, CoordStatus.SUSPENDED).map(_ => true)
         } else {
           Future(false)
         }
@@ -255,7 +272,7 @@ abstract class AbstractRestService extends Log with RestService {
         stopWorkflow(coord.workflowDefine.name)
           .flatMap { _ =>
             if (Triggers.getTrigger(coord.trigger.name).stop(name)) {
-              updateCoordinatorStatus(name, CoordinatorStatus.STOPPED).map(_ => true)
+              updateCoordinatorStatus(name, CoordStatus.STOPPED).map(_ => true)
             } else {
               Future(false)
             }
@@ -271,7 +288,7 @@ abstract class AbstractRestService extends Log with RestService {
       .flatMap { coord =>
         if (isLocal(coord.host)) {
           if (Triggers.getTrigger(coord.trigger.name).resume(name)) {
-            updateCoordinatorStatus(name, CoordinatorStatus.RUNNING).map(_ => true)
+            updateCoordinatorStatus(name, CoordStatus.RUNNING).map(_ => true)
           } else {
             Future(false)
           }
@@ -296,7 +313,7 @@ abstract class AbstractRestService extends Log with RestService {
     coordinatorStateRepo.findById(name).map(_.get)
   }
 
-  private def updateCoordinatorStatus(name: String, state: CoordinatorStatus.value): Future[Unit] = {
+  private def updateCoordinatorStatus(name: String, state: CoordStatus): Future[Unit] = {
     coordinatorStateRepo.save(name, CoordinatorStatus(name, state))
   }
 }

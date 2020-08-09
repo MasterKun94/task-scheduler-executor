@@ -13,13 +13,13 @@ sealed class RichTaskMeta(id: Int = -1,
                    reRunId: Int = 0,
                    taskType: String = null,
                    user: String = null,
-                   createTime: Date = null,
-                   startTime: Date = null,
-                   endTime: Date = null,
+                   createTime: Option[Date] = None,
+                   startTime: Option[Date] = None,
+                   endTime: Option[Date] = None,
                    execDir: String = "",
                    message: String = "",
-                   error: Throwable = null,
-                   state: TaskStatus.value = TaskStatus.OFFLINE,
+                   error: Option[Throwable] = None,
+                   state: TaskStatus = TaskStatus.OFFLINE,
                    retryNum: Int = 0) extends TaskMeta(
   id = id,
   name = name,
@@ -41,13 +41,13 @@ sealed class RichTaskMeta(id: Int = -1,
            reRunId: Int = reRunId,
            taskType: String = taskType,
            user: String = user,
-           createTime: Date = createTime,
-           startTime: Date = startTime,
-           endTime: Date = endTime,
+           createTime: Option[Date] = createTime,
+           startTime: Option[Date] = startTime,
+           endTime: Option[Date] = endTime,
            execDir: String = execDir,
            message: String = message,
-           error: Throwable = error,
-           state: TaskStatus.value = state,
+           error: Option[Throwable] = error,
+           state: TaskStatus = state,
            retryNum: Int = retryNum): RichTaskMeta = {
     new RichTaskMeta(
       id = id,
@@ -68,26 +68,13 @@ sealed class RichTaskMeta(id: Int = -1,
 
   def incRetry(): RichTaskMeta = this.copy(retryNum = this.retryNum + 1)
 
-  def withTask(task: Task): RichTaskMeta = {
-    val graphMeta = task.rawEnv.graphMeta
-    val dateFormat = DateUtil.format("yyyyMMdd").format(graphMeta.scheduleTime)
-
-    this.copy(
-      id = task.id,
-      name = task.name,
-      taskType = task.prop.taskType,
-      user = task.user,
-      execDir = Environment.EXEC_WORK_DIR/dateFormat/graphMeta.name/graphMeta.id/graphMeta.reRunId/task.id
-    )
-  }
-
   def failure(task: Task, e: Throwable): RichTaskMeta = {
     this.copy(
       id = task.id,
       name = task.name,
       taskType = task.prop.taskType,
       user = task.user,
-      error = e,
+      error = Option(e),
       message = e.getMessage,
       state = TaskStatus.FAILED
     )
@@ -99,6 +86,18 @@ sealed class RichTaskMeta(id: Int = -1,
 }
 
 object RichTaskMeta {
+  def apply(task: Task): RichTaskMeta =  {
+    val graphMeta = task.rawEnv.graphMeta
+    val dateFormat = DateUtil.format("yyyyMMdd").format(graphMeta.scheduleTime.get)
+    new RichTaskMeta(
+      id = task.id,
+      name = task.name,
+      taskType = task.prop.taskType,
+      user = task.user,
+      execDir = Environment.EXEC_WORK_DIR/dateFormat/graphMeta.name/graphMeta.id/graphMeta.reRunId/task.id
+    )
+  }
+
   def apply(taskMeta: TaskMeta): RichTaskMeta = {
     taskMeta match {
       case richTaskMeta: RichTaskMeta => richTaskMeta

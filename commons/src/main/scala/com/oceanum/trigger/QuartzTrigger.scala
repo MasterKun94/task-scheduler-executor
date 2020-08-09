@@ -27,19 +27,16 @@ class QuartzTrigger extends Trigger {
    *               startTime：可选，表示任务第一次启动的时间；
    *               calendar：可选，暂未支持
    */
-  override def start(name: String, config: Map[String, String])(action: Date => Unit): Unit = {
-    startTrigger(name, config, receiver, TriggerAction(action))
+  override def start(name: String, config: Map[String, String], startTime: Option[Date])(action: Date => Unit): Unit = {
+    startTrigger(name, config, startTime, receiver, TriggerAction(action))
   }
 
-  private def startTrigger(name: String, config: Map[String, String], receiver: ActorRef, msg: TriggerAction): Unit = {
+  private def startTrigger(name: String, config: Map[String, String], startTime: Option[Date], receiver: ActorRef, msg: TriggerAction): Unit = {
     val cron = ExprParser.parse(config("cron"))(new JavaHashMap(0))
     val calendar = config.get("calendar")
       .map(str => ExprParser.parse(str)(new JavaHashMap(0)))
     val description = config.get("description")
       .map(str => ExprParser.parse(str)(new JavaHashMap(0)))
-    val startTime = config.get("startTime")
-      .map(str => new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
-        .parse(ExprParser.parse(str)(new JavaHashMap(0))))
     stop(name)
     quartz.createSchedule(name, description, cron, calendar, Environment.TIME_ZONE)
     quartz.schedule(name, receiver, MessageRequireFireTime(msg), startTime)

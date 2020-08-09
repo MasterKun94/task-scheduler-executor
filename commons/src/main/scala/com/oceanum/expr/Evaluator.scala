@@ -1,10 +1,8 @@
 package com.oceanum.expr
 
-import java.util.Date
-
-import com.googlecode.aviator.{AviatorEvaluator, Expression}
 import com.googlecode.aviator.lexer.token.OperatorType
 import com.googlecode.aviator.runtime.`type`.AviatorFunction
+import com.googlecode.aviator.{AviatorEvaluator, Expression}
 import com.oceanum.common.{Environment, GraphContext}
 
 /**

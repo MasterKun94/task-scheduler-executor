@@ -27,7 +27,7 @@ object TaskTest {
     .checkStateInterval("3s")
     .parallelism(1)
     .build
-    .addGraphMeta(new RichGraphMeta().copy(id = 0, scheduleTime = new Date()))
+    .addGraphMeta(new RichGraphMeta().copy(id = 0, scheduleTime = Some(new Date())))
 
   def getSelfAddress: String = {
 //    "127.0.0.1"

@@ -1,9 +1,7 @@
 package com.oceanum.serialize
 
-import com.oceanum.api.entities.CoordinatorStatus
-import com.oceanum.common.{FallbackStrategy, GraphStatus, ReRunStrategy, TaskStatus}
+import com.oceanum.common._
 import org.json4s._
-import org.json4s.ext.EnumNameSerializer
 import org.json4s.jackson.{JsonMethods, Serialization => JackSerial}
 
 import scala.collection.concurrent.TrieMap
@@ -72,11 +70,11 @@ class JsonSerialization(protected val serializableMap: TrieMap[String, Serializa
 
 object JsonSerialization {
   implicit val formats: Formats = DefaultFormats +
-    new EnumNameSerializer(FallbackStrategy) +
-    new EnumNameSerializer(ReRunStrategy) +
-    new EnumNameSerializer(GraphStatus) +
-    new EnumNameSerializer(TaskStatus) +
-    new EnumNameSerializer(CoordinatorStatus) +
+    new EnumSerializer[GraphStatus]() +
+    new EnumSerializer[TaskStatus]() +
+    new EnumSerializer[CoordStatus]() +
+    new EnumSerializer[ReRunStrategy]() +
+    new EnumSerializer[FallbackStrategy]() +
     new ThrowableSerializer() +
     new StackTraceElementSerializer()
 }
