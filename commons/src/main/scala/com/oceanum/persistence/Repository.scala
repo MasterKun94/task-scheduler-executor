@@ -17,7 +17,7 @@ import scala.concurrent.Future
  *    {@link com.oceanum.annotation.IRepository}
  *
  * 或者直接实现仓库工厂：
- *    {@link com.oceanum.persistence.es.EsRepositoryFactory}
+ *    {@link com.oceanum.persistence.RepositoryFactory}
  * 并添加注解：
  *    {@link com.oceanum.annotation.IRepositoryFactory}
  *
