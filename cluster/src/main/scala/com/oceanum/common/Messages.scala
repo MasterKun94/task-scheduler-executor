@@ -13,7 +13,7 @@ case class RunningMessage(metadata: RichTaskMeta) extends Message
 case class FailedMessage(metadata: RichTaskMeta) extends Message
 case class SuccessMessage(metadata: RichTaskMeta) extends Message
 case class RetryMessage(metadata: RichTaskMeta) extends Message
-case class KillMessage(metadata: RichTaskMeta) extends Message
+case object KillMessage extends Message
 case class TimeoutMessage(metadata: RichTaskMeta) extends Message
 case class StartMessage(metadata: RichTaskMeta) extends Message
 

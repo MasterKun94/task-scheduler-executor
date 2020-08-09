@@ -43,7 +43,7 @@ class ExecutionInstance(task: Task, actor: ActorRef) extends Actor with ActorLog
     }
 
     override def kill(message: RichTaskMeta): Unit = {
-      self ! KillMessage(message)
+      self ! KillMessage
     }
   }
   private val executionTask = ExecutionTask.from(task, listener)
@@ -159,7 +159,7 @@ class ExecutionInstance(task: Task, actor: ActorRef) extends Actor with ActorLog
   private def caseKillAction(implicit holder: Holder): Receive = {
     case KillAction =>
       holder.hook.kill()
-      self ! KillMessage(new RichTaskMeta())
+      self ! KillMessage
   }
 
   private def caseTerminateAction(implicit holder: Holder): Receive = {
@@ -218,8 +218,8 @@ class ExecutionInstance(task: Task, actor: ActorRef) extends Actor with ActorLog
       checkState
   }
   private def caseKill(implicit meta: RichTaskMeta, holder: Holder): Receive = {
-    case m: KillMessage =>
-      val metadata = meta update m.metadata
+    case KillMessage =>
+      val metadata = meta
       log.info("receive status changing, status: KILL({})", metadata)
       context.become(kill(metadata))
       checkState
