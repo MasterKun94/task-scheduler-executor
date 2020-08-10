@@ -4,7 +4,7 @@ import java.util.Date
 import java.util.concurrent.atomic.AtomicReference
 
 import com.oceanum.api.entities._
-import com.oceanum.common.{FallbackStrategy, GraphMeta, ReRunStrategy}
+import com.oceanum.common.{FallbackStrategy, GraphMeta, NodeStatus, RerunStrategy}
 
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
@@ -16,7 +16,7 @@ class ConsistentHashRemoteRestService(seed: String) extends RestService {
   updateRef(seed)
 
   private def updateRef(host: String): Future[ClusterNodes] = {
-    remoteRestServices.get(host).getClusterNodes(status = Some("up"), None, None)
+    remoteRestServices.get(host).getClusterNodes(status = Some(NodeStatus.UP))
       .andThen {
         case Success(value) => hostsRef.set(value)
         case Failure(exception) => exception.printStackTrace()
@@ -45,8 +45,8 @@ class ConsistentHashRemoteRestService(seed: String) extends RestService {
     execute(name)(_.runWorkflow(name, fallbackStrategy, env, keepAlive, scheduleTime, version))
   }
 
-  override def reRunWorkflow(name: String, reRunStrategy: ReRunStrategy, env: Map[String, Any], keepAlive: Boolean): Future[RunWorkflowInfo] = {
-    execute(name)(_.reRunWorkflow(name, reRunStrategy, env, keepAlive))
+  override def rerunWorkflow(name: String, reRunStrategy: RerunStrategy, env: Map[String, Any], keepAlive: Boolean): Future[RunWorkflowInfo] = {
+    execute(name)(_.rerunWorkflow(name, reRunStrategy, env, keepAlive))
   }
 
   override def getWorkflow(name: String): Future[WorkflowDefine] = {
@@ -105,7 +105,7 @@ class ConsistentHashRemoteRestService(seed: String) extends RestService {
     execute(name)(_.resumeCoordinator(name))
   }
 
-  override def getClusterNodes(status: Option[String], host: Option[String], role: Option[String]): Future[ClusterNodes] = {
+  override def getClusterNodes(status: Option[NodeStatus], host: Option[String], role: Option[String]): Future[ClusterNodes] = {
     execute(_.getClusterNodes(status, host, role))
   }
 

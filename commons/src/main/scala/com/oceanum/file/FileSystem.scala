@@ -9,7 +9,6 @@ import scala.concurrent.{ExecutionContext, Future}
 
 /**
  * @author chenmingkun
- * @date 2020/7/4
  */
 abstract class FileSystem(val scheme: String) {
   def download(srcPath: String, destPath: String)(implicit ec: ExecutionContext): Future[Unit]

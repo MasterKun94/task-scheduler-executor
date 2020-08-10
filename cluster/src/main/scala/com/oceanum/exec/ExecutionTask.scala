@@ -4,7 +4,7 @@ import java.util.Date
 import java.util.concurrent.atomic.{AtomicBoolean, AtomicReference}
 
 import com.oceanum.client.Task
-import com.oceanum.common.{GraphContext, RichTaskMeta}
+import com.oceanum.common.{Environment, GraphContext, RichTaskMeta}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -59,7 +59,7 @@ case class ExecutionTask[T <: TaskConfig](name: String,
 object ExecutionTask {
   def from(task: Task, listener: EventListener): ExecutionTask[_ <: TaskConfig] = {
     val env = task.env
-    val taskMeta = RichTaskMeta(env.taskMeta).copy(createTime = Option(new Date()))
+    val taskMeta = RichTaskMeta(env.taskMeta).copy(createTime = Option(new Date()), host = Environment.HOST)
     ExecutionTask(
       name = task.name,
       retryCount = task.retryCount,

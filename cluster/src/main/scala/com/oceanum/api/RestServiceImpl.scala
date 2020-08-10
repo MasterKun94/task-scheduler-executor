@@ -7,7 +7,7 @@ import com.oceanum.annotation.IRestService
 import com.oceanum.api.HttpServer.restService
 import com.oceanum.api.entities.{ClusterNode, ClusterNodes, NodeTaskInfo, NodeTaskInfos, RunWorkflowInfo, WorkflowDefine}
 import com.oceanum.client.TaskClient
-import com.oceanum.common.{ActorSystems, Environment, GraphMeta}
+import com.oceanum.common.{ActorSystems, Environment, GraphMeta, NodeStatus}
 import com.oceanum.exec.RunnerManager
 import com.oceanum.graph.{GraphHook, GraphMetaHandler, Workflow, WorkflowInstance}
 
@@ -72,12 +72,12 @@ class RestServiceImpl extends AbstractRestService {
 
   override def isWorkflowAlive(name: String): Future[Boolean] = Future.successful(workflows.contains(name))
 
-  override def getClusterNodes(status: Option[String], host: Option[String], role: Option[String]): Future[ClusterNodes] = {
+  override def getClusterNodes(status: Option[NodeStatus], host: Option[String], role: Option[String]): Future[ClusterNodes] = {
     Future.successful {
       val members = cluster.state.members
       val members1 = status match {
-        case Some(status) =>
-          val memberStatus = statusMap(status.toLowerCase())
+        case Some(s) =>
+          val memberStatus = statusMap(s)
           members.filter(_.status == memberStatus)
         case None => members
       }
@@ -98,28 +98,28 @@ class RestServiceImpl extends AbstractRestService {
     }
   }
 
-  private val statusMap = Map[String, MemberStatus](
-    "up" -> MemberStatus.Up,
-    "down" -> MemberStatus.Down,
-    "removed" -> MemberStatus.Removed,
-    "joining" -> MemberStatus.Joining,
-    "leaving" -> MemberStatus.Leaving,
-    "exiting" -> MemberStatus.Exiting,
-    "weaklyup" -> MemberStatus.WeaklyUp
+  private val statusMap = Map[NodeStatus, MemberStatus](
+    NodeStatus.UP -> MemberStatus.Up,
+    NodeStatus.DOWN -> MemberStatus.Down,
+    NodeStatus.REMOVED -> MemberStatus.Removed,
+    NodeStatus.JOINING -> MemberStatus.Joining,
+    NodeStatus.LEAVING -> MemberStatus.Leaving,
+    NodeStatus.EXITING -> MemberStatus.Exiting,
+  NodeStatus.WEAKLY_UP -> MemberStatus.WeaklyUp
   )
 
-  private val reverseStatusMap = Map[MemberStatus, String](
-    MemberStatus.Up -> "up",
-    MemberStatus.Down -> "down",
-    MemberStatus.Removed -> "removed",
-    MemberStatus.Joining -> "joining",
-    MemberStatus.Leaving ->  "leaving",
-    MemberStatus.Exiting -> "exiting",
-    MemberStatus.WeaklyUp -> "weaklyup"
+  private val reverseStatusMap = Map[MemberStatus, NodeStatus](
+    MemberStatus.Up -> NodeStatus.UP,
+    MemberStatus.Down -> NodeStatus.DOWN,
+    MemberStatus.Removed -> NodeStatus.REMOVED,
+    MemberStatus.Joining -> NodeStatus.JOINING,
+    MemberStatus.Leaving ->  NodeStatus.LEAVING,
+    MemberStatus.Exiting -> NodeStatus.EXITING,
+    MemberStatus.WeaklyUp -> NodeStatus.WEAKLY_UP
   )
 
   override def getClusterTaskInfos(host: Option[String]): Future[NodeTaskInfos] = {
-    val nodes = getClusterNodes(status = Some("up"), host, None)
+    val nodes = getClusterNodes(status = Some(NodeStatus.UP), host = host)
     nodes
       .flatMap { nodes =>
         Future.sequence(nodes.nodes.map(node => getNodeTaskInfo(node.host)))

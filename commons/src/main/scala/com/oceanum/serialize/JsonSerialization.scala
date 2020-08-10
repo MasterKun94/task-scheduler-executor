@@ -67,14 +67,3 @@ class JsonSerialization(protected val serializableMap: TrieMap[String, Serializa
     JackSerial.read(str)(formats, mf)
   }
 }
-
-object JsonSerialization {
-  implicit val formats: Formats = DefaultFormats +
-    new EnumSerializer[GraphStatus]() +
-    new EnumSerializer[TaskStatus]() +
-    new EnumSerializer[CoordStatus]() +
-    new EnumSerializer[ReRunStrategy]() +
-    new EnumSerializer[FallbackStrategy]() +
-    new ThrowableSerializer() +
-    new StackTraceElementSerializer()
-}

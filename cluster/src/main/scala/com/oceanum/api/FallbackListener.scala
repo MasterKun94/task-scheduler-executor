@@ -6,7 +6,7 @@ import akka.actor.{Actor, ActorLogging}
 import akka.cluster.ClusterEvent.{MemberEvent, UnreachableMember}
 import akka.cluster.{Cluster, ClusterEvent}
 import com.oceanum.api.entities.{ClusterNodes, Coordinator}
-import com.oceanum.common.{Scheduler, SystemInit}
+import com.oceanum.common.{NodeStatus, Scheduler, SystemInit}
 import com.oceanum.persistence.Catalog
 
 import scala.collection.JavaConversions.mapAsJavaMap
@@ -28,7 +28,7 @@ class FallbackListener extends Actor with ActorLogging {
   override def receive: Receive = {
     case _:MemberEvent|UnreachableMember =>
       val future: Future[ClusterNodes] = restService
-        .getClusterNodes(status = Some("up"), host = None, role = None)
+        .getClusterNodes(status = Some(NodeStatus.UP))
       future
         .flatMap { value: ClusterNodes =>
           coordinatorRepo

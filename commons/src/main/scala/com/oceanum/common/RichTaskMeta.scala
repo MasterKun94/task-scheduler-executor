@@ -9,21 +9,23 @@ import com.oceanum.common.Implicits.PathHelper
 @SerialVersionUID(1L)
 @ISerializationMessage("RICH_TASK_META")
 sealed class RichTaskMeta(id: Int = -1,
-                   name: String = null,
-                   reRunId: Int = 0,
-                   taskType: String,
-                   user: String,
-                   createTime: Option[Date] = None,
-                   startTime: Option[Date] = None,
-                   endTime: Option[Date] = None,
-                   execDir: String,
-                   message: String = "",
-                   error: Option[Throwable] = None,
-                   state: TaskStatus = TaskStatus.OFFLINE,
-                   retryNum: Int = 0) extends TaskMeta(
+                          name: String = null,
+                          rerunId: Int = 0,
+                          taskType: String,
+                          user: String,
+                          createTime: Option[Date] = None,
+                          startTime: Option[Date] = None,
+                          endTime: Option[Date] = None,
+                          execDir: String,
+                          message: String = "",
+                          error: Option[Throwable] = None,
+                          state: TaskStatus = TaskStatus.OFFLINE,
+                          retryNum: Int = 0,
+                          host: String = Environment.HOST,
+                          extendedProperties: Map[String, String] = Map.empty) extends TaskMeta(
   id = id,
   name = name,
-  reRunId = reRunId,
+  rerunId = rerunId,
   taskType = taskType,
   user = user,
   createTime = createTime,
@@ -33,12 +35,14 @@ sealed class RichTaskMeta(id: Int = -1,
   message = message,
   error = error,
   state = state,
-  retryNum = retryNum
+  retryNum = retryNum,
+  host = host,
+  extendedProperties = extendedProperties
 ) {
 
   def copy(id: Int = id,
            name: String = name,
-           reRunId: Int = reRunId,
+           rerunId: Int = rerunId,
            taskType: String = taskType,
            user: String = user,
            createTime: Option[Date] = createTime,
@@ -48,11 +52,13 @@ sealed class RichTaskMeta(id: Int = -1,
            message: String = message,
            error: Option[Throwable] = error,
            state: TaskStatus = state,
-           retryNum: Int = retryNum): RichTaskMeta = {
+           retryNum: Int = retryNum,
+           host: String = host,
+           extendedProperties: Map[String, String] = extendedProperties): RichTaskMeta = {
     new RichTaskMeta(
       id = id,
       name = name,
-      reRunId = reRunId,
+      rerunId = rerunId,
       taskType = taskType,
       user = user,
       createTime = createTime,
@@ -62,7 +68,9 @@ sealed class RichTaskMeta(id: Int = -1,
       message = message,
       error = error,
       state = state,
-      retryNum = retryNum
+      retryNum = retryNum,
+      host = host,
+      extendedProperties = extendedProperties
     )
   }
 
@@ -94,7 +102,7 @@ object RichTaskMeta {
       name = task.name,
       taskType = task.prop.taskType,
       user = task.user,
-      execDir = Environment.EXEC_WORK_DIR/dateFormat/graphMeta.name/graphMeta.id/graphMeta.reRunId/task.id
+      execDir = Environment.EXEC_WORK_DIR/dateFormat/graphMeta.name/graphMeta.id/graphMeta.rerunId/task.id
     )
   }
 
@@ -104,7 +112,7 @@ object RichTaskMeta {
       case _ => new RichTaskMeta(
         id = taskMeta.id,
         name = taskMeta.name,
-        reRunId = taskMeta.reRunId,
+        rerunId = taskMeta.rerunId,
         taskType = taskMeta.taskType,
         user = taskMeta.user,
         createTime = taskMeta.createTime,

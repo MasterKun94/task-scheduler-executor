@@ -32,7 +32,7 @@ abstract class ProcessTaskConfig(val propCmd: Array[String] = Array.empty,
       val rawEnv = env.javaExprEnv
       val taskMeta = env.taskMeta
       val taskConfig = SuUserTaskConfig(taskMeta.user, this).parseFunction(rawEnv)
-      val fileMap: Map[String, String] = taskConfig.files
+      val fileMap: Map[String, String] = taskConfig.fileSeq
         .map(src => (src, taskMeta.execDir/new File(src).getName))
         .toMap
       val newConfig = taskConfig.convert(fileMap)
@@ -44,9 +44,9 @@ abstract class ProcessTaskConfig(val propCmd: Array[String] = Array.empty,
     }
   }
 
-  def parseFunction(implicit exprEnv: JavaMap[String, AnyRef]): ProcessTaskConfig
+  override def parseFunction(implicit exprEnv: JavaMap[String, AnyRef]): ProcessTaskConfig
 
-  def files: Seq[String] = Seq.empty
+  def fileSeq: Seq[String] = Seq.empty
 
   def convert(fileMap: Map[String, String]): ProcessTaskConfig = this
 }

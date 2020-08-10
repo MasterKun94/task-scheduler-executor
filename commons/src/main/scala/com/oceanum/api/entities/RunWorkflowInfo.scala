@@ -3,23 +3,25 @@ package com.oceanum.api.entities
 import java.util.Date
 
 import com.oceanum.annotation.ISerializationMessage
-import com.oceanum.common.{FallbackStrategy, GraphMeta, ReRunStrategy}
+import com.oceanum.common.{FallbackStrategy, GraphMeta, RerunStrategy}
 
 @ISerializationMessage("RUN_WORKFLOW_INFO")
 case class RunWorkflowInfo(id: Int,
                            name: String,
-                           reRunId: Int,
+                           rerunId: Int,
                            fallbackStrategy: FallbackStrategy,
-                           reRunStrategy: ReRunStrategy,
-                           createTime: Option[Date])
+                           rerunStrategy: RerunStrategy,
+                           createTime: Option[Date],
+                           host: String)
 
 object RunWorkflowInfo {
   def from(graphMeta: GraphMeta): RunWorkflowInfo = RunWorkflowInfo(
     id = graphMeta.id,
     name = graphMeta.name,
-    reRunId = graphMeta.reRunId,
+    rerunId = graphMeta.rerunId,
     fallbackStrategy = graphMeta.fallbackStrategy,
-    reRunStrategy = graphMeta.reRunStrategy,
-    createTime = graphMeta.createTime
+    rerunStrategy = graphMeta.rerunStrategy,
+    createTime = graphMeta.createTime,
+    host = graphMeta.host
   )
 }

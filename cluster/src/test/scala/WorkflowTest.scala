@@ -5,6 +5,7 @@ import com.oceanum.api.entities._
 import com.oceanum.client.Task
 import com.oceanum.common.Environment.NONE_BLOCKING_EXECUTION_CONTEXT
 import com.oceanum.common._
+import com.oceanum.persistence.Catalog
 
 import scala.io.StdIn
 import scala.util.{Failure, Success, Try}
@@ -27,7 +28,7 @@ object WorkflowTest {
     .checkStateInterval("3s")
     .parallelism(1)
     .build
-  val task1: Task = task.copy(rawEnv = GraphContext(Map("file_name" -> "${(graph.id() == 0) ? 'python-err' : 'python'}")))
+  val task1: Task = task.copy(rawEnv = GraphContext(Map("file_name" -> "${(graph.rerunId() == 0) ? 'python-err' : 'python'}")))
   val task2: Task = task.copy(name = "task2")
   val task3: Task = task.copy(name = "task3")
   val task4: Task = task.copy(name = "task4")
@@ -72,8 +73,9 @@ object WorkflowTest {
     Environment.loadEnv(Array("--conf=cluster/src/main/resources/application.properties"))
     Environment.initSystem()
     val restService = new RemoteRestService("192.168.10.131")
+//    Catalog.getRepository[GraphMeta].save("test", new RichGraphMeta())
 
-    restService.submitWorkflow(workflowDefine).onComplete(println)
+    restService.submitWorkflow(workflowDefine).map(_ => BoolValue(true)).onComplete(printResult)
     StdIn.readLine()
     restService.getWorkflow(workflowDefine.name).onComplete(printResult)
     StdIn.readLine()
@@ -81,7 +83,7 @@ object WorkflowTest {
     StdIn.readLine()
     restService.checkWorkflowStatus(workflowDefine.name).onComplete(printResult)
     StdIn.readLine()
-    restService.reRunWorkflow(workflowDefine.name, ReRunStrategy.RUN_ALL_AFTER_FAILED).onComplete(printResult)
+    restService.rerunWorkflow(workflowDefine.name, RerunStrategy.RUN_ALL_AFTER_FAILED).onComplete(printResult)
     StdIn.readLine()
     restService.checkWorkflowStatus(workflowDefine.name).onComplete(printResult)
   }

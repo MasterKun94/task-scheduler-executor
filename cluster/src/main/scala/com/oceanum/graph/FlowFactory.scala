@@ -71,12 +71,12 @@ object FlowFactory {
   }
 
   private def runOrReRun(task: Task)(implicit metadata: RichGraphMeta, schedulerClient: TaskClient, builder: GraphBuilder): Future[RichGraphMeta] = {
-    metadata.reRunStrategy match {
-      case ReRunStrategy.NONE | ReRunStrategy.RUN_ALL =>
+    metadata.rerunStrategy match {
+      case RerunStrategy.NONE | RerunStrategy.RUN_ALL =>
         run(task)
-      case ReRunStrategy.RUN_ONLY_FAILED =>
+      case RerunStrategy.RUN_ONLY_FAILED =>
         runIfNotSuccess(task)
-      case ReRunStrategy.RUN_ALL_AFTER_FAILED =>
+      case RerunStrategy.RUN_ALL_AFTER_FAILED =>
         if (metadata.isReRun) {
           run(task)
         } else {
@@ -109,14 +109,14 @@ object FlowFactory {
       .completeState
       .onComplete {
         case Success(value) =>
-          val taskMeta = value.metadata.copy(reRunId = metadata.reRunId)
+          val taskMeta = value.metadata.copy(rerunId = metadata.rerunId)
           val graphMeta = metadata
             .addTask(taskMeta, isComplete = true)
-            .copy(reRunFlag = true)
+            .copy(rerunFlag = true)
           promise.success(graphMeta)
         case Failure(e) =>
           e.printStackTrace()
-          val taskMeta = task.env.taskMeta.asInstanceOf[RichTaskMeta].failure(task, e).copy(reRunId = metadata.reRunId)
+          val taskMeta = task.env.taskMeta.asInstanceOf[RichTaskMeta].failure(task, e).copy(rerunId = metadata.rerunId)
           val graphMeta = metadata.addTask(taskMeta, isComplete = true)
           promise.success(graphMeta)
       }

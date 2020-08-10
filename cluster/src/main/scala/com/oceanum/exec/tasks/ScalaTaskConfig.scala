@@ -34,7 +34,7 @@ case class ScalaTaskConfig(jars: Array[String],
     env = env.map(kv => (parse(kv._1), parse(kv._2))),
     directory = parse(directory)
   )
-  override def files: Seq[String] = jars.toSeq
+  override def fileSeq: Seq[String] = jars.toSeq
 
   override def convert(fileMap: Map[String, String]): ScalaTaskConfig = this.copy(
     jars = jars.map(fileMap.apply)

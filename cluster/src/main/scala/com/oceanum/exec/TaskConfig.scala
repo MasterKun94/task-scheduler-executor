@@ -7,6 +7,7 @@ import com.oceanum.exec.tasks.{JavaTaskConfig, PythonTaskConfig, ScalaTaskConfig
 import scala.concurrent.{ExecutionContext, Future}
 import StdHandlerFactory.default._
 import com.oceanum.exec.tasks.SysTasks.UserAddTaskConfig
+import com.oceanum.expr.JavaMap
 
 /**
  * @author chenmingkun
@@ -14,6 +15,8 @@ import com.oceanum.exec.tasks.SysTasks.UserAddTaskConfig
  */
 trait TaskConfig {
   def close()
+
+  def parseFunction(implicit exprEnv: JavaMap[String, AnyRef]): TaskConfig
 
   def prepare(env: GraphContext)(implicit ec: ExecutionContext): Future[_<:TaskConfig]
 }

@@ -10,6 +10,7 @@ object ExitCode {
 
   def apply(code: Int): ExitCode = {
     if (code == 0) OK
+//    else if (code == -1) KILL
     else ERROR(new Exception("exit with code " + code))
   }
 

@@ -30,7 +30,7 @@ case class ShellScriptTaskConfig(scriptFile: String,
             directory = parse(directory)
       )
 
-      override def files: Seq[String] = Seq(scriptFile)
+      override def fileSeq: Seq[String] = Seq(scriptFile)
 
       override def convert(fileMap: Map[String, String]): ShellScriptTaskConfig = this.copy(
             scriptFile = fileMap(scriptFile)

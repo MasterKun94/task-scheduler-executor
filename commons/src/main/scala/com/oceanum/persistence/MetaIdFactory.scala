@@ -9,10 +9,10 @@ import com.oceanum.common.{GraphMeta, TaskMeta}
 object MetaIdFactory {
 
   def getTaskMetaId(graphMeta: GraphMeta, taskMeta: TaskMeta): String = {
-    s"${graphMeta.name}-${graphMeta.id}-${taskMeta.reRunId}-${taskMeta.id}"
+    s"${graphMeta.name}-${graphMeta.id}-${taskMeta.rerunId}-${taskMeta.id}"
   }
 
   def getGraphMetaId(graphMeta: GraphMeta): String = {
-    s"${graphMeta.name}-${graphMeta.id}-${graphMeta.reRunId}"
+    s"${graphMeta.name}-${graphMeta.id}-${graphMeta.rerunId}"
   }
 }

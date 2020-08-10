@@ -32,10 +32,10 @@ class RemoteRestService(host: String) extends RestService {
     )
   }
 
-  override def reRunWorkflow(name: String, reRunStrategy: ReRunStrategy, env: Map[String, Any] = Map.empty, keepAlive: Boolean = false): Future[RunWorkflowInfo] = {
+  override def rerunWorkflow(name: String, reRunStrategy: RerunStrategy, env: Map[String, Any] = Map.empty, keepAlive: Boolean = false): Future[RunWorkflowInfo] = {
     val graphMeta = new RichGraphMeta(
       name = name,
-      reRunStrategy = reRunStrategy,
+      rerunStrategy = reRunStrategy,
       env = env
     )
     HttpClient.post[GraphMeta, RunWorkflowInfo](
@@ -131,11 +131,11 @@ class RemoteRestService(host: String) extends RestService {
     ).map(_.value)
   }
 
-  override def getClusterNodes(status: Option[String], host: Option[String], role: Option[String]): Future[ClusterNodes] = {
+  override def getClusterNodes(status: Option[NodeStatus], host: Option[String], role: Option[String]): Future[ClusterNodes] = {
     HttpClient.get[Nothing, ClusterNodes](
       url = hostPort + "/api/cluster/nodes",
       param = Map(
-        "status" -> status,
+        "status" -> status.map(_.toString),
         "host" -> host,
         "role" -> role
       )

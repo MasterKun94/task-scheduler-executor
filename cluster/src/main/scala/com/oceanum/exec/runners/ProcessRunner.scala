@@ -64,7 +64,12 @@ object ProcessRunner extends TypedRunner[ProcessTaskConfig]("SHELL", "SHELL_SCRI
         if (exited) {
           ExitCode(process.exitValue())
         } else {
-          ExitCode(process.destroyForcibly().exitValue())
+          process.destroy()
+          if (process.isAlive) {
+            ExitCode(process.destroyForcibly().exitValue())
+          } else {
+            ExitCode(process.exitValue())
+          }
         }
       } catch {
         case _: InterruptedException =>
@@ -80,14 +85,20 @@ object ProcessRunner extends TypedRunner[ProcessTaskConfig]("SHELL", "SHELL_SCRI
   }
 
   class ShellExecutionHook(process: Process) extends ExecutionHook {
-    var ref = new AtomicBoolean(false)
 
     override def kill(): Boolean = {
-      ref.set(false)
-      !process.destroyForcibly().isAlive
+      if (process.isAlive) {
+        process.destroy()
+        if (process.isAlive) {
+          process.destroyForcibly()
+        }
+        true
+      } else {
+        false
+      }
     }
 
-    override def isKilled: Boolean = ref.get()
+    override def isKilled: Boolean = process.isAlive
   }
 
   override def close(): Unit = {

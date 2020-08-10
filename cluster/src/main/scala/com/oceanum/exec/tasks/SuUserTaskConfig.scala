@@ -19,7 +19,7 @@ case class SuUserTaskConfig(user: String, prop: ProcessTaskConfig)
     prop = prop.parseFunction(exprEnv)
   )
 
-  override def files: Seq[String] = prop.files
+  override def fileSeq: Seq[String] = prop.fileSeq
 
   override def convert(fileMap: Map[String, String]): SuUserTaskConfig = this.copy(
     prop = prop.convert(fileMap)

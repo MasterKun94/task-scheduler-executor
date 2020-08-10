@@ -9,7 +9,7 @@ abstract class TypedRunner[T <: TaskConfig](types: String*) extends TaskRunner(t
   def run(task: ExecutionTask[_ <: TaskConfig]): ExitCode = {
     if (executable(task)) {
       try {
-        task.eventListener.running(task.metadata)
+//        task.eventListener.running(task.metadata)
         typedRun(task.asInstanceOf[ExecutionTask[T]])
       } catch {
         case e: Throwable =>

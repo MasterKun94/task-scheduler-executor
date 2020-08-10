@@ -8,7 +8,7 @@ import com.oceanum.annotation.ISerializationMessage
 @ISerializationMessage("TASK_META")
 class TaskMeta(val id: Int,
                val name: String,
-               val reRunId: Int,
+               val rerunId: Int,
                val taskType: String,
                val user: String,
                val createTime: Option[Date],
@@ -18,4 +18,6 @@ class TaskMeta(val id: Int,
                val message: String,
                val error: Option[Throwable],
                val state: TaskStatus,
-               val retryNum: Int) extends Serializable
+               val retryNum: Int,
+               val host: String,
+               val extendedProperties: Map[String, String]) extends Serializable

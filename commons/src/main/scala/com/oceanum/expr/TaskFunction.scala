@@ -29,18 +29,18 @@ class TaskIdFunction extends AbstractFunction {
 }
 
 @IFunction
-class TaskReRunIdFunction extends AbstractFunction {
-  override def getName: String = "task.reRunId"
+class TaskRerunIdFunction extends AbstractFunction {
+  override def getName: String = "task.rerunId"
 
   override def call(env: JavaMap[String, AnyRef]): AviatorObject = {
-    AviatorLong.valueOf(env.get(GraphContext.taskKey).asInstanceOf[TaskMeta].reRunId)
+    AviatorLong.valueOf(env.get(GraphContext.taskKey).asInstanceOf[TaskMeta].rerunId)
   }
 
   override def call(env: JavaMap[String, AnyRef], task: AviatorObject): AviatorObject = {
     if (task.isNull(env))
       AviatorNil.NIL
     else {
-      AviatorLong.valueOf(FunctionUtils.getJavaObject(task, env).asInstanceOf[TaskMeta].reRunId)
+      AviatorLong.valueOf(FunctionUtils.getJavaObject(task, env).asInstanceOf[TaskMeta].rerunId)
     }
   }
 }

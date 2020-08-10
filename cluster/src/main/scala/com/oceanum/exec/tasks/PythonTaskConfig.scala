@@ -29,7 +29,7 @@ case class PythonTaskConfig(pyFile: String,
     env = env.map(kv => (parse(kv._1), parse(kv._2))),
     directory = parse(directory)
   )
-  override def files: Seq[String] = Seq(pyFile)
+  override def fileSeq: Seq[String] = Seq(pyFile)
 
   override def convert(fileMap: Map[String, String]): PythonTaskConfig = this.copy(
     pyFile = fileMap(pyFile)

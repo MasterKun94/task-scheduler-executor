@@ -1,18 +1,15 @@
 package com.oceanum.api
 
 import akka.Done
-import akka.cluster.Cluster
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{Route, StandardRoute}
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.ActorMaterializer
-import com.oceanum.api.entities.{BoolValue, Coordinator, CoordinatorStatus, NodeTaskInfos, RunWorkflowInfo, WorkflowDefine}
+import com.oceanum.api.entities._
 import com.oceanum.common.Environment.NONE_BLOCKING_EXECUTION_CONTEXT
 import com.oceanum.common._
-import com.oceanum.exceptions.BadRequestException
-import com.oceanum.exec.RunnerManager
 
 import scala.concurrent.Future
 import scala.util.{Failure, Success, Try}
@@ -37,7 +34,7 @@ object HttpServer extends Log {
           runWorkflow(name)   //api/workflow/{name}/run
         } ~
         pathPrefix("rerun") {
-          reRunWorkflow(name)   //api/workflow/{name}/rerun
+          rerunWorkflow(name)   //api/workflow/{name}/rerun
         } ~
         pathPrefix("kill") {
           killWorkflow(name)   //api/workflow/{name}/kill
@@ -109,10 +106,10 @@ object HttpServer extends Log {
     }
   }
 
-  def reRunWorkflow(name: String): Route = {
+  def rerunWorkflow(name: String): Route = {
     (parameterMap & extractRequestEntity) { (map, entity) =>
       val future: Future[RunWorkflowInfo] = deserializeAndRun[RichGraphMeta, RunWorkflowInfo](entity) { meta =>
-        restService.reRunWorkflow(name, meta.reRunStrategy, meta.env, map.get("keepAlive").forall(_.toBoolean))
+        restService.rerunWorkflow(name, meta.rerunStrategy, meta.env, map.get("keepAlive").forall(_.toBoolean))
       }
       returnResponseWithEntity(future)
     }
@@ -193,7 +190,7 @@ object HttpServer extends Log {
 
   def clusterNodes(): Route = {
     parameterMap { map =>
-      val nodes = restService.getClusterNodes(map.get("status"), map.get("host"), map.get("role"))
+      val nodes = restService.getClusterNodes(map.get("status").map(NodeStatus.valueOf), map.get("host"), map.get("role"))
       returnResponseWithEntity(nodes)
     }
   }

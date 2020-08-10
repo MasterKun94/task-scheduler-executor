@@ -99,6 +99,7 @@ class ExecutionInstance(task: Task, actor: ActorRef) extends Actor with ActorLog
   private def running(meta: RichTaskMeta)(implicit holder: Holder): Receive = {
     implicit val metadata: RichTaskMeta = meta
     caseCheckState(running_)
+      .orElse(caseRunning)
       .orElse(caseKillAction)
       .orElse(caseSuccess)
       .orElse(caseFailed)

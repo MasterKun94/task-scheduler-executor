@@ -34,7 +34,7 @@ abstract class AbstractRestService extends Log with RestService {
   }
 
   private def selectHost(key: String): Future[String] = {
-    getClusterNodes(status = Option("up"), None, None).map(_.consistentHashSelect(key).host)
+    getClusterNodes(status = Option(NodeStatus.UP), None, None).map(_.consistentHashSelect(key).host)
   }
 
   private def submitWorkflow(workflowDefine: WorkflowDefine, host: String): Future[Unit] = {
@@ -52,14 +52,15 @@ abstract class AbstractRestService extends Log with RestService {
         checkWorkflowStatus(name).flatMap(meta => {
           val newMeta = RichGraphMeta(meta).copy(
             id = meta.id + 1,
-            reRunStrategy = ReRunStrategy.NONE,
+            rerunStrategy = RerunStrategy.NONE,
             env = meta.env ++ env,
             createTime = Option(new Date()),
             scheduleTime = scheduleTime,
             startTime = None,
             endTime = None,
-            reRunId = 0,
-            reRunFlag = false)
+            rerunId = 0,
+            rerunFlag = false,
+            host = Environment.HOST)
           runWorkflowLocally(name, newMeta, wf, keepAlive)
         })
 
@@ -71,9 +72,9 @@ abstract class AbstractRestService extends Log with RestService {
 
   protected def runWorkflowLocally(name: String, graphMeta: GraphMeta, workflowDefine: WorkflowDefine, keepAlive: Boolean): Future[RunWorkflowInfo]
 
-  override def reRunWorkflow(name: String, reRunStrategy: ReRunStrategy, env: Map[String, Any], keepAlive: Boolean): Future[RunWorkflowInfo] = {
-    if (reRunStrategy == ReRunStrategy.NONE) {
-      Future.failed(new IllegalArgumentException("reRunStrategy can not be none"))
+  override def rerunWorkflow(name: String, reRunStrategy: RerunStrategy, env: Map[String, Any], keepAlive: Boolean): Future[RunWorkflowInfo] = {
+    if (reRunStrategy == RerunStrategy.NONE) {
+      Future.failed(new IllegalArgumentException("rerunStrategy can not be none"))
     }
     getWorkflow(name).flatMap { wf =>
       if (isLocal(wf.host)) {
@@ -82,11 +83,12 @@ abstract class AbstractRestService extends Log with RestService {
             meta.graphStatus match {
               case GraphStatus.SUCCESS | GraphStatus.FAILED | GraphStatus.KILLED =>
                 RichGraphMeta(meta).copy(
-                  reRunStrategy = reRunStrategy,
+                  rerunStrategy = reRunStrategy,
                   env = meta.env ++ env,
                   startTime = None,
                   endTime = None,
-                  reRunFlag = false
+                  rerunFlag = false,
+                  host = Environment.HOST
                 )
               case status =>
                 throw new BadRequestException("workflow not complete，status is: " + status)
@@ -98,7 +100,7 @@ abstract class AbstractRestService extends Log with RestService {
           }
       } else {
         RemoteRestServices.get(wf.host)
-          .reRunWorkflow(name, reRunStrategy, env, keepAlive)
+          .rerunWorkflow(name, reRunStrategy, env, keepAlive)
       }
     }
   }
@@ -140,7 +142,7 @@ abstract class AbstractRestService extends Log with RestService {
         |repo.select(
         | repo.field('name', name),
         | repo.sort('id', 'DESC'),
-        | repo.sort('reRunId', 'DESC'),
+        | repo.sort('rerunId', 'DESC'),
         | repo.limit(1)
         |)
         |""".stripMargin
@@ -171,19 +173,21 @@ abstract class AbstractRestService extends Log with RestService {
   }
 
   override def submitCoordinator(coordinator: Coordinator): Future[Unit] = {
-    selectHost(coordinator.name).flatMap { host =>
-      coordinatorRepo.save(coordinator.name, coordinator.copy(host = host))
-        .flatMap { _ =>
-          submitWorkflow(
-            workflowDefine = coordinator.workflowDefine.copy(version = coordinator.version, name = coordinator.name),
-            host = host
-          )
-        }
-    }
+    selectHost(coordinator.name).flatMap(submitCoordinator(coordinator, _))
+  }
+
+  private def submitCoordinator(coordinator: Coordinator, host: String): Future[Unit] = {
+    coordinatorRepo.save(coordinator.name, coordinator.copy(host = host))
+      .flatMap { _ =>
+        submitWorkflow(
+          workflowDefine = coordinator.workflowDefine.copy(version = coordinator.version, name = coordinator.name),
+          host = host
+        )
+      }
   }
 
   override def submitAndRunCoordinator(coordinator: Coordinator): Future[Unit] = {
-    submitCoordinator(coordinator).flatMap { _ =>
+    submitCoordinator(coordinator, Environment.HOST).flatMap { _ =>
       runCoordinator(coordinator.copy(host = Environment.HOST))
     }
   }

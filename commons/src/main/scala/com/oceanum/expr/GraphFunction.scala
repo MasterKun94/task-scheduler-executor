@@ -21,11 +21,11 @@ class GraphIdFunction extends AbstractFunction {
 }
 
 @IFunction
-class GraphReRunIdFunction extends AbstractFunction {
-  override def getName: String = "graph.reRunId"
+class GraphRerunIdFunction extends AbstractFunction {
+  override def getName: String = "graph.rerunId"
 
   override def call(env: JavaMap[String, AnyRef]): AviatorObject = {
-    AviatorLong.valueOf(env.get(GraphContext.graphKey).asInstanceOf[GraphMeta].reRunId)
+    AviatorLong.valueOf(env.get(GraphContext.graphKey).asInstanceOf[GraphMeta].rerunId)
   }
 }
 

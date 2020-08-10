@@ -12,7 +12,7 @@ import com.oceanum.common.{TaskMeta, TaskStatus}
 @ISerializationMessage("TASK_META_INFO")
 case class TaskMetaInfo(id: Int,
                         name: String,
-                        reRunId: Int,
+                        rerunId: Int,
                         taskType: String,
                         user: String,
                         createTime: Option[Date],
@@ -22,11 +22,13 @@ case class TaskMetaInfo(id: Int,
                         message: String,
                         error: Option[Throwable],
                         state: TaskStatus,
-                        retryNum: Int) {
+                        retryNum: Int,
+                        host: String,
+                        extendedProperties: Map[String, String] = Map.empty) {
   def toMeta: TaskMeta = new TaskMeta(
     id = id,
     name = name,
-    reRunId = reRunId,
+    rerunId = rerunId,
     taskType = taskType,
     user = user,
     createTime = createTime,
@@ -36,7 +38,9 @@ case class TaskMetaInfo(id: Int,
     message = message,
     error = error,
     state = state,
-    retryNum = retryNum
+    retryNum = retryNum,
+    host = host,
+    extendedProperties = extendedProperties
   )
 }
 
@@ -44,7 +48,7 @@ object TaskMetaInfo {
   def from(taskMeta: TaskMeta): TaskMetaInfo = TaskMetaInfo(
     id = taskMeta.id,
     name = taskMeta.name,
-    reRunId = taskMeta.reRunId,
+    rerunId = taskMeta.rerunId,
     taskType = taskMeta.taskType,
     user = taskMeta.user,
     createTime = taskMeta.createTime,
@@ -54,6 +58,8 @@ object TaskMetaInfo {
     message = taskMeta.message,
     error = taskMeta.error,
     state = taskMeta.state,
-    retryNum = taskMeta.retryNum
+    retryNum = taskMeta.retryNum,
+    host = taskMeta.host,
+    extendedProperties = taskMeta.extendedProperties
   )
 }

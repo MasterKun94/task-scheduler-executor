@@ -8,7 +8,7 @@ import akka.stream.{ClosedShape, OverflowStrategy}
 import akka.stream.scaladsl.{GraphDSL, RunnableGraph, Sink, Source}
 import com.oceanum.api.entities.WorkflowDefine
 import com.oceanum.client.TaskClient
-import com.oceanum.common.{Environment, GraphMeta, GraphStatus, ReRunStrategy, RichGraphMeta}
+import com.oceanum.common.{Environment, GraphMeta, GraphStatus, RerunStrategy, RichGraphMeta}
 import com.oceanum.exec.State
 import com.oceanum.graph.StreamFlows.{EndFlow, StartFlow}
 import com.oceanum.serialize.{DefaultJsonSerialization, Serialization}
@@ -52,7 +52,7 @@ object Workflow {
         val meta = message.meta
 
         val start =
-          if (meta.reRunStrategy == ReRunStrategy.NONE) {
+          if (meta.rerunStrategy == RerunStrategy.NONE) {
             if (idOffset.get() >= meta.id) {
               meta.copy(
                 error = Option(new IllegalArgumentException("id is not legal, must higher than " + idOffset.get())),
@@ -65,8 +65,8 @@ object Workflow {
                 startTime = Some(new Date()),
                 endTime = None,
                 graphStatus = GraphStatus.RUNNING,
-                reRunId = 0,
-                reRunFlag = false,
+                rerunId = 0,
+                rerunFlag = false,
                 env = env ++ meta.env,
                 latestTaskId = -1
               )
@@ -77,8 +77,8 @@ object Workflow {
               startTime = Some(new Date()),
               endTime = None,
               graphStatus = GraphStatus.RUNNING,
-              reRunId = meta.reRunId + 1,
-              reRunFlag = false,
+              rerunId = meta.rerunId + 1,
+              rerunFlag = false,
               env = env ++ meta.env,
               latestTaskId = -1
             )

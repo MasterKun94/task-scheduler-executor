@@ -8,11 +8,11 @@ import com.oceanum.annotation.ISerializationMessage
 @ISerializationMessage("RICH_GRAPH_META")
 sealed class RichGraphMeta(id: Int = -1,
                            name: String = UUID.randomUUID().toString,
-                           reRunId: Int = 0,
+                           rerunId: Int = 0,
                            tasks: Map[Int, RichTaskMeta] = Map.empty,
                            latestTaskId: Int = -1,
                            fallbackStrategy: FallbackStrategy = FallbackStrategy.CONTINUE,
-                           reRunStrategy: ReRunStrategy = ReRunStrategy.NONE,
+                           rerunStrategy: RerunStrategy = RerunStrategy.NONE,
                            graphStatus: GraphStatus = GraphStatus.OFFLINE,
                            error: Option[Throwable] = None,
                            createTime: Option[Date] = None,
@@ -20,30 +20,32 @@ sealed class RichGraphMeta(id: Int = -1,
                            startTime: Option[Date] = None,
                            endTime: Option[Date] = None,
                            env: Map[String, Any] = Map.empty,
-                           reRunFlag: Boolean = false)
+                           rerunFlag: Boolean = false,
+                           host: String = Environment.HOST)
   extends GraphMeta(
     id = id,
     name = name,
-    reRunId = reRunId,
+    rerunId = rerunId,
     tasks = tasks,
     latestTaskId = latestTaskId,
     fallbackStrategy = fallbackStrategy,
-    reRunStrategy = reRunStrategy,
+    rerunStrategy = rerunStrategy,
     graphStatus = graphStatus,
     error = error,
     createTime = createTime,
     scheduleTime = scheduleTime,
     startTime = startTime,
     endTime = endTime,
-    env = env) {
+    env = env,
+    host = host) {
 
   def copy(id: Int = id,
            name: String = name,
-           reRunId: Int = reRunId,
+           rerunId: Int = rerunId,
            tasks: Map[Int, RichTaskMeta] = tasks,
            latestTaskId: Int = latestTaskId,
            fallbackStrategy: FallbackStrategy = fallbackStrategy,
-           reRunStrategy: ReRunStrategy = reRunStrategy,
+           rerunStrategy: RerunStrategy = rerunStrategy,
            graphStatus: GraphStatus = graphStatus,
            error: Option[Throwable] = error,
            createTime: Option[Date] = createTime,
@@ -51,15 +53,16 @@ sealed class RichGraphMeta(id: Int = -1,
            startTime: Option[Date] = startTime,
            endTime: Option[Date] = endTime,
            env: Map[String, Any] = env,
-           reRunFlag: Boolean = reRunFlag): RichGraphMeta = {
+           rerunFlag: Boolean = rerunFlag,
+           host: String = host): RichGraphMeta = {
     new RichGraphMeta(
       id = id,
       name = name,
-      reRunId = reRunId,
+      rerunId = rerunId,
       tasks = tasks,
       latestTaskId = latestTaskId,
       fallbackStrategy = fallbackStrategy,
-      reRunStrategy = reRunStrategy,
+      rerunStrategy = rerunStrategy,
       graphStatus = graphStatus,
       error = error,
       createTime = createTime,
@@ -67,10 +70,11 @@ sealed class RichGraphMeta(id: Int = -1,
       startTime = startTime,
       endTime = endTime,
       env = env,
-      reRunFlag = reRunFlag)
+      rerunFlag = rerunFlag,
+      host = host)
   }
 
-  def isReRun: Boolean = reRunFlag
+  def isReRun: Boolean = rerunFlag
 
   def addTask(taskMeta: RichTaskMeta, isComplete: Boolean = false): RichGraphMeta = {
     val graphStatus = taskMeta.state match {
@@ -102,7 +106,7 @@ sealed class RichGraphMeta(id: Int = -1,
       }
       (key, task.asInstanceOf[RichTaskMeta])
     }}.toMap
-    val completedTasks = map.filter(t => t._2.reRunId == meta.reRunId && t._2.endTime != null)
+    val completedTasks = map.filter(t => t._2.rerunId == meta.rerunId && t._2.endTime != null)
     val latest = if (completedTasks.isEmpty) -1 else completedTasks.maxBy(_._2.endTime)._2.id
     updateGraphStatus(meta.graphStatus).copy(tasks = map, latestTaskId = latest)
   }
@@ -130,11 +134,11 @@ object RichGraphMeta {
       case _ => new RichGraphMeta(
         id = graphMeta.id,
         name = graphMeta.name,
-        reRunId = graphMeta.reRunId,
+        rerunId = graphMeta.rerunId,
         tasks = graphMeta.tasks.mapValues(RichTaskMeta.apply),
         latestTaskId = graphMeta.latestTaskId,
         fallbackStrategy = graphMeta.fallbackStrategy,
-        reRunStrategy = graphMeta.reRunStrategy,
+        rerunStrategy = graphMeta.rerunStrategy,
         graphStatus = graphMeta.graphStatus,
         error = graphMeta.error,
         createTime = graphMeta.createTime,

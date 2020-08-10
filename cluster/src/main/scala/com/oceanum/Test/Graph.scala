@@ -4,7 +4,7 @@ import java.net.{InetAddress, UnknownHostException}
 
 import com.oceanum.api.entities.{ConvergeVertex, Dag, DecisionVertex, EndVertex, ForkVertex, JoinVertex, StartVertex, TaskVertex, WorkflowDefine}
 import com.oceanum.client.TaskClient
-import com.oceanum.common.{GraphContext, GraphMeta, ReRunStrategy, RichGraphMeta}
+import com.oceanum.common.{GraphContext, GraphMeta, RerunStrategy, RichGraphMeta}
 import com.oceanum.exec.State
 import com.oceanum.graph.Operators._
 import com.oceanum.graph.{GraphDefine, GraphMetaHandler, Workflow}
@@ -85,7 +85,7 @@ object Graph {
       println(c)
       println(c.graphMeta)
 
-      val m = meta.get.copy(reRunStrategy = ReRunStrategy.RUN_ALL_AFTER_FAILED)
+      val m = meta.get.copy(rerunStrategy = RerunStrategy.RUN_ALL_AFTER_FAILED)
       println("retry: " + m)
       instance.offer(m)
     })
@@ -138,7 +138,7 @@ object Graph2 {
     import scala.concurrent.ExecutionContext.Implicits.global
     promise.future.onComplete(meta => {
       Thread.sleep(3000)
-      val m = meta.get.copy(reRunStrategy = ReRunStrategy.RUN_ALL_AFTER_FAILED)
+      val m = meta.get.copy(rerunStrategy = RerunStrategy.RUN_ALL_AFTER_FAILED)
       println("retry: " + m)
       instance.offer(m)
     })
@@ -196,7 +196,7 @@ object Graph3 {
     import scala.concurrent.ExecutionContext.Implicits.global
     promise.future.onComplete(meta => {
       Thread.sleep(3000)
-      val m = meta.get.copy(reRunStrategy = ReRunStrategy.RUN_ALL_AFTER_FAILED)
+      val m = meta.get.copy(rerunStrategy = RerunStrategy.RUN_ALL_AFTER_FAILED)
       println("retry: " + m)
       instance.offer(m)
     })

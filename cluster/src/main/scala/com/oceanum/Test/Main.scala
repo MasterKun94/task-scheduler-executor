@@ -15,7 +15,7 @@ object Main {
     Environment.initSystem()
     val repo = Catalog.getRepository[GraphMeta]
     val env = Map("name" -> "7bf47817-0b76-4a1e-a53a-c4e7c6b38f2a")
-    repo.find("repo.select(repo.field('name', name), repo.sort('reRunId', 'DESC'))", env).onComplete {
+    repo.find("repo.select(repo.field('name', name), repo.sort('rerunId', 'DESC'))", env).onComplete {
       case Success(value) =>
         println("---------")
         value.foreach(println)
