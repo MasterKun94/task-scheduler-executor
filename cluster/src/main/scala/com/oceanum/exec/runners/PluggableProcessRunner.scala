@@ -1,9 +1,6 @@
 package com.oceanum.exec.runners
 
-import java.util.concurrent.{ArrayBlockingQueue, TimeUnit}
-import java.util.concurrent.atomic.AtomicReference
-
-import akka.actor.{ActorRef, Props}
+import akka.actor.Props
 import com.oceanum.common.ActorSystems
 import com.oceanum.exec.tasks.{PluggableTaskConfig, ProcessTaskConfig}
 import com.oceanum.exec.{ExecutionTask, ExitCode, TypedRunner}
@@ -25,14 +22,10 @@ object PluggableProcessRunner extends TypedRunner[PluggableTaskConfig] {
       }
     }
     val prim = ActorSystems.SYSTEM.actorOf(Props(classOf[PluggablePrimEndpoint], listener))
-    val processTask = pluggable2process(task, prim)
+    val processTask: ExecutionTask[_<:ProcessTaskConfig] = task.copy(prop = task.prop.toJavaTaskConfig(prim))
 
     innerRunner.run(processTask)
   }
 
   override def close(): Unit = {}
-
-  private def pluggable2process(task: ExecutionTask[_<: PluggableTaskConfig], prim: ActorRef): ExecutionTask[_<: ProcessTaskConfig] = {
-    ???
-  }
 }

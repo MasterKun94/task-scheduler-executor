@@ -1,5 +1,6 @@
 package com.oceanum.exec.tasks
 
+import akka.actor.ActorRef
 import com.oceanum.common.Environment
 import com.oceanum.exec.StdHandler
 import com.oceanum.expr.{ExprParser, JavaMap}
@@ -40,5 +41,19 @@ case class PluggableTaskConfig(args: Array[String] = Array.empty,
       jars = jars.map(fileMap)
     )
   }
+
+  private def plugJar: String = ???
+  private def plugClass: String = ???
+  def toJavaTaskConfig(prim: ActorRef): JavaTaskConfig = JavaTaskConfig(
+    jars = ???,
+    mainClass = ???,
+    args = ???,
+    options = options,
+    env = env,
+    directory = directory,
+    waitForTimeout = waitForTimeout,
+    stderrHandler = stderrHandler,
+    stdoutHandler = stdoutHandler
+  )
 }
 
