@@ -44,7 +44,7 @@ object RunnerManager extends Log {
   }
 
   def submit(operatorProp: Prop): ExecutionHook = {
-    operatorProp.eventListener.prepare(operatorProp.env.taskMeta.asInstanceOf[RichTaskMeta])
+    operatorProp.eventListener.prepare(_ => operatorProp.env.taskMeta.asInstanceOf[RichTaskMeta])
     priorityMailbox.send(operatorProp)
     operatorProp.hook
   }
@@ -57,7 +57,7 @@ object RunnerManager extends Log {
 
   private def consume(operatorProp: Prop): Unit = {
     val prop = operatorProp.updateMeta(operatorProp.metadata.copy(startTime = Option(new Date())))
-    prop.eventListener.start(prop.metadata)
+    prop.eventListener.start(_ => prop.metadata)
     incRunning()
     TaskInfoTrigger.trigger()
     try {
@@ -65,7 +65,7 @@ object RunnerManager extends Log {
         case ExitCode.ERROR(msg) =>
           if (prop.retryCount > 1) {
             val newOperatorProp = prop.retry()
-            prop.eventListener.retry(newOperatorProp.metadata.copy(message = msg.getMessage, error = Option(msg)))
+            prop.eventListener.retry(_ => newOperatorProp.metadata.copy(message = msg.getMessage, error = Option(msg)))
             log.info("task begin retry: " + newOperatorProp.name)
             incRetrying()
             val cancellable = scheduleOnce(newOperatorProp.retryInterval) {
@@ -78,7 +78,7 @@ object RunnerManager extends Log {
             scheduleOnce(10.second) {
               prop.prop.close()
             }
-            prop.eventListener.failed(prop.metadata.copy(message = msg.getMessage, error = Option(msg), endTime = Option(new Date())))
+            prop.eventListener.failed(_ => prop.metadata.copy(message = msg.getMessage, error = Option(msg), endTime = Option(new Date())))
             log.info("task failed: " + prop.name)
             incFailed()
           }
@@ -87,7 +87,7 @@ object RunnerManager extends Log {
           scheduleOnce(10.second) {
             prop.prop.close()
           }
-          prop.eventListener.success(prop.metadata.copy(endTime = Option(new Date())))
+          prop.eventListener.success(_ => prop.metadata.copy(endTime = Option(new Date())))
           log.info("task success: " + prop.name)
           incSuccess()
 
@@ -95,20 +95,22 @@ object RunnerManager extends Log {
           scheduleOnce(10.second) {
             prop.prop.close()
           }
-          prop.eventListener.kill(prop.metadata.copy(endTime = Option(new Date())))
+          prop.eventListener.kill(_ => prop.metadata.copy(endTime = Option(new Date())))
           log.info("task kill: " + prop.name)
           incKilled()
 
         case unSupport: ExitCode.UN_SUPPORT =>
           log.error(s"no executable executor exists for prop ${prop.prop.getClass}")
-          prop.eventListener.failed(prop.metadata.copy(message = s"task type not support: ${unSupport.taskType}", endTime = Option(new Date())))
-          prop.prop.close()
+          prop.eventListener.failed(_ => prop.metadata.copy(message = s"task type not support: ${unSupport.taskType}", endTime = Option(new Date())))
+          scheduleOnce(10.second) {
+            prop.prop.close()
+          }
           incFailed()
       }
     } catch {
       case e: Throwable =>
         log.error(e, e.getMessage)
-        prop.eventListener.failed(prop.metadata.copy(message = e.getMessage, error = Option(e)))
+        prop.eventListener.failed(_ => prop.metadata.copy(message = e.getMessage, error = Option(e)))
         scheduleOnce(10.second) {
           prop.prop.close()
         }

@@ -8,19 +8,19 @@ import com.oceanum.common.RichTaskMeta
  */
 trait EventListener {
 
-  def prepare(message: RichTaskMeta)
+  def prepare(message: RichTaskMeta => RichTaskMeta)
 
-  def start(message: RichTaskMeta)
+  def start(message: RichTaskMeta => RichTaskMeta)
 
-  def running(message: RichTaskMeta)
+  def running(message: RichTaskMeta => RichTaskMeta)
 
-  def failed(message: RichTaskMeta)
+  def failed(message: RichTaskMeta => RichTaskMeta)
 
-  def success(message: RichTaskMeta)
+  def success(message: RichTaskMeta => RichTaskMeta)
 
-  def retry(message: RichTaskMeta)
+  def retry(message: RichTaskMeta => RichTaskMeta)
 
-  def timeout(message: RichTaskMeta)
+  def timeout(message: RichTaskMeta => RichTaskMeta)
 
-  def kill(message: RichTaskMeta)
+  def kill(message: RichTaskMeta => RichTaskMeta)
 }

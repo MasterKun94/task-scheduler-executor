@@ -13,12 +13,21 @@ public class DemoExecutor implements Executor {
     @Override
     public void run(String[] args, StateListener stateListener) {
         stateListener.updateState(map);
-        System.out.println("hello, args: " + Arrays.asList(args));
+        for (int i = 0; i < 100; i++) {
+            System.out.println(i + " hello, args: " + Arrays.asList(args));
+            map.put("num", String.valueOf(i));
+            stateListener.updateState(map);
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     @Override
     public boolean isRunning() {
-        return false;
+        return true;
     }
 
     @Override

@@ -6,13 +6,16 @@ import com.oceanum.api.HttpServer
 import com.oceanum.cluster.{ClusterNode, ExecutionEndpoint, ReceptionistListener}
 import com.oceanum.common.{ActorSystems, Environment}
 import com.oceanum.metrics.MetricsListener
+
+import scala.util.Properties
+
 /**
  * @author chenmingkun
  * @date 2020/5/28
  */
 object ClusterStarter {
   def main(args: Array[String]): Unit = {
-    Environment.loadEnv(args)
+    Environment.loadEnv("--mode=cluster" +: args)
     Environment.printEnv()
     Environment.initSystem()
     start()

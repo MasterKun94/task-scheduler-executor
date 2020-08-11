@@ -1,6 +1,6 @@
 package com.oceanum.common
 
-import java.io.{File, FileInputStream}
+import java.io.{File, FileFilter, FileInputStream}
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.{Locale, Properties, TimeZone}
 
@@ -92,7 +92,7 @@ object Environment {
     else if (sys.isMac) MAC
     else LINUX
   }
-
+  lazy val PLUGGABLE_EXECUTOR_JARS: Array[String] = getPluggableExecutorJars
   implicit lazy val NONE_BLOCKING_EXECUTION_CONTEXT: ExecutionContextExecutor = ActorSystems.SYSTEM.dispatcher
   implicit lazy val FILE_SYSTEM_EXECUTION_CONTEXT: ExecutionContext = ExecutionContext.global
 
@@ -189,6 +189,30 @@ object Environment {
   }
 
   def initSystem(): Unit = SystemInit.initAnnotatedClass()
+
+  def getPluggableExecutorJars: Array[String] = {
+    val file = new File(BASE_PATH/"lib")
+    file.listFiles(new FileFilter {
+      override def accept(pathname: File): Boolean = {
+        val fileName = pathname.getName
+        (
+          fileName.startsWith("aeron") ||
+            fileName.startsWith("akka-actor") ||
+            fileName.startsWith("akka-remote") ||
+            fileName.startsWith("akka-protobuf") ||
+            fileName.startsWith("akka-stream") ||
+            fileName.startsWith("config") ||
+            fileName.startsWith("netty") ||
+            fileName.startsWith("pluggable-executor") ||
+            fileName.startsWith("reactive-streams") ||
+            fileName.startsWith("scala") ||
+            fileName.startsWith("ssl-config")
+          ) &&
+          fileName.endsWith(".jar")
+      }
+    })
+      .map(_.getAbsolutePath)
+  }
 
   object Arg {
     val MODE = "--mode"

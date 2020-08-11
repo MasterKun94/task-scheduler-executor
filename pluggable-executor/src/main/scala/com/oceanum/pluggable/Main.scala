@@ -2,21 +2,25 @@ package com.oceanum.pluggable
 
 import java.util
 
-import akka.actor.ActorSelection
+import akka.actor.{ActorPath, ActorSelection, ActorSystem}
 import com.oceanum.pluggable.Env.UpdateState
 
 import scala.collection.JavaConversions.mapAsScalaMap
 
-class Main {
+object Main {
+
   def main(args: Array[String]): Unit = {
     val className = args(0)
     val actorPath = args(1)
-    val taskArgs = args.drop(2)
-    val executor = Class.forName(className).getConstructor().newInstance().asInstanceOf[Executor]
-    val primEndpoint = Env.system.actorSelection(actorPath)
+    val host = args(2)
+    val taskArgs = args.drop(3)
+    val system = Env.createSystem(host)
+    val primEndpoint = system.actorSelection(ActorPath.fromString(actorPath))
     val listener = executorListener(primEndpoint)
-    addShutDownHook(executor, listener)
+
     try {
+      val executor = Class.forName(className).getConstructor().newInstance().asInstanceOf[Executor]
+      addShutDownHook(executor, listener, system)
       executor.run(taskArgs, listener)
       System.exit(0)
     } catch {
@@ -32,16 +36,22 @@ class Main {
     }
   }
 
-  private def addShutDownHook(executor: Executor, listener: StateListener): Unit = {
+  private def addShutDownHook(executor: Executor, listener: StateListener, system: ActorSystem): Unit = {
     Runtime.getRuntime.addShutdownHook(new Thread(new Runnable {
       override def run(): Unit = {
+        println()
         if (executor.isRunning) {
           executor.kill(listener)
+          println("executor killed")
         }
         executor.close()
+        println("executor closed")
+
+        system.terminate()
+        system.getWhenTerminated.toCompletableFuture.get()
+        println("terminated")
+        println()
       }
     }))
-    Env.system.terminate()
-    Env.system.getWhenTerminated.toCompletableFuture.get()
   }
 }

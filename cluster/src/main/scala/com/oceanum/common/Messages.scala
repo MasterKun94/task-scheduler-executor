@@ -8,14 +8,14 @@ import com.oceanum.client.{StateHandler, Task}
 
 @SerialVersionUID(1L)
 trait Message {}
-case class PrepareMessage(metadata: RichTaskMeta) extends Message
-case class RunningMessage(metadata: RichTaskMeta) extends Message
-case class FailedMessage(metadata: RichTaskMeta) extends Message
-case class SuccessMessage(metadata: RichTaskMeta) extends Message
-case class RetryMessage(metadata: RichTaskMeta) extends Message
+case class PrepareMessage(message: RichTaskMeta => RichTaskMeta) extends Message
+case class RunningMessage(message: RichTaskMeta => RichTaskMeta) extends Message
+case class FailedMessage(message: RichTaskMeta => RichTaskMeta) extends Message
+case class SuccessMessage(message: RichTaskMeta => RichTaskMeta) extends Message
+case class RetryMessage(message: RichTaskMeta => RichTaskMeta) extends Message
 case object KillMessage extends Message
-case class TimeoutMessage(metadata: RichTaskMeta) extends Message
-case class StartMessage(metadata: RichTaskMeta) extends Message
+case class TimeoutMessage(message: RichTaskMeta => RichTaskMeta) extends Message
+case class StartMessage(message: RichTaskMeta => RichTaskMeta) extends Message
 
 @SerialVersionUID(1L)
 case object KillAction extends Message

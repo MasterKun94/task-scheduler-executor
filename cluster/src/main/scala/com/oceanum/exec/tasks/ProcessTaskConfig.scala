@@ -37,7 +37,7 @@ abstract class ProcessTaskConfig(val propCmd: Array[String] = Array.empty,
         .toMap
       val newConfig = taskConfig.convert(fileMap)
       fileMap.map(kv => FileSystem.download(kv._1, kv._2))
-        .reduce((f1, f2) => f1.flatMap(_ => f2))
+        .fold(Future.successful(Unit))((f1, f2) => f1.flatMap(_ => f2))
         .map(_ => newConfig)
     } flatMap {
       future => future

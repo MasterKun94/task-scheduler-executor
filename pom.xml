@@ -26,7 +26,7 @@ under the License.
 	<version>1.0-SNAPSHOT</version>
 	<modules>
 		<module>cluster</module>
-		<module>executor</module>
+		<module>pluggable-executor</module>
 		<module>commons</module>
         <module>elastic-repository</module>
         <module>hdfs-file-system</module>
@@ -64,6 +64,9 @@ under the License.
 		<hadoop.version>2.6.0</hadoop.version>
 		<aviator.version>5.0.1</aviator.version>
 		<json4s.version>3.6.9</json4s.version>
+
+		<output.dir>executor</output.dir>
+		<pack.dir>${project.build.directory}/${output.dir}</pack.dir>
 	</properties>
 
 	<dependencies>

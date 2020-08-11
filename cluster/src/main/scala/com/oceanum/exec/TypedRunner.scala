@@ -25,7 +25,7 @@ abstract class TypedRunner[T <: TaskConfig](types: String*) extends TaskRunner(t
 
   protected def sendRunEvent(task: ExecutionTask[_ <: T], hook: ExecutionHook): Unit = {
     task.receive(hook)
-    task.eventListener.running(task.metadata)
+    task.eventListener.running(_ => task.metadata)
   }
 
   protected def kill(task: ExecutionTask[_ <: T]): Boolean = task.hook.kill()

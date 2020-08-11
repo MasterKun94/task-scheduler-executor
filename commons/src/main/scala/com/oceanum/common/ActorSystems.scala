@@ -63,7 +63,6 @@ object ActorSystems {
          |  }
          |}
          |""".stripMargin
-    ConfigFactory.parseString(configString)
     ActorSystem(Environment.CLIENT_NODE_SYSTEM_NAME, ConfigFactory.parseString(configString))
   }
 }

@@ -11,15 +11,11 @@
 
     <artifactId>cluster</artifactId>
 
-    <properties>
-        <output.dir>executor</output.dir>
-        <pack.dir>${project.build.directory}/${output.dir}</pack.dir>
-    </properties>
 
     <dependencies>
         <dependency>
             <groupId>com.oceanum</groupId>
-            <artifactId>executor</artifactId>
+            <artifactId>pluggable-executor</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>

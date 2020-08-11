@@ -1,28 +1,44 @@
 package com.oceanum.exec.tasks
 
-import akka.actor.ActorRef
+import akka.actor.{ActorRef, PoisonPill}
 import com.oceanum.common.Environment
 import com.oceanum.exec.StdHandler
 import com.oceanum.expr.{ExprParser, JavaMap}
 
 case class PluggableTaskConfig(args: Array[String] = Array.empty,
-                               plugName: String,
-                               files: Seq[String],
-                               jars: Seq[String],
+                               plugJars: Array[String],
+                               plugClass: String,
+                               mainClass: String,
+                               files: Array[String],
+                               jars: Array[String],
                                options: Array[String] = Array.empty,
                                env: Map[String, String] = Map.empty,
                                directory: String = Environment.EXEC_WORK_DIR,
                                waitForTimeout: String = "24h",
+                               communicator: ActorRef,
                                stdoutHandler: StdHandler,
                                stderrHandler: StdHandler)
   extends ProcessTaskConfig(
-    (Environment.EXEC_JAVA +: options :+ "-cp" :+ (jars ++ Array()).mkString(":") :+ "com.oceanum.pluggable.Main") ++ args,
+    {
+      val _jars: Array[String] = jars ++ plugJars
+      val _mainClass: String = mainClass
+      val _args: Array[String] = plugClass +:
+        communicator.path.toStringWithAddress(communicator.path.address.copy(
+          protocol = "akka.tcp",
+          host = Some(Environment.HOST),
+          port = Some(Environment.CLUSTER_NODE_PORT))) +:
+        Environment.HOST +:
+        args
+      val _options: Array[String] = options
+      (Environment.EXEC_JAVA +: _options :+ "-cp" :+ _jars.mkString(":") :+ _mainClass) ++ _args
+    },
     env,
     directory,
     waitForTimeout,
     stdoutHandler,
     stderrHandler
   ) {
+
   override def parseFunction(implicit exprEnv: JavaMap[String, AnyRef]): ProcessTaskConfig = {
     this.copy(
       args = args.map(ExprParser.parse(_)),
@@ -42,18 +58,9 @@ case class PluggableTaskConfig(args: Array[String] = Array.empty,
     )
   }
 
-  private def plugJar: String = ???
-  private def plugClass: String = ???
-  def toJavaTaskConfig(prim: ActorRef): JavaTaskConfig = JavaTaskConfig(
-    jars = ???,
-    mainClass = ???,
-    args = ???,
-    options = options,
-    env = env,
-    directory = directory,
-    waitForTimeout = waitForTimeout,
-    stderrHandler = stderrHandler,
-    stdoutHandler = stdoutHandler
-  )
+  override def close(): Unit = {
+    communicator ! PoisonPill
+    super.close()
+  }
 }
 

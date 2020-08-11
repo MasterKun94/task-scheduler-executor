@@ -2,6 +2,7 @@ package com.oceanum.exec
 
 import java.io._
 import java.nio.charset.StandardCharsets
+import java.util.function.Consumer
 
 import scala.util.Properties
 
@@ -14,17 +15,22 @@ trait LineStdHandler extends StdHandler {
     val reader = new BufferedReader(new InputStreamReader(input, StandardCharsets.UTF_8))
     try {
       before()
-      Stream.continually(reader.readLine())
-        .foreach(line => {
-          if (line == null) {
-            return
+      reader
+        .lines()
+        .forEachOrdered(new Consumer[String]() {
+          override def accept(line: String): Unit = {
+            if (line == null) {
+              return
+            }
+            handle(line)
           }
-          handle(line)
         })
       after()
     } catch {
       case e: IOException =>
         throw new RuntimeException("Stdout/Stderr read/write error", e)
+      case e: Throwable =>
+        e.printStackTrace()
     } finally {
       try {
         reader.close()

@@ -1,13 +1,17 @@
 package com.oceanum.exec
 
-import com.oceanum.client.{JavaTaskProp, PythonTaskProp, ScalaTaskProp, ShellScriptTaskProp, ShellTaskProp, TaskProp, UserAdd}
-import com.oceanum.common.{GraphContext, RichTaskMeta}
-import com.oceanum.exec.tasks.{JavaTaskConfig, PythonTaskConfig, ScalaTaskConfig, ShellScriptTaskConfig, ShellTaskConfig}
+import java.util.UUID
+
+import akka.actor.Props
+import com.oceanum.client._
+import com.oceanum.common.{ActorSystems, Environment, GraphContext, RichTaskMeta}
+import com.oceanum.exec.StdHandlerFactory.default._
+import com.oceanum.exec.tasks.SysTasks.UserAddTaskConfig
+import com.oceanum.exec.tasks._
+import com.oceanum.expr.JavaMap
+import com.oceanum.pluggable.{PluggablePrimEndpoint, PrimListener}
 
 import scala.concurrent.{ExecutionContext, Future}
-import StdHandlerFactory.default._
-import com.oceanum.exec.tasks.SysTasks.UserAddTaskConfig
-import com.oceanum.expr.JavaMap
 
 /**
  * @author chenmingkun
@@ -22,7 +26,7 @@ trait TaskConfig {
 }
 
 object TaskConfig {
-  def from(taskProp: TaskProp, taskMeta: RichTaskMeta): TaskConfig = taskProp match {
+  def from(taskProp: TaskProp, taskMeta: RichTaskMeta, listener: EventListener): TaskConfig = taskProp match {
     case prop: ShellTaskProp => ShellTaskConfig(
       prop.cmd,
       prop.env,
@@ -72,5 +76,28 @@ object TaskConfig {
       createStdErrHandler(taskMeta)
     )
     case prop: UserAdd => UserAddTaskConfig(prop.user)
+
+    case prop: PluggableTaskProp =>
+      val execListener: PrimListener = new PrimListener {
+        override def updateState(info: Map[String, String]): Unit = {
+          listener.running(meta => meta.copy(extendedProperties = meta.extendedProperties ++ info))
+        }
+      }
+      val communicator = ActorSystems.SYSTEM.actorOf(Props(classOf[PluggablePrimEndpoint], execListener), UUID.randomUUID().toString)
+      PluggableTaskConfig(
+        args = prop.args,
+        plugJars = Environment.PLUGGABLE_EXECUTOR_JARS,
+        plugClass = prop.plugClass,
+        mainClass = "com.oceanum.pluggable.Main",
+        files = prop.files,
+        jars = prop.jars,
+        options = prop.options,
+        env = prop.env,
+        directory = prop.directory,
+        waitForTimeout = prop.waitForTimeout,
+        communicator = communicator,
+        stderrHandler = createStdErrHandler(taskMeta),
+        stdoutHandler = createStdOutHandler(taskMeta)
+      )
   }
 }

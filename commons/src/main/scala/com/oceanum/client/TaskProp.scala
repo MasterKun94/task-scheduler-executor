@@ -1,5 +1,6 @@
 package com.oceanum.client
 
+import com.oceanum.common.Environment
 import com.oceanum.expr.ValidateParser
 
 @SerialVersionUID(1L)
@@ -96,4 +97,23 @@ case class PythonTaskProp(pyFile: String = "",
 case class UserAdd(user: String) extends ProcessTaskProp("USER_ADD") {
 
   override def validate(): Unit = ValidateParser.parse(user)
+}
+
+class PluggableTaskProp(val args: Array[String] = Array.empty,
+                        val plugClass: String,
+                        val files: Array[String] = Array.empty,
+                        val jars: Array[String],
+                        val options: Array[String] = Array.empty,
+                        val env: Map[String, String] = Map.empty,
+                        val directory: String = "",
+                        val waitForTimeout: String = "24h")
+extends TaskProp("PLUGGABLE") {
+  override def validate(): Unit = {
+    args.foreach(ValidateParser.parse)
+    files.foreach(ValidateParser.parse)
+    jars.foreach(ValidateParser.parse)
+    options.foreach(ValidateParser.parse)
+    env.mapValues(ValidateParser.parse)
+    ValidateParser.parse(plugClass)
+  }
 }

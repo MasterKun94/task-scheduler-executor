@@ -14,35 +14,35 @@ import scala.concurrent.ExecutionContext
  */
 class ExecutionInstance(task: Task, actor: ActorRef) extends Actor with ActorLogging {
   private def listener: EventListener = new EventListener {
-    override def prepare(message: RichTaskMeta): Unit = {
+    override def prepare(message: RichTaskMeta => RichTaskMeta): Unit = {
       self ! PrepareMessage(message)
     }
 
-    override def start(message: RichTaskMeta): Unit = {
+    override def start(message: RichTaskMeta => RichTaskMeta): Unit = {
       self ! StartMessage(message)
     }
 
-    override def running(message: RichTaskMeta): Unit = {
+    override def running(message: RichTaskMeta => RichTaskMeta): Unit = {
       self ! RunningMessage(message)
     }
 
-    override def failed(message: RichTaskMeta): Unit = {
+    override def failed(message: RichTaskMeta => RichTaskMeta): Unit = {
       self ! FailedMessage(message)
     }
 
-    override def success(message: RichTaskMeta): Unit = {
+    override def success(message: RichTaskMeta => RichTaskMeta): Unit = {
       self ! SuccessMessage(message)
     }
 
-    override def retry(message: RichTaskMeta): Unit = {
+    override def retry(message: RichTaskMeta => RichTaskMeta): Unit = {
       self ! RetryMessage(message)
     }
 
-    override def timeout(message: RichTaskMeta): Unit = {
+    override def timeout(message: RichTaskMeta => RichTaskMeta): Unit = {
       self ! TimeoutMessage(message)
     }
 
-    override def kill(message: RichTaskMeta): Unit = {
+    override def kill(message: RichTaskMeta => RichTaskMeta): Unit = {
       self ! KillMessage
     }
   }
@@ -178,42 +178,42 @@ class ExecutionInstance(task: Task, actor: ActorRef) extends Actor with ActorLog
 
   private def casePrepare(implicit meta: RichTaskMeta, holder: Holder): Receive = {
     case m: PrepareMessage =>
-      val metadata = meta update m.metadata
+      val metadata = m.message(meta)
       log.info("receive status changing, status: PREPARE({})", metadata)
       context.become(prepare(metadata))
       checkState
   }
   private def caseStart(implicit meta: RichTaskMeta, holder: Holder): Receive = {
     case m: StartMessage =>
-      val metadata = meta update m.metadata
+      val metadata = m.message(meta)
       log.info("receive status changing, status: START({})", metadata)
       context.become(start(metadata))
       checkState
   }
   private def caseRunning(implicit meta: RichTaskMeta, holder: Holder): Receive = {
     case m: RunningMessage =>
-      val metadata = meta update m.metadata
+      val metadata = m.message(meta)
       log.info("receive status changing, status: RUNNING({})", metadata)
       context.become(running(metadata))
       checkState
   }
   private def caseSuccess(implicit meta: RichTaskMeta, holder: Holder): Receive = {
     case m: SuccessMessage =>
-      val metadata = meta update m.metadata
+      val metadata = m.message(meta)
       log.info("receive status changing, status: SUCCESS({})", metadata)
       context.become(success(metadata))
       checkState
   }
   private def caseFailed(implicit meta: RichTaskMeta, holder: Holder): Receive = {
     case m: FailedMessage =>
-      val metadata = meta update m.metadata
+      val metadata = m.message(meta)
       log.info("receive status changing, status: FAILED({})", metadata)
       context.become(failed(metadata))
       checkState
   }
   private def caseRetry(implicit meta: RichTaskMeta, holder: Holder): Receive = {
     case m: RetryMessage =>
-      val metadata = meta update m.metadata
+      val metadata = m.message(meta)
       log.info("receive status changing, status: RETRY({})", metadata)
       context.become(retry(metadata))
       checkState
@@ -227,7 +227,7 @@ class ExecutionInstance(task: Task, actor: ActorRef) extends Actor with ActorLog
   }
   private def caseTimeout(implicit meta: RichTaskMeta, holder: Holder): Receive = {
     case m: TimeoutMessage =>
-      val metadata = meta update m.metadata
+      val metadata = m.message(meta)
       log.info("receive status changing, status: TIMEOUT({})", metadata)
       context.become(timeout(metadata))
       checkState

@@ -65,7 +65,7 @@ object ExecutionTask {
       retryCount = task.retryCount,
       retryInterval = task.retryInterval,
       priority = task.priority,
-      prop = TaskConfig.from(task.prop, taskMeta),
+      prop = TaskConfig.from(task.prop, taskMeta, listener),
       eventListener = listener,
       env = env.copy(taskMeta = taskMeta)
     )
