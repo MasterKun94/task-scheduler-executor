@@ -35,6 +35,11 @@
         </dependency>
 
         <dependency>
+            <groupId>com.github.jnr</groupId>
+            <artifactId>jnr-posix</artifactId>
+            <version>3.0.12</version>
+        </dependency>
+        <dependency>
             <groupId>com.typesafe.akka</groupId>
             <artifactId>akka-cluster_${scala.binary.version}</artifactId>
             <version>${akka.version}</version>

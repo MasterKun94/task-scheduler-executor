@@ -8,6 +8,7 @@ import com.oceanum.common.Environment
 import com.oceanum.exec.ExitCode.ERROR
 import com.oceanum.exec.{ExecutionHook, ExecutionTask, ExitCode, MailBox, StdHandler, TypedRunner}
 import com.oceanum.exec.tasks.ProcessTaskConfig
+import jnr.posix.POSIXFactory
 
 import scala.collection.JavaConversions.{mapAsJavaMap, seqAsJavaList}
 import scala.concurrent.duration.Duration
@@ -61,16 +62,10 @@ object ProcessRunner extends TypedRunner[ProcessTaskConfig]("SHELL", "SHELL_SCRI
           else
             timeout
         val exited = process.waitFor(maxWait, TimeUnit.MILLISECONDS)
-        if (exited) {
-          ExitCode(process.exitValue())
-        } else {
-          process.destroy()
-          if (process.isAlive) {
-            ExitCode(process.destroyForcibly().exitValue())
-          } else {
-            ExitCode(process.exitValue())
-          }
+        if (!exited) {
+          kill(process)
         }
+        ExitCode(process.exitValue())
       } catch {
         case _: InterruptedException =>
           if (process.isAlive) {
@@ -88,10 +83,7 @@ object ProcessRunner extends TypedRunner[ProcessTaskConfig]("SHELL", "SHELL_SCRI
 
     override def kill(): Boolean = {
       if (process.isAlive) {
-        process.destroy()
-        if (process.isAlive) {
-          process.destroyForcibly()
-        }
+        ProcessRunner.kill(process)
         true
       } else {
         false
@@ -103,5 +95,25 @@ object ProcessRunner extends TypedRunner[ProcessTaskConfig]("SHELL", "SHELL_SCRI
 
   override def close(): Unit = {
     streamOutput.close()
+  }
+
+  private def kill(process: Process): Unit = {
+    try {
+      val clazz = process.getClass
+      val fPid = clazz.getDeclaredField("pid")
+      if (!fPid.isAccessible) fPid.setAccessible(true)
+      val pid = fPid.getInt(process).toString
+      new ProcessBuilder()
+        .command("kill", "-15", pid)
+        .start()
+        .waitFor(60, TimeUnit.SECONDS)
+
+      if (process.isAlive) {
+        process.destroy()
+        if (process.isAlive) {
+          process.destroyForcibly()
+        }
+      }
+    }
   }
 }
