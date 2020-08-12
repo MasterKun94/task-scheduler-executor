@@ -5,11 +5,12 @@ import akka.cluster.{Cluster, MemberStatus}
 import akka.stream.QueueOfferResult.{Dropped, Enqueued, QueueClosed, Failure => QFailure}
 import com.oceanum.annotation.IRestService
 import com.oceanum.api.HttpServer.restService
-import com.oceanum.api.entities.{ClusterNode, ClusterNodes, NodeTaskInfo, NodeTaskInfos, RunWorkflowInfo, WorkflowDefine}
+import com.oceanum.api.entities.{ClusterNode, ClusterNodes, Elements, NodeTaskInfo, RunWorkflowInfo, WorkflowDefine}
 import com.oceanum.client.TaskClient
 import com.oceanum.common.{ActorSystems, Environment, GraphMeta, NodeStatus}
 import com.oceanum.exec.RunnerManager
 import com.oceanum.graph.{GraphHook, GraphMetaHandler, Workflow, WorkflowInstance}
+import com.oceanum.trigger.Triggers
 
 import scala.collection.concurrent.TrieMap
 import scala.concurrent.Future
@@ -118,13 +119,13 @@ class RestServiceImpl extends AbstractRestService {
     MemberStatus.WeaklyUp -> NodeStatus.WEAKLY_UP
   )
 
-  override def getClusterTaskInfos(host: Option[String]): Future[NodeTaskInfos] = {
+  override def getClusterTaskInfos(host: Option[String]): Future[Elements[NodeTaskInfo]] = {
     val nodes = getClusterNodes(status = Some(NodeStatus.UP), host = host)
     nodes
       .flatMap { nodes =>
         Future.sequence(nodes.nodes.map(node => getNodeTaskInfo(node.host)))
       }
-      .map(NodeTaskInfos)
+      .map(Elements(_))
   }
 
   override def getNodeTaskInfo(host: String): Future[NodeTaskInfo] = {

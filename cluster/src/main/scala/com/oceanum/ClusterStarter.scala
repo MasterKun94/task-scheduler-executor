@@ -2,7 +2,7 @@ package com.oceanum
 
 import akka.actor.Props
 import akka.cluster.client.ClusterClientReceptionist
-import com.oceanum.api.HttpServer
+import com.oceanum.api.{FallbackListener, HttpServer}
 import com.oceanum.cluster.{ClusterNode, ExecutionEndpoint, ReceptionistListener}
 import com.oceanum.common.{ActorSystems, Environment}
 import com.oceanum.metrics.MetricsListener
@@ -28,7 +28,8 @@ object ClusterStarter {
     ClusterClientReceptionist(system).registerService(service)
     val receptionist = ClusterClientReceptionist(system).underlying
     system.actorOf(Props(classOf[ReceptionistListener], receptionist),"event-listener")
-    MetricsListener.start()
+    MetricsListener.start(system)
+    FallbackListener.start(system)
     HttpServer.start()
   }
 }

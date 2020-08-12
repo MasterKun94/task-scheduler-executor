@@ -1,6 +1,5 @@
 package com.oceanum.trigger
 
-import java.text.SimpleDateFormat
 import java.util.Date
 
 import akka.actor.{ActorRef, ActorSystem, Props}
@@ -8,6 +7,8 @@ import com.oceanum.annotation.ITrigger
 import com.oceanum.common.{ActorSystems, Environment}
 import com.oceanum.expr.{ExprParser, JavaHashMap}
 import com.typesafe.akka.extension.quartz.{MessageRequireFireTime, QuartzSchedulerExtension}
+
+import scala.collection.concurrent.TrieMap
 
 /**
  * Quartz触发器
@@ -20,6 +21,7 @@ class QuartzTrigger extends Trigger {
   private lazy implicit val system: ActorSystem = ActorSystems.SYSTEM
   private lazy val quartz: QuartzSchedulerExtension = QuartzSchedulerExtension(system)
   private lazy val receiver: ActorRef = system.actorOf(Props[TriggerActor])
+  private val externalSuspendedTask: TrieMap[String, () => Unit] = TrieMap()
 
   /**
    * @param config 任务配置, 有三个参数分别是：
@@ -51,8 +53,22 @@ class QuartzTrigger extends Trigger {
   }
 
   override def resume(name: String): Boolean = {
-    quartz.resumeJob(name)
+    externalSuspendedTask.remove(name) match {
+      case Some(func) =>
+        func()
+        true
+      case None =>
+        quartz.resumeJob(name)
+    }
   }
 
   override def triggerType: String = "QUARTZ"
+
+  override def recover(name: String, config: Map[String, String], startTime: Option[Date], isSuspended: Boolean)(action: Date => Unit): Unit = {
+    if (isSuspended) {
+      externalSuspendedTask += (name -> (() => start(name, config, startTime)(action)))
+    } else {
+      start(name, config, startTime)(action)
+    }
+  }
 }

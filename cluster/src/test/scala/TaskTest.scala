@@ -26,7 +26,7 @@ object TaskTest {
     .parallelism(1)
     .build
     .addGraphMeta(new RichGraphMeta().copy(id = 0, scheduleTime = Some(new Date())))
-    .copy(prop = new PluggableTaskProp(plugClass = "com.oceanum.pluggable.DemoExecutor", jars = Array.empty))
+//    .copy(prop = new PluggableTaskProp(plugClass = "com.oceanum.pluggable.DemoExecutor", jars = Array.empty))
 
   def getSelfAddress: String = {
 //    "127.0.0.1"

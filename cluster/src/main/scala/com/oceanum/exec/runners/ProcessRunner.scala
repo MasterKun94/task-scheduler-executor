@@ -103,17 +103,23 @@ object ProcessRunner extends TypedRunner[ProcessTaskConfig]("SHELL", "SHELL_SCRI
       val fPid = clazz.getDeclaredField("pid")
       if (!fPid.isAccessible) fPid.setAccessible(true)
       val pid = fPid.getInt(process).toString
-      new ProcessBuilder()
+      log.info("killing pid: {}", pid)
+      val killing = new ProcessBuilder()
         .command("kill", "-15", pid)
         .start()
-        .waitFor(60, TimeUnit.SECONDS)
+      val exited = process.waitFor(120, TimeUnit.SECONDS)
 
-      if (process.isAlive) {
+      if (!exited) {
+        log.error("'kill -15' failed, start to destroy pid: {}", pid)
         process.destroy()
         if (process.isAlive) {
           process.destroyForcibly()
         }
       }
+    } catch {
+      case e: Throwable =>
+        e.printStackTrace()
+        process.destroyForcibly()
     }
   }
 }

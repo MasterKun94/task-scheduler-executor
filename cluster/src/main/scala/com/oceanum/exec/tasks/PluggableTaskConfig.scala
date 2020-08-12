@@ -11,6 +11,7 @@ case class PluggableTaskConfig(args: Array[String] = Array.empty,
                                mainClass: String,
                                files: Array[String],
                                jars: Array[String],
+                               completeDir: String,
                                options: Array[String] = Array.empty,
                                env: Map[String, String] = Map.empty,
                                directory: String = Environment.EXEC_WORK_DIR,
@@ -28,6 +29,7 @@ case class PluggableTaskConfig(args: Array[String] = Array.empty,
           host = Some(Environment.HOST),
           port = Some(Environment.CLUSTER_NODE_PORT))) +:
         Environment.HOST +:
+        completeDir +:
         args
       val _options: Array[String] = options
       (Environment.EXEC_JAVA +: _options :+ "-cp" :+ _jars.mkString(":") :+ _mainClass) ++ _args

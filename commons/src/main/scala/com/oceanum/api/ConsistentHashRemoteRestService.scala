@@ -109,7 +109,7 @@ class ConsistentHashRemoteRestService(seed: String) extends RestService {
     execute(_.getClusterNodes(status, host, role))
   }
 
-  override def getClusterTaskInfos(host: Option[String]): Future[NodeTaskInfos] = {
+  override def getClusterTaskInfos(host: Option[String]): Future[Elements[NodeTaskInfo]] = {
     execute(_.getClusterTaskInfos(host))
   }
 

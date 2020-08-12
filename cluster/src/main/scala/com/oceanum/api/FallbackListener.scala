@@ -1,17 +1,16 @@
 package com.oceanum.api
 
-import java.util.concurrent.TimeUnit
-
-import akka.actor.{Actor, ActorLogging}
+import akka.actor.{Actor, ActorLogging, ActorRef, ActorSystem, PoisonPill, Props}
 import akka.cluster.ClusterEvent.{MemberEvent, UnreachableMember}
+import akka.cluster.singleton.{ClusterSingletonManager, ClusterSingletonManagerSettings}
 import akka.cluster.{Cluster, ClusterEvent}
 import com.oceanum.api.entities.{ClusterNodes, Coordinator}
-import com.oceanum.common.{NodeStatus, Scheduler, SystemInit}
+import com.oceanum.common.{Environment, NodeStatus, SystemInit}
+import com.oceanum.metrics.MetricsListener
 import com.oceanum.persistence.Catalog
 
 import scala.collection.JavaConversions.mapAsJavaMap
 import scala.concurrent.Future
-import scala.concurrent.duration.FiniteDuration
 import scala.util.{Failure, Success}
 
 class FallbackListener extends Actor with ActorLogging {
@@ -38,25 +37,32 @@ class FallbackListener extends Actor with ActorLogging {
             )
             .map(_.filter(coord => coord.endTime.map(_.getTime).getOrElse(Long.MaxValue) > System.currentTimeMillis()))
             .flatMap { coordinators =>
-              val seq = coordinators
+              val seq: Seq[Future[Unit]] = coordinators
                 .map(coord => {
                   val host = value.consistentHashSelect(coord.name).host
                   log.info("fallback: moving coordinator: [{}] to host: [{}]", coord, host)
-                  coord.copy(host = host, version = coord.version + 1)
-                }
-                )
-                .map(coord => {
-                  val remoteRestService = RemoteRestServices.get(coord.host)
-                  remoteRestService.submitAndRunCoordinator(coord)
+                  val newCoord = coord.copy(host = host, version = coord.version + 1)
+                  val remoteRestService = RemoteRestServices.get(newCoord.host)
+                  remoteRestService.submitAndRunCoordinator(newCoord)
                 })
               Future.sequence(seq)
             }
         }
         .andThen {
-          case Success(_) =>
-            log.info("fallback complete")
           case Failure(exception) =>
             log.error(exception, "fallback failed: " + exception.getMessage)
         }
+
+
+  }
+}
+
+object FallbackListener {
+  def start(system: ActorSystem): ActorRef = {
+    system.actorOf(ClusterSingletonManager.props(
+      singletonProps = Props(classOf[FallbackListener]),
+      settings = ClusterSingletonManagerSettings(system),
+      terminationMessage = PoisonPill.getInstance
+    ), name = "fallback-listener")
   }
 }

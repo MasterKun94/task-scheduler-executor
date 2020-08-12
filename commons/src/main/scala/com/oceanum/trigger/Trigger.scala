@@ -22,6 +22,8 @@ trait Trigger {
    */
   def start(name: String, config: Map[String, String], startTime: Option[Date])(action: Date => Unit): Unit
 
+  def recover(name: String, config: Map[String, String], startTime: Option[Date], isSuspended: Boolean)(action: Date => Unit)
+
   /**
    * 根据任务名称停止任务
    *

@@ -1,6 +1,6 @@
 package com.oceanum.metrics
 
-import akka.actor.{Actor, ActorLogging, ActorRef, Cancellable, PoisonPill, Props}
+import akka.actor.{Actor, ActorLogging, ActorRef, ActorSystem, Cancellable, PoisonPill, Props}
 import akka.cluster.ClusterEvent.{MemberEvent, UnreachableMember}
 import akka.cluster.metrics.{ClusterMetricsChanged, ClusterMetricsExtension}
 import akka.cluster.pubsub.DistributedPubSub
@@ -138,8 +138,7 @@ class MetricsListener extends Actor with ActorLogging {
 
 object MetricsListener {
 
-  def start(): Unit = {
-    val system = ActorSystems.SYSTEM
+  def start(system: ActorSystem): Unit = {
     system.actorOf(ClusterSingletonManager.props(
       singletonProps = Props(classOf[MetricsListener]),
       settings = ClusterSingletonManagerSettings(system),

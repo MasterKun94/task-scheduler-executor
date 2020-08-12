@@ -91,6 +91,7 @@ object TaskConfig {
         mainClass = "com.oceanum.pluggable.Main",
         files = prop.files,
         jars = prop.jars,
+        completeDir = taskMeta.execDir,
         options = prop.options,
         env = prop.env,
         directory = prop.directory,

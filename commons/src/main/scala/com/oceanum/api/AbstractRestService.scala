@@ -318,6 +318,6 @@ abstract class AbstractRestService extends Log with RestService {
   }
 
   private def updateCoordinatorStatus(name: String, state: CoordStatus): Future[Unit] = {
-    coordinatorStateRepo.save(name, CoordinatorStatus(name, state))
+    coordinatorStateRepo.save(name, CoordinatorStatus(name, state).copy(latestUpdateTime = new Date()))
   }
 }
