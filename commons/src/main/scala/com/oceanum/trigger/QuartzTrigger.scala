@@ -4,7 +4,7 @@ import java.util.Date
 
 import akka.actor.{ActorRef, ActorSystem, Props}
 import com.oceanum.annotation.ITrigger
-import com.oceanum.common.{ActorSystems, Environment}
+import com.oceanum.common.{ActorSystems, CoordStatus, Environment}
 import com.oceanum.expr.{ExprParser, JavaHashMap}
 import com.typesafe.akka.extension.quartz.{MessageRequireFireTime, QuartzSchedulerExtension}
 
@@ -39,7 +39,9 @@ class QuartzTrigger extends Trigger {
       .map(str => ExprParser.parse(str)(new JavaHashMap(0)))
     val description = config.get("description")
       .map(str => ExprParser.parse(str)(new JavaHashMap(0)))
-    stop(name)
+    if (quartz.runningJobs.contains(name)) {
+      throw new IllegalArgumentException(name + "is already running")
+    }
     quartz.createSchedule(name, description, cron, calendar, Environment.TIME_ZONE)
     quartz.schedule(name, receiver, MessageRequireFireTime(msg), startTime)
   }
@@ -64,10 +66,11 @@ class QuartzTrigger extends Trigger {
 
   override def triggerType: String = "QUARTZ"
 
-  override def recover(name: String, config: Map[String, String], startTime: Option[Date], isSuspended: Boolean)(action: Date => Unit): Unit = {
-    if (isSuspended) {
-      externalSuspendedTask += (name -> (() => start(name, config, startTime)(action)))
-    } else {
+  override def recover(name: String, config: Map[String, String], startTime: Option[Date], status: CoordStatus)(action: Date => Unit): Unit = {
+    if (status == CoordStatus.SUSPENDED) {
+      val time: Option[Date] = startTime.orElse(Some(new Date()))
+      externalSuspendedTask += (name -> (() => start(name, config, time)(action)))
+    } else if (status == CoordStatus.RUNNING) {
       start(name, config, startTime)(action)
     }
   }

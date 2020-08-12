@@ -75,7 +75,7 @@ class TaskCreateTimeFunction extends AbstractFunction {
     if (task.isNull(env))
       AviatorNil.NIL
     else {
-      AviatorRuntimeJavaType.valueOf((FunctionUtils.getJavaObject(task, env).asInstanceOf[TaskMeta].createTime))
+      AviatorRuntimeJavaType.valueOf((FunctionUtils.getJavaObject(task, env).asInstanceOf[TaskMeta].createTime.orNull))
     }
   }
 }
@@ -93,7 +93,7 @@ class TaskStartTimeFunction extends AbstractFunction {
     if (task.isNull(env))
       AviatorNil.NIL
     else {
-      AviatorRuntimeJavaType.valueOf((FunctionUtils.getJavaObject(task, env).asInstanceOf[TaskMeta].startTime))
+      AviatorRuntimeJavaType.valueOf((FunctionUtils.getJavaObject(task, env).asInstanceOf[TaskMeta].startTime.orNull))
     }
   }
 }
@@ -107,7 +107,7 @@ class TaskEndTimeFunction extends AbstractFunction {
     if (task.isNull(env))
       AviatorNil.NIL
     else {
-      AviatorRuntimeJavaType.valueOf((FunctionUtils.getJavaObject(task, env).asInstanceOf[TaskMeta].endTime))
+      AviatorRuntimeJavaType.valueOf((FunctionUtils.getJavaObject(task, env).asInstanceOf[TaskMeta].endTime.orNull))
     }
   }
 }

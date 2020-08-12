@@ -77,8 +77,8 @@ class ConsistentHashRemoteRestService(seed: String) extends RestService {
     execute(coordinator.name)(_.submitCoordinator(coordinator))
   }
 
-  override def submitAndRunCoordinator(coordinator: Coordinator): Future[Unit] = {
-    execute(coordinator.name)(_.submitAndRunCoordinator(coordinator))
+  override def recover(coordinator: Coordinator): Future[Unit] = {
+    execute(coordinator.name)(_.recover(coordinator))
   }
 
   override def runCoordinator(name: String): Future[Unit] = {

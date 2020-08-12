@@ -88,9 +88,9 @@ class RemoteRestService(host: String) extends RestService {
     )
   }
 
-  override def submitAndRunCoordinator(coordinator: Coordinator): Future[Unit] = {
+  override def recover(coordinator: Coordinator): Future[Unit] = {
     HttpClient.post[Coordinator, Nothing](
-      url = hostPort + "/api/coordinator/" + coordinator.name + "/run",
+      url = hostPort + "/api/coordinator/" + coordinator.name + "/recover",
       entity = Some(coordinator)
     )
   }

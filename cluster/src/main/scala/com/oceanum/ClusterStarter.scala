@@ -23,6 +23,7 @@ object ClusterStarter {
 
   def start(): Unit = {
     val system = ActorSystems.SYSTEM
+    system.deadLetters
     system.actorOf(Props(classOf[ClusterNode]), "cluster-node")
     val service = system.actorOf(Props(classOf[ExecutionEndpoint]), "execution-endpoint")
     ClusterClientReceptionist(system).registerService(service)

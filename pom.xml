@@ -30,6 +30,7 @@ under the License.
 		<module>commons</module>
         <module>elastic-repository</module>
         <module>hdfs-file-system</module>
+        <module>spark-executor</module>
     </modules>
 	<packaging>pom</packaging>
 

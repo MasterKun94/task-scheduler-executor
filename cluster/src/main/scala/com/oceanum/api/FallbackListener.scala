@@ -5,13 +5,12 @@ import akka.cluster.ClusterEvent.{MemberEvent, UnreachableMember}
 import akka.cluster.singleton.{ClusterSingletonManager, ClusterSingletonManagerSettings}
 import akka.cluster.{Cluster, ClusterEvent}
 import com.oceanum.api.entities.{ClusterNodes, Coordinator}
-import com.oceanum.common.{Environment, NodeStatus, SystemInit}
-import com.oceanum.metrics.MetricsListener
+import com.oceanum.common.{NodeStatus, SystemInit}
 import com.oceanum.persistence.Catalog
 
 import scala.collection.JavaConversions.mapAsJavaMap
 import scala.concurrent.Future
-import scala.util.{Failure, Success}
+import scala.util.Failure
 
 class FallbackListener extends Actor with ActorLogging {
   private lazy val restService = SystemInit.restService
@@ -21,39 +20,41 @@ class FallbackListener extends Actor with ActorLogging {
 
   override def preStart(): Unit = {
     cluster.subscribe(self, ClusterEvent.initialStateAsEvents, classOf[UnreachableMember], classOf[MemberEvent])
-
+    fallback()
   }
 
   override def receive: Receive = {
     case _:MemberEvent|UnreachableMember =>
-      val future: Future[ClusterNodes] = restService
-        .getClusterNodes(status = Some(NodeStatus.UP))
-      future
-        .flatMap { value: ClusterNodes =>
-          coordinatorRepo
-            .find(
-              expr = "!repo.fieldIn('host', values)",
-              env = Map("values" -> value.nodes.map(_.host))
-            )
-            .map(_.filter(coord => coord.endTime.map(_.getTime).getOrElse(Long.MaxValue) > System.currentTimeMillis()))
-            .flatMap { coordinators =>
-              val seq: Seq[Future[Unit]] = coordinators
-                .map(coord => {
-                  val host = value.consistentHashSelect(coord.name).host
-                  log.info("fallback: moving coordinator: [{}] to host: [{}]", coord, host)
-                  val newCoord = coord.copy(host = host, version = coord.version + 1)
-                  val remoteRestService = RemoteRestServices.get(newCoord.host)
-                  remoteRestService.submitAndRunCoordinator(newCoord)
-                })
-              Future.sequence(seq)
-            }
-        }
-        .andThen {
-          case Failure(exception) =>
-            log.error(exception, "fallback failed: " + exception.getMessage)
-        }
+      fallback()
+  }
 
-
+  def fallback(): Unit = {
+    val future: Future[ClusterNodes] = restService
+      .getClusterNodes(status = Some(NodeStatus.UP))
+    future
+      .flatMap { value: ClusterNodes =>
+        coordinatorRepo
+          .find(
+            expr = "!repo.fieldIn('host', values)",
+            env = Map("values" -> value.nodes.map(_.host))
+          )
+          .map(_.filter(coord => coord.endTime.map(_.getTime).getOrElse(Long.MaxValue) > System.currentTimeMillis()))
+          .flatMap { coordinators =>
+            val seq: Seq[Future[Unit]] = coordinators
+              .map(coord => {
+                val host = value.consistentHashSelect(coord.name).host
+                log.info("fallback: moving coordinator: [{}] to host: [{}]", coord, host)
+                val newCoord = coord.copy(host = host, version = coord.version + 1)
+                val remoteRestService = RemoteRestServices.get(newCoord.host)
+                remoteRestService.recover(newCoord)
+              })
+            Future.sequence(seq)
+          }
+      }
+      .andThen {
+        case Failure(exception) =>
+          log.error(exception, "fallback failed: " + exception.getMessage)
+      }
   }
 }
 

@@ -65,6 +65,9 @@ object HttpServer extends Log {
         path("resume") {
           resumeCoordinator(name)   //api/coordinator/{name}/resume
         } ~
+        path("recover") {
+          recoverCoordinator(name)   //api/coordinator/{name}/resume
+        } ~
         get {
           getCoordinator(name)   //api/coordinator/{name}
         } ~
@@ -142,16 +145,8 @@ object HttpServer extends Log {
   }
 
   def runCoordinator(name: String): Route = {
-    extractRequestEntity { entity =>
-      val future: Future[Unit] = if (entity.isKnownEmpty()) {
-        restService.runCoordinator(name)
-      } else {
-        deserializeAndRun[Coordinator, Unit](entity) { coord =>
-          restService.submitAndRunCoordinator(coord.copy(name = name))
-        }
-      }
-      returnResponse(future)
-    }
+    val future: Future[Unit] = restService.runCoordinator(name)
+    returnResponse(future)
   }
 
   def checkCoordinatorStatus(name: String): Route = {
@@ -172,6 +167,16 @@ object HttpServer extends Log {
   def resumeCoordinator(name: String): Route = {
     val future: Future[Boolean] = restService.resumeCoordinator(name)
     returnResponseWithEntity(future.map(BoolValue))
+  }
+
+  def recoverCoordinator(name: String): Route = {
+    extractRequestEntity { entity =>
+      val future: Future[Unit] =
+        deserializeAndRun[Coordinator, Unit](entity) { coord =>
+          restService.recover(coord.copy(name = name))
+        }
+      returnResponse(future)
+    }
   }
 
   def submitCoordinator(name: String): Route = {

@@ -2,6 +2,8 @@ package com.oceanum.trigger
 
 import java.util.Date
 
+import com.oceanum.common.CoordStatus
+
 /**
  * 触发器接口，Coordinator运行时会启动一个触发器任务，用以计划性的执行工作流。
  *
@@ -22,7 +24,7 @@ trait Trigger {
    */
   def start(name: String, config: Map[String, String], startTime: Option[Date])(action: Date => Unit): Unit
 
-  def recover(name: String, config: Map[String, String], startTime: Option[Date], isSuspended: Boolean)(action: Date => Unit)
+  def recover(name: String, config: Map[String, String], startTime: Option[Date], state: CoordStatus)(action: Date => Unit)
 
   /**
    * 根据任务名称停止任务

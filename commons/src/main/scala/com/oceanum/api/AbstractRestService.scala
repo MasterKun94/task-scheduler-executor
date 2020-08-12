@@ -7,7 +7,7 @@ import com.oceanum.api.entities._
 import com.oceanum.common._
 import com.oceanum.exceptions.{BadRequestException, VersionOutdatedException}
 import com.oceanum.persistence.Catalog
-import com.oceanum.trigger.Triggers
+import com.oceanum.trigger.{Trigger, Triggers}
 
 import scala.collection.JavaConversions.mapAsJavaMap
 import scala.concurrent.Future
@@ -186,10 +186,14 @@ abstract class AbstractRestService extends Log with RestService {
       }
   }
 
-  override def submitAndRunCoordinator(coordinator: Coordinator): Future[Unit] = {
-    submitCoordinator(coordinator, Environment.HOST).flatMap { _ =>
-      runCoordinator(coordinator.copy(host = Environment.HOST))
-    }
+  override def recover(coordinator: Coordinator): Future[Unit] = {
+    submitCoordinator(coordinator, Environment.HOST)
+      .flatMap { _ =>
+        checkCoordinatorStatus(coordinator.name)
+      }
+      .map { s =>
+        coordinatorAction(coordinator, recoverStatus = Option(s.status))
+      }
   }
 
   override def runCoordinator(name: String): Future[Unit] = {
@@ -197,6 +201,15 @@ abstract class AbstractRestService extends Log with RestService {
   }
 
   private def runCoordinator(coordinator: Coordinator): Future[Unit] = {
+    if (isLocal(coordinator.host)) {
+      coordinatorAction(coordinator, recoverStatus = None)
+      updateCoordinatorStatus(coordinator.name, CoordStatus.RUNNING)
+    } else {
+      RemoteRestServices.get(coordinator.host).runCoordinator(coordinator.name)
+    }
+  }
+
+  def coordinatorAction(coordinator: Coordinator, recoverStatus: Option[CoordStatus]): Unit = {
     val name = coordinator.name
     val cancellable = coordinator.endTime match {
       case Some(date) =>
@@ -207,28 +220,28 @@ abstract class AbstractRestService extends Log with RestService {
       case None =>
         Cancellable.alreadyCancelled
     }
-    if (isLocal(coordinator.host)) {
-      val trigger = Triggers.getTrigger(coordinator.trigger.name)
-      trigger
-        .start(name, coordinator.trigger.config, coordinator.startTime) { date =>
-          log.info("trigger running Workflow: " + name)
-          runWorkflow(name, coordinator.fallbackStrategy, coordinator.workflowDefine.env, keepAlive = true, scheduleTime = Some(date), Some(coordinator.version))
-            .andThen {
-              case Failure(_: VersionOutdatedException) =>
-                log.warning("coordinator outdated: " + coordinator)
-                trigger.stop(name)
-                cancellable.cancel()
-              case Failure(e) =>
-                log.error(e, "trigger workflow failed: " + name)
-            }
-            .onComplete {
-              updateCoordinatorLog(coordinator, _)
-            }
-        }
+    val trigger = Triggers.getTrigger(coordinator.trigger.name)
 
-      updateCoordinatorStatus(name, CoordStatus.RUNNING)
-    } else {
-      RemoteRestServices.get(coordinator.host).runCoordinator(name)
+    val action = { date: Date =>
+      log.info("trigger running Workflow: " + name)
+      runWorkflow(name, coordinator.fallbackStrategy, coordinator.workflowDefine.env, keepAlive = true, scheduleTime = Some(date), Some(coordinator.version))
+        .andThen {
+          case Failure(_: VersionOutdatedException) =>
+            log.warning("coordinator outdated: " + coordinator)
+            trigger.stop(name)
+            cancellable.cancel()
+          case Failure(e) =>
+            log.error(e, "trigger workflow failed: " + name)
+        }
+        .onComplete {
+          updateCoordinatorLog(coordinator, _)
+        }
+    }
+    recoverStatus match {
+      case Some(status) =>
+        trigger.recover(name, coordinator.trigger.config, coordinator.startTime, status)(action)
+      case None =>
+        trigger.start(name, coordinator.trigger.config, coordinator.startTime)(action)
     }
   }
 
