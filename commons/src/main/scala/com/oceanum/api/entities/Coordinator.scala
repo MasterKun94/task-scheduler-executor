@@ -16,5 +16,5 @@ case class Coordinator(name: String,
                        workflowDefine: WorkflowDefine,
                        startTime: Option[Date] = None,
                        endTime: Option[Date] = None,
-                       host: String = Environment.HOST,
+                       host: Option[String] = None,
                        version: Int)

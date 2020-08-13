@@ -64,8 +64,7 @@ object WorkflowTest {
         "join" -> Array("python5"),
         "python5" -> Array("end")
       )
-    )
-    ,
+    ),
     env = Map("file_name" -> "python")
   )
 
@@ -90,6 +89,11 @@ object WorkflowTest {
 
   def printResult[T<:AnyRef](value: Try[T]): Unit = value match {
     case Success(value) => println(SystemInit.serialization.serialize(value, pretty = true))
+    case Failure(exception) => exception.printStackTrace()
+  }
+
+  def printValue[T](value: Try[T]): Unit = value match {
+    case Success(value) => println(value)
     case Failure(exception) => exception.printStackTrace()
   }
 }

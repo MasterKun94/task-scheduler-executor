@@ -28,6 +28,11 @@ class FallbackListener extends Actor with ActorLogging {
       fallback()
   }
 
+  override def postStop(): Unit = {
+    cluster.unsubscribe(self)
+    fallback()
+  }
+
   def fallback(): Unit = {
 
     val future: Future[ClusterNodes] = restService
@@ -45,8 +50,8 @@ class FallbackListener extends Actor with ActorLogging {
               .map(coord => {
                 val host = value.consistentHashSelect(coord.name).host
                 log.info("fallback: moving coordinator: [{}] to host: [{}]", coord, host)
-                val newCoord = coord.copy(host = host, version = coord.version + 1)
-                val remoteRestService = RemoteRestServices.get(newCoord.host)
+                val newCoord = coord.copy(host = Option(host), version = coord.version + 1)
+                val remoteRestService = RemoteRestServices.get(newCoord.host.get)
                 remoteRestService.recover(newCoord)
               })
             Future.sequence(seq)

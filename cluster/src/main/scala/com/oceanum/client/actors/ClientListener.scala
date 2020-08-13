@@ -21,8 +21,8 @@ class ClientListener(clusterClient: ActorRef) extends Actor with ActorLogging {
       log.info(s"*******ContactPointAdded: ${cp.address.toString}*******")
     case ContactPointRemoved(cp) =>
       log.info(s"*******ContactPointRemoved: ${cp.address.toString}*******")
-    case d: DeadLetter => log.warning("deadLetter: " + d)
-
+    case d: DeadLetter =>
+      log.debug("deadLetter: " + d)
   }
 }
 

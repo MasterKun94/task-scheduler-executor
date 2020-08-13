@@ -12,7 +12,7 @@ import scala.util.{Failure, Success}
  */
 object TaskTest {
 
-  def task(name: String = "name"): Task = Task.builder.python()
+  def task(name: String = "test"): Task = Task.builder.python()
     .user("root")
     .name(name)
     .topic("optimus10a131")

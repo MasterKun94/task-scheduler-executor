@@ -13,7 +13,7 @@ public class DemoExecutor implements Executor {
     @Override
     public void run(String[] args, StateListener stateListener) {
         stateListener.updateState(map);
-        for (int i = 0; i < 100; i++) {
+        for (int i = 0; i < 20; i++) {
             System.out.println(i + " hello, args: " + Arrays.asList(args));
             map.put("num", String.valueOf(i));
             stateListener.updateState(map);
