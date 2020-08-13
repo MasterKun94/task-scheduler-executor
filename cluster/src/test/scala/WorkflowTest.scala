@@ -91,4 +91,9 @@ object WorkflowTest {
     case Success(value) => println(SystemInit.serialization.serialize(value, pretty = true))
     case Failure(exception) => exception.printStackTrace()
   }
+
+  def printValue[T](value: Try[T]): Unit = value match {
+    case Success(value) => println(value)
+    case Failure(exception) => exception.printStackTrace()
+  }
 }

@@ -4,7 +4,7 @@ import com.oceanum.api.RemoteRestService
 import com.oceanum.api.entities.{Coordinator, TriggerConfig, WorkflowDefine}
 import com.oceanum.client.Task
 import com.oceanum.common.{Environment, FallbackStrategy}
-import WorkflowTest.printResult
+import WorkflowTest.{printResult, printValue}
 import Environment.NONE_BLOCKING_EXECUTION_CONTEXT
 
 import scala.io.StdIn
@@ -34,23 +34,23 @@ object CoordinatorTest {
     Environment.loadEnv(Array("--conf=cluster/src/main/resources/application.properties"))
     Environment.initSystem()
     val restService = new RemoteRestService("192.168.10.131")
-    restService.submitCoordinator(coordinator).onComplete(println)
+    restService.submitCoordinator(coordinator).onComplete(printValue)
     StdIn.readLine()
     restService.getCoordinator(coordinator.name).onComplete(printResult)
     StdIn.readLine()
-    restService.runCoordinator(coordinator.name).onComplete(println)
+    restService.runCoordinator(coordinator.name).onComplete(printValue)
     StdIn.readLine()
     restService.checkCoordinatorStatus(coordinator.name).onComplete(printResult)
     StdIn.readLine()
-    restService.suspendCoordinator(coordinator.name).onComplete(println)
+    restService.suspendCoordinator(coordinator.name).onComplete(printValue)
     StdIn.readLine()
     restService.checkCoordinatorStatus(coordinator.name).onComplete(printResult)
     StdIn.readLine()
-    restService.resumeCoordinator(coordinator.name).onComplete(println)
+    restService.resumeCoordinator(coordinator.name).onComplete(printValue)
     StdIn.readLine()
     restService.checkCoordinatorStatus(coordinator.name).onComplete(printResult)
     StdIn.readLine()
-    restService.stopCoordinator(coordinator.name).onComplete(println)
+    restService.stopCoordinator(coordinator.name).onComplete(printValue)
     StdIn.readLine()
     restService.checkCoordinatorStatus(coordinator.name).onComplete(printResult)
   }

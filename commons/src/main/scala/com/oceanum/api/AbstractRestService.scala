@@ -286,7 +286,7 @@ abstract class AbstractRestService extends Log with RestService {
   override def stopCoordinator(name: String): Future[Boolean] = {
     getCoordinator(name).flatMap { coord =>
       if (isLocal(coord.host)) {
-        stopWorkflow(coord.workflowDefine.name)
+        stopWorkflowLocally(coord.workflowDefine.name)
           .flatMap { _ =>
             if (Triggers.getTrigger(coord.trigger.name).stop(name)) {
               updateCoordinatorStatus(name, CoordStatus.STOPPED).map(_ => true)
@@ -295,7 +295,7 @@ abstract class AbstractRestService extends Log with RestService {
             }
           }
       } else {
-        RemoteRestServices.get(coord.host).suspendCoordinator(name)
+        RemoteRestServices.get(coord.host).stopCoordinator(name)
       }
     }
   }
@@ -310,7 +310,7 @@ abstract class AbstractRestService extends Log with RestService {
             Future(false)
           }
         } else {
-          RemoteRestServices.get(coord.host).suspendCoordinator(name)
+          RemoteRestServices.get(coord.host).resumeCoordinator(name)
         }
       }
   }
