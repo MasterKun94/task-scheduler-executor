@@ -23,12 +23,12 @@ object CoordinatorTest {
     trigger = TriggerConfig(
       name = "QUARTZ",
       config = Map(
-        "cron" -> "0 * * * * ? *",
-        "startTime" -> "${date.format('yyyy-MM-dd HH:mm:ss', date.now() + duration.minute(5))}"
+        "cron" -> "0 * * * * ? *"
       )
     ),
     workflowDefine = wfDefine,
-    version = 0
+    version = 0,
+    startTime = Some(new Date(System.currentTimeMillis() + 3 * 60 * 1000L))
   )
 
   def main(args: Array[String]): Unit = {

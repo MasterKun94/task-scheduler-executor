@@ -1,6 +1,6 @@
-import com.alibaba.fastjson.JSON;
 import com.oceanum.pluggable.Executor;
 import com.oceanum.pluggable.StateListener;
+import com.oceanum.util.SparkArgs;
 import org.apache.spark.launcher.SparkAppHandle;
 import org.apache.spark.launcher.SparkLauncher;
 
@@ -18,18 +18,15 @@ public class Launcher implements Executor {
 
     @Override
     public void run(String[] args, StateListener listener) throws Throwable {
-        SparkArgs sparkArgs = JSON.parseObject(args[0], SparkArgs.class);
+        SparkArgs sparkArgs = SparkArgs.fromJson(args[0]);
         SparkLauncher launcher = createLauncher(sparkArgs);
         Map<String, String> info = new ConcurrentHashMap<>();
-        String resourceManager = getResourceManagerUrl(sparkArgs);
-        info.put("resourceManager", resourceManager);
 
         SparkAppHandle handler = launcher.startApplication(new SparkAppHandle.Listener(){
                     @Override
                     public void stateChanged(SparkAppHandle handle) {
                         SparkAppHandle.State state = handle.getState();
                         info.put("appId", handle.getAppId());
-                        info.put("appUrl", resourceManager + "/" + handle.getAppId());
                         info.put("appStatus", state.toString());
                         listener.updateState(info);
                         currentState.set(state);
@@ -69,56 +66,30 @@ public class Launcher implements Executor {
 
     private SparkLauncher createLauncher(SparkArgs sparkArgs) {
         Map<String, String> env = new HashMap<>();
-        env.put("HADOOP_HOME", sparkArgs.getHadoopHome());
+        env.put("HADOOP_HOME", sparkArgs.hadoopHome());
 
         SparkLauncher launcher = new SparkLauncher(env);
+        sparkArgs.getAppName().ifPresent(launcher::setAppName);
+        launcher.setAppResource(sparkArgs.appResource());
+        launcher.setMainClass(sparkArgs.mainClass());
+        launcher.setSparkHome(sparkArgs.sparkHome());
+        launcher.setMaster(sparkArgs.master());
+        launcher.addAppArgs(sparkArgs.appArgs());
 
-        if (nonEmpty(sparkArgs.getAppName())) {
-            launcher.setAppName(sparkArgs.getAppName());
+        sparkArgs.getDeployMode().ifPresent(launcher::setDeployMode);
+
+        for (String jar : sparkArgs.jars()) {
+            launcher.addJar(jar);
         }
-
-        launcher.setAppResource(sparkArgs.getAppResource());
-        launcher.setMainClass(sparkArgs.getMainClass());
-        launcher.setSparkHome(sparkArgs.getSparkHome());
-        launcher.setMaster(sparkArgs.getMaster());
-
-        if (sparkArgs.getAppArgs() != null) {
-            launcher.addAppArgs(sparkArgs.getAppArgs());
-        }
-
-        if (nonEmpty(sparkArgs.getDeployMode())) {
-            launcher.setDeployMode(sparkArgs.getDeployMode());
+        for (String file : sparkArgs.files()) {
+            launcher.addFile(file);
         }
 
-        if (sparkArgs.getJars() != null) {
-            for (String jar : sparkArgs.getJars()) {
-                launcher.addJar(jar);
-            }
+        for (String pyFile : sparkArgs.pyFiles()) {
+            launcher.addPyFile(pyFile);
         }
-        if (sparkArgs.getFiles() != null) {
-            for (String file : sparkArgs.getFiles()) {
-                launcher.addFile(file);
-            }
-        }
-        if (sparkArgs.getPyFiles() != null) {
-            for (String pyFile : sparkArgs.getPyFiles()) {
-                launcher.addPyFile(pyFile);
-            }
-        }
-        if (sparkArgs.getConf() != null) {
-            sparkArgs.getConf().forEach(launcher::setConf);
-        }
-        if (nonEmpty(sparkArgs.getPropertiesFile())) {
-            launcher.setPropertiesFile(sparkArgs.getPropertiesFile());
-        }
+        sparkArgs.getConf().forEach(launcher::setConf);
+        sparkArgs.getPropertiesFile().ifPresent(launcher::setPropertiesFile);
         return launcher;
-    }
-
-    private String getResourceManagerUrl(SparkArgs sparkArgs) {
-        return "";
-    }
-
-    private boolean nonEmpty(String string) {
-        return string != null && !"".equals(string.trim());
     }
 }

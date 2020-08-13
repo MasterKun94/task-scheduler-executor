@@ -64,8 +64,7 @@ object WorkflowTest {
         "join" -> Array("python5"),
         "python5" -> Array("end")
       )
-    )
-    ,
+    ),
     env = Map("file_name" -> "python")
   )
 

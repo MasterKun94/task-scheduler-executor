@@ -206,7 +206,9 @@ object Environment {
             fileName.startsWith("pluggable-executor") ||
             fileName.startsWith("reactive-streams") ||
             fileName.startsWith("scala") ||
-            fileName.startsWith("ssl-config")
+            fileName.startsWith("ssl-config") ||
+            fileName.startsWith("json4s") ||
+            fileName.startsWith("jackson")
           ) &&
           fileName.endsWith(".jar")
       }

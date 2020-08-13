@@ -28,10 +28,12 @@ under the License.
 		<module>cluster</module>
 		<module>pluggable-executor</module>
 		<module>commons</module>
-        <module>elastic-repository</module>
-        <module>hdfs-file-system</module>
-        <module>spark-executor</module>
-    </modules>
+        <module>repository-elastic</module>
+        <module>file-system-hadoop</module>
+        <module>executor-spark</module>
+        <module>executor-flink</module>
+		<module>executor-mapreduce</module>
+	</modules>
 	<packaging>pom</packaging>
 
 	<name>Task Scheduler Executor</name>
