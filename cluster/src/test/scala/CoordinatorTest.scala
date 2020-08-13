@@ -27,8 +27,7 @@ object CoordinatorTest {
       )
     ),
     workflowDefine = wfDefine,
-    version = 0,
-    startTime = Some(new Date(System.currentTimeMillis() + 3 * 60 * 1000L))
+    version = 0
   )
 
   def main(args: Array[String]): Unit = {
