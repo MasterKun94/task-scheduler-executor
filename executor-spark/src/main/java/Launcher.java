@@ -43,6 +43,9 @@ public class Launcher implements Executor {
         handleRef.set(handler);
         countDown.await();
         handler.disconnect();
+        if (currentState.get() != SparkAppHandle.State.FINISHED) {
+            throw new IllegalArgumentException();
+        }
     }
 
     @Override

@@ -12,5 +12,5 @@ case class WorkflowDefine(version: Int,
                           name: String,
                           dag: Dag,
                           env: Map[String, Any],
-                          host: String = Environment.HOST,
+                          host: Option[String] = None,
                           alive: Boolean = false)

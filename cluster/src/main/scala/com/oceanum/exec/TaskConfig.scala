@@ -85,17 +85,17 @@ object TaskConfig {
       }
       val communicator = ActorSystems.SYSTEM.actorOf(Props(classOf[PluggablePrimEndpoint], execListener), UUID.randomUUID().toString)
       PluggableTaskConfig(
-        args = prop._args,
+        args = prop.args,
         plugJars = Environment.PLUGGABLE_EXECUTOR_JARS,
-        plugClass = prop._plugClass,
+        plugClass = prop.plugClass,
         mainClass = "com.oceanum.pluggable.Main",
-        files = prop._files,
-        jars = prop._jars,
+        files = prop.files,
+        jars = prop.jars,
         completeDir = taskMeta.execDir,
-        options = prop._options,
-        env = prop._env,
-        directory = prop._directory,
-        waitForTimeout = prop._waitForTimeout,
+        options = prop.options,
+        env = prop.env,
+        directory = prop.directory,
+        waitForTimeout = prop.waitForTimeout,
         communicator = communicator,
         stderrHandler = createStdErrHandler(taskMeta),
         stdoutHandler = createStdOutHandler(taskMeta)

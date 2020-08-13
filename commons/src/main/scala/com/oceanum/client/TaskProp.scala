@@ -98,14 +98,7 @@ case class UserAdd(user: String) extends ProcessTaskProp("USER_ADD") {
   override def validate(): Unit = ValidateParser.parse(user)
 }
 
-class PluggableTaskProp(args: Array[String] = Array.empty,
-                        plugClass: String,
-                        files: Array[String] = Array.empty,
-                        jars: Array[String],
-                        options: Array[String] = Array.empty,
-                        env: Map[String, String] = Map.empty,
-                        directory: String = "",
-                        waitForTimeout: String = "24h")
+abstract class PluggableTaskProp
 extends TaskProp("PLUGGABLE") {
   override def validate(): Unit = {
     args.foreach(ValidateParser.parse)
@@ -116,14 +109,14 @@ extends TaskProp("PLUGGABLE") {
     ValidateParser.parse(plugClass)
   }
 
-  def _args: Array[String] = args
-  def _plugClass: String = plugClass
-  def _files: Array[String] = files
-  def _jars: Array[String] = jars
-  def _options: Array[String] = options
-  def _env: Map[String, String] = env
-  def _directory: String = directory
-  def _waitForTimeout: String = waitForTimeout
+  def args: Array[String] = Array.empty
+  def plugClass: String
+  def files: Array[String] = Array.empty
+  def jars: Array[String] = Array.empty
+  def options: Array[String] = Array.empty
+  def env: Map[String, String] = Map.empty
+  def directory: String = ""
+  def waitForTimeout: String = "24h"
 }
 
 case class SparkArgs(appName: Option[String],
