@@ -140,7 +140,7 @@ abstract class AbstractRestService extends Log with RestService {
     val expr =
       """
         |repo.select(
-        | repo.field('name', name),
+        | repo.field('name') == name,
         | repo.sort('id', 'DESC'),
         | repo.sort('rerunId', 'DESC'),
         | repo.limit(1)
@@ -159,7 +159,7 @@ abstract class AbstractRestService extends Log with RestService {
     val expr =
       """
         |repo.select(
-        | repo.field('name', name) && repo.field('id', id),
+        | repo.field('name') == name && repo.field('id') == id,
         | repo.sort('reRunId', 'DESC'),
         | repo.limit(1)
         |)

@@ -4,355 +4,124 @@ import java.util.Date
 import java.util.concurrent.TimeUnit
 
 import com.googlecode.aviator.lexer.token.OperatorType
-import com.googlecode.aviator.runtime.`type`.{AviatorBoolean, AviatorDouble, AviatorObject, AviatorRuntimeJavaType, AviatorType}
-import com.googlecode.aviator.runtime.function.{AbstractFunction, FunctionUtils}
+import com.googlecode.aviator.runtime.`type`.{AviatorFunction, AviatorObject, AviatorRuntimeJavaType}
+import com.googlecode.aviator.runtime.function.AbstractFunction
 import com.oceanum.annotation.IOpFunction
 
 import scala.concurrent.duration.Duration
 
-/**
- * @author chenmingkun
- * @date 2020/7/19
- */
-@IOpFunction(OperatorType.ADD)
-class OpAddFunction extends AbstractFunction {
-  override def getName: String = OperatorType.ADD.getToken
+trait OpFunction {
+  def getOpType: OperatorType
+  def call1(env: JavaMap[String, AnyRef]): PartialFunction[Any, AviatorObject] = PartialFunction.empty
+  def call2(env: JavaMap[String, AnyRef]): PartialFunction[(Any, Any), AviatorObject] = PartialFunction.empty
 
-  override def call(env: JavaMap[String, AnyRef], arg1: AviatorObject, arg2: AviatorObject): AviatorObject = {
-    if (arg1.getAviatorType == AviatorType.JavaType) {
-      FunctionUtils.getJavaObject(arg1, env) match {
-        case date: Date =>
-          if (arg2.getAviatorType == AviatorType.JavaType) {
-            FunctionUtils.getJavaObject(arg2, env) match {
-              case duration: Duration =>
-                return AviatorRuntimeJavaType.valueOf(new Date(date.getTime + duration.toMillis))
-              case _ =>
-            }
-          }
-        case duration: Duration =>
-          if (arg2.getAviatorType == AviatorType.JavaType) {
-            FunctionUtils.getJavaObject(arg2, env) match {
-              case dur: Duration =>
-                return AviatorRuntimeJavaType.valueOf(dur + duration)
-              case date: Date =>
-                return AviatorRuntimeJavaType.valueOf(new Date(date.getTime + duration.toMillis))
-              case _ =>
-            }
-          }
-        case _ =>
+  def merge(opFunction: OpFunction): OpFunction = {
+    val func1: JavaMap[String, AnyRef] => PartialFunction[Any, AviatorObject] = this.call1
+    val func2: JavaMap[String, AnyRef] => PartialFunction[(Any, Any), AviatorObject] = this.call2
+    if (getOpType == opFunction.getOpType) {
+      new OpFunction {
+        override def getOpType: OperatorType = opFunction.getOpType
+        override def call1(env: JavaMap[String, AnyRef]): PartialFunction[Any, AviatorObject] = func1(env).orElse(opFunction.call1(env))
+        override def call2(env: JavaMap[String, AnyRef]): PartialFunction[(Any, Any), AviatorObject] = func2(env).orElse(opFunction.call2(env))
       }
+    } else {
+      throw new IllegalArgumentException("wrong op type")
     }
-    arg1.add(arg2, env)
+  }
+
+  def toAviator: AviatorFunction = new AbstractFunction {
+    override def getName: String = getOpType.token
+    override def call(env: JavaMap[String, AnyRef], arg1: AviatorObject): AviatorObject = {
+      val obj = arg1.getValue(env)
+      call1(env)
+        .orElse[Any, AviatorObject] {
+          case _ => getOpType.eval(Array(arg1), env)
+        }
+        .apply(obj)
+    }
+    override def call(env: JavaMap[String, AnyRef], arg1: AviatorObject, arg2: AviatorObject): AviatorObject = {
+      val obj1 = arg1.getValue(env)
+      val obj2 = arg2.getValue(env)
+      call2(env)
+        .orElse[(Any, Any), AviatorObject] {
+          case (_, _) => getOpType.eval(Array(arg1, arg2), env)
+        }
+        .apply(obj1, obj2)
+    }
   }
 }
 
-@IOpFunction(OperatorType.SUB)
-class OpSubFunction extends AbstractFunction {
-  override def getName: String = OperatorType.SUB.getToken
-
-  override def call(env: JavaMap[String, AnyRef], arg1: AviatorObject, arg2: AviatorObject): AviatorObject = {
-    if (arg1.getAviatorType == AviatorType.JavaType) {
-      FunctionUtils.getJavaObject(arg1, env) match {
-        case date: Date =>
-          if (arg2.getAviatorType == AviatorType.JavaType) {
-            FunctionUtils.getJavaObject(arg2, env) match {
-              case duration: Duration =>
-                return AviatorRuntimeJavaType.valueOf(new Date(date.getTime - duration.toMillis))
-              case date0: Date =>
-                return AviatorRuntimeJavaType.valueOf(Duration(date.getTime - date0.getTime, TimeUnit.MILLISECONDS))
-              case _ =>
-            }
-          }
-        case duration: Duration =>
-          if (arg2.getAviatorType == AviatorType.JavaType) {
-            FunctionUtils.getJavaObject(arg2, env) match {
-              case dur: Duration =>
-                return AviatorRuntimeJavaType.valueOf(dur - duration)
-              case _ =>
-            }
-          }
-        case _ =>
-      }
-    }
-    arg1.sub(arg2, env)
+object OpFunction {
+  def empty(operatorType: OperatorType): OpFunction = new OpFunction {
+    override def getOpType: OperatorType = operatorType
   }
 }
 
-@IOpFunction(OperatorType.NEG)
-class OpNegFunction extends AbstractFunction {
-  override def getName: String = OperatorType.NEG.getToken
+@IOpFunction
+class OpAdd extends OpFunction {
+  override def getOpType: OperatorType = OperatorType.ADD
 
-  override def call(env: JavaMap[String, AnyRef], arg1: AviatorObject): AviatorObject = {
-    if (arg1.getAviatorType == AviatorType.JavaType) {
-      FunctionUtils.getJavaObject(arg1, env) match {
-        case duration: Duration =>
-          return AviatorRuntimeJavaType.valueOf(duration.neg())
-        case _ =>
-      }
-    }
-    arg1.neg( env)
-
+  override def call2(env: JavaMap[String, AnyRef]): PartialFunction[(Any, Any), AviatorObject] = {
+    case (left: Date, right: Duration) => AviatorRuntimeJavaType.valueOf(new Date(left.getTime + right.toMillis))
+    case (left: Duration, right: Date) => AviatorRuntimeJavaType.valueOf(new Date(left.toMillis + right.getTime))
+    case (left: Duration, right: Duration) => AviatorRuntimeJavaType.valueOf(left + right)
   }
 }
 
-@IOpFunction(OperatorType.DIV)
-class OpDivFunction extends AbstractFunction {
-  override def getName: String = OperatorType.DIV.getToken
+@IOpFunction
+class OpSub extends OpFunction {
+  override def getOpType: OperatorType = OperatorType.SUB
 
-  override def call(env: JavaMap[String, AnyRef], arg1: AviatorObject, arg2: AviatorObject): AviatorObject = {
-    if (arg1.getAviatorType == AviatorType.JavaType) {
-      FunctionUtils.getJavaObject(arg1, env) match {
-        case left: Duration =>
-          arg2.getAviatorType match {
-            case AviatorType.JavaType =>
-              FunctionUtils.getJavaObject(arg2, env) match {
-                case right: Duration =>
-                  return AviatorDouble.valueOf(left / right)
-                case _ =>
-              }
-            case AviatorType.Double | AviatorType.Long | AviatorType.Decimal | AviatorType.BigInt =>
-              return AviatorRuntimeJavaType.valueOf(left / FunctionUtils.getNumberValue(arg2, env).doubleValue())
-            case _ =>
-          }
-        case _ =>
-      }
-    }
-    arg1.neg( env)
+  override def call2(env: JavaMap[String, AnyRef]): PartialFunction[(Any, Any), AviatorObject] = {
+    case (left: Date, right: Duration) => AviatorRuntimeJavaType.valueOf(new Date(left.getTime - right.toMillis))
+    case (left: Date, right: Date) => AviatorRuntimeJavaType.valueOf(Duration(left.getTime - right.getTime, TimeUnit.MILLISECONDS))
+    case (left: Duration, right: Duration) => AviatorRuntimeJavaType.valueOf(left - right)
   }
 }
 
-@IOpFunction(OperatorType.MULT)
-class OpMulFunction extends AbstractFunction {
-  override def getName: String = OperatorType.MULT.getToken
+@IOpFunction
+class OpNeg extends OpFunction {
+  override def getOpType: OperatorType = OperatorType.NEG
 
-  override def call(env: JavaMap[String, AnyRef], arg1: AviatorObject, arg2: AviatorObject): AviatorObject = {
-    if (arg1.getAviatorType == AviatorType.JavaType) {
-      FunctionUtils.getJavaObject(arg1, env) match {
-        case left: Duration =>
-          arg2.getAviatorType match {
-            case AviatorType.Double | AviatorType.Long | AviatorType.Decimal | AviatorType.BigInt =>
-              return AviatorRuntimeJavaType.valueOf(left * FunctionUtils.getNumberValue(arg2, env).doubleValue())
-            case _ =>
-          }
-        case _ =>
-      }
-    }
-    arg1.neg( env)
+  override def call1(env: JavaMap[String, AnyRef]): PartialFunction[Any, AviatorObject] = {
+    case d: Duration => AviatorRuntimeJavaType.valueOf(d.neg())
   }
 }
 
-@IOpFunction(OperatorType.GT)
-class OpGtFunction extends AbstractFunction {
-  override def getName: String = OperatorType.GT.getToken
+@IOpFunction
+class OpDiv extends OpFunction {
+  override def getOpType: OperatorType = OperatorType.DIV
 
-  override def call(env: JavaMap[String, AnyRef], arg1: AviatorObject, arg2: AviatorObject): AviatorObject = {
-    if (arg1.getAviatorType == AviatorType.JavaType) {
-      FunctionUtils.getJavaObject(arg1, env) match {
-        case left: Duration =>
-          arg2.getAviatorType match {
-            case AviatorType.JavaType =>
-              FunctionUtils.getJavaObject(arg2, env) match {
-                case right: Duration =>
-                  return AviatorRuntimeJavaType.valueOf(left > right)
-                case _ =>
-              }
-            case _ =>
-          }
-        case left: Date =>
-          arg2.getAviatorType match {
-            case AviatorType.JavaType =>
-              FunctionUtils.getJavaObject(arg2, env) match {
-                case right: Date =>
-                  return AviatorRuntimeJavaType.valueOf(left.getTime > right.getTime)
-                case _ =>
-              }
-            case AviatorType.Long =>
-              return AviatorRuntimeJavaType.valueOf(left.getTime > FunctionUtils.getNumberValue(arg2, env).longValue())
-            case _ =>
-          }
-        case _ =>
-      }
-    }
-    AviatorBoolean.valueOf(arg1.compare(arg2, env) > 0)
+  override def call2(env: JavaMap[String, AnyRef]): PartialFunction[(Any, Any), AviatorObject] = {
+    case (left: Duration, right: Duration) => AviatorRuntimeJavaType.valueOf(left / right)
+    case (left: Duration, right: Double) => AviatorRuntimeJavaType.valueOf(left / right)
+    case (left: Duration, right: Float) => AviatorRuntimeJavaType.valueOf(left / right)
+    case (left: Duration, right: Int) => AviatorRuntimeJavaType.valueOf(left / right)
+    case (left: Duration, right: Long) => AviatorRuntimeJavaType.valueOf(left / right)
+    case (left: Duration, right: Short) => AviatorRuntimeJavaType.valueOf(left / right)
+    case (left: Duration, right: Number) => AviatorRuntimeJavaType.valueOf(left / right.doubleValue())
   }
 }
 
-@IOpFunction(OperatorType.GE)
-class OpGeFunction extends AbstractFunction {
-  override def getName: String = OperatorType.GE.getToken
+@IOpFunction
+class OpMulti extends OpFunction {
+  override def getOpType: OperatorType = OperatorType.MULT
 
-  override def call(env: JavaMap[String, AnyRef], arg1: AviatorObject, arg2: AviatorObject): AviatorObject = {
-    if (arg1.getAviatorType == AviatorType.JavaType) {
-      FunctionUtils.getJavaObject(arg1, env) match {
-        case left: Duration =>
-          arg2.getAviatorType match {
-            case AviatorType.JavaType =>
-              FunctionUtils.getJavaObject(arg2, env) match {
-                case right: Duration =>
-                  return AviatorRuntimeJavaType.valueOf(left >= right)
-                case _ =>
-              }
-            case _ =>
-          }
-        case left: Date =>
-          arg2.getAviatorType match {
-            case AviatorType.JavaType =>
-              FunctionUtils.getJavaObject(arg2, env) match {
-                case right: Date =>
-                  return AviatorRuntimeJavaType.valueOf(left.getTime >= right.getTime)
-                case _ =>
-              }
-            case AviatorType.Long =>
-              return AviatorRuntimeJavaType.valueOf(left.getTime >= FunctionUtils.getNumberValue(arg2, env).longValue())
-            case _ =>
-          }
-        case _ =>
-      }
-    }
-    AviatorBoolean.valueOf(arg1.compare(arg2, env) >= 0)
+  override def call2(env: JavaMap[String, AnyRef]): PartialFunction[(Any, Any), AviatorObject] = {
+    case (left: Duration, right: Double) => AviatorRuntimeJavaType.valueOf(left * right)
+    case (left: Duration, right: Float) => AviatorRuntimeJavaType.valueOf(left * right)
+    case (left: Duration, right: Int) => AviatorRuntimeJavaType.valueOf(left * right)
+    case (left: Duration, right: Long) => AviatorRuntimeJavaType.valueOf(left * right)
+    case (left: Duration, right: Short) => AviatorRuntimeJavaType.valueOf(left * right)
+    case (left: Duration, right: Number) => AviatorRuntimeJavaType.valueOf(left * right.doubleValue())
   }
 }
 
-@IOpFunction(OperatorType.LT)
-class OpLtFunction extends AbstractFunction {
-  override def getName: String = OperatorType.LT.getToken
+@IOpFunction
+class OpGt extends OpFunction {
+  override def getOpType: OperatorType = OperatorType.GT
 
-  override def call(env: JavaMap[String, AnyRef], arg1: AviatorObject, arg2: AviatorObject): AviatorObject = {
-    if (arg1.getAviatorType == AviatorType.JavaType) {
-      FunctionUtils.getJavaObject(arg1, env) match {
-        case left: Duration =>
-          arg2.getAviatorType match {
-            case AviatorType.JavaType =>
-              FunctionUtils.getJavaObject(arg2, env) match {
-                case right: Duration =>
-                  return AviatorRuntimeJavaType.valueOf(left < right)
-                case _ =>
-              }
-            case _ =>
-          }
-        case left: Date =>
-          arg2.getAviatorType match {
-            case AviatorType.JavaType =>
-              FunctionUtils.getJavaObject(arg2, env) match {
-                case right: Date =>
-                  return AviatorRuntimeJavaType.valueOf(left.getTime < right.getTime)
-                case _ =>
-              }
-            case AviatorType.Long =>
-              return AviatorRuntimeJavaType.valueOf(left.getTime < FunctionUtils.getNumberValue(arg2, env).longValue())
-            case _ =>
-          }
-        case _ =>
-      }
-    }
-    AviatorBoolean.valueOf(arg1.compare(arg2, env) < 0)
-  }
-}
-
-@IOpFunction(OperatorType.LE)
-class OpLeFunction extends AbstractFunction {
-  override def getName: String = OperatorType.LE.getToken
-
-  override def call(env: JavaMap[String, AnyRef], arg1: AviatorObject, arg2: AviatorObject): AviatorObject = {
-    if (arg1.getAviatorType == AviatorType.JavaType) {
-      FunctionUtils.getJavaObject(arg1, env) match {
-        case left: Duration =>
-          arg2.getAviatorType match {
-            case AviatorType.JavaType =>
-              FunctionUtils.getJavaObject(arg2, env) match {
-                case right: Duration =>
-                  return AviatorRuntimeJavaType.valueOf(left <= right)
-                case _ =>
-              }
-            case _ =>
-          }
-        case left: Date =>
-          arg2.getAviatorType match {
-            case AviatorType.JavaType =>
-              FunctionUtils.getJavaObject(arg2, env) match {
-                case right: Date =>
-                  return AviatorRuntimeJavaType.valueOf(left.getTime <= right.getTime)
-                case _ =>
-              }
-            case AviatorType.Long =>
-              return AviatorRuntimeJavaType.valueOf(left.getTime <= FunctionUtils.getNumberValue(arg2, env).longValue())
-            case _ =>
-          }
-        case _ =>
-      }
-    }
-    AviatorBoolean.valueOf(arg1.compare(arg2, env) <= 0)
-  }
-}
-
-@IOpFunction(OperatorType.EQ)
-class OpEqFunction extends AbstractFunction {
-  override def getName: String = OperatorType.EQ.getToken
-
-  override def call(env: JavaMap[String, AnyRef], arg1: AviatorObject, arg2: AviatorObject): AviatorObject = {
-    if (arg1.getAviatorType == AviatorType.JavaType) {
-      FunctionUtils.getJavaObject(arg1, env) match {
-        case left: Duration =>
-          arg2.getAviatorType match {
-            case AviatorType.JavaType =>
-              FunctionUtils.getJavaObject(arg2, env) match {
-                case right: Duration =>
-                  return AviatorRuntimeJavaType.valueOf(left == right)
-                case _ =>
-              }
-            case _ =>
-          }
-        case left: Date =>
-          arg2.getAviatorType match {
-            case AviatorType.JavaType =>
-              FunctionUtils.getJavaObject(arg2, env) match {
-                case right: Date =>
-                  return AviatorRuntimeJavaType.valueOf(left.getTime == right.getTime)
-                case _ =>
-              }
-            case AviatorType.Long =>
-              return AviatorRuntimeJavaType.valueOf(left.getTime == FunctionUtils.getNumberValue(arg2, env).longValue())
-            case _ =>
-          }
-        case _ =>
-      }
-    }
-    AviatorBoolean.valueOf(arg1.compare(arg2, env) == 0)
-  }
-}
-
-@IOpFunction(OperatorType.NEQ)
-class OpNEqFunction extends AbstractFunction {
-  override def getName: String = OperatorType.NEQ.getToken
-
-  override def call(env: JavaMap[String, AnyRef], arg1: AviatorObject, arg2: AviatorObject): AviatorObject = {
-    if (arg1.getAviatorType == AviatorType.JavaType) {
-      FunctionUtils.getJavaObject(arg1, env) match {
-        case left: Duration =>
-          arg2.getAviatorType match {
-            case AviatorType.JavaType =>
-              FunctionUtils.getJavaObject(arg2, env) match {
-                case right: Duration =>
-                  return AviatorRuntimeJavaType.valueOf(left != right)
-                case _ =>
-              }
-            case _ =>
-          }
-        case left: Date =>
-          arg2.getAviatorType match {
-            case AviatorType.JavaType =>
-              FunctionUtils.getJavaObject(arg2, env) match {
-                case right: Date =>
-                  return AviatorRuntimeJavaType.valueOf(left.getTime != right.getTime)
-                case _ =>
-              }
-            case AviatorType.Long =>
-              return AviatorRuntimeJavaType.valueOf(left.getTime != FunctionUtils.getNumberValue(arg2, env).longValue())
-            case _ =>
-          }
-        case _ =>
-      }
-    }
-    AviatorBoolean.valueOf(arg1.compare(arg2, env) != 0)
+  override def call2(env: JavaMap[String, AnyRef]): PartialFunction[(Any, Any), AviatorObject] = {
+    case (left: Duration, right: Duration) => AviatorRuntimeJavaType.valueOf(left > right)
   }
 }

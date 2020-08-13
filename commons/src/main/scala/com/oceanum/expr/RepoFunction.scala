@@ -3,11 +3,22 @@ package com.oceanum.expr
 import java.util
 
 import com.googlecode.aviator.lexer.token.OperatorType
-import com.googlecode.aviator.runtime.`type`.AviatorObject
+import com.googlecode.aviator.runtime.`type`.{AviatorObject, AviatorRuntimeJavaType}
 import com.googlecode.aviator.runtime.function.{AbstractFunction, FunctionUtils}
+import com.oceanum.annotation.IFunction
 
-abstract class RepoFieldFunction extends AbstractFunction {
+@IFunction
+class RepoFieldFunction extends AbstractFunction {
   override def getName: String = "repo.field"
+
+  override def call(env: JavaMap[String, AnyRef], field: AviatorObject): AviatorObject = {
+    val fieldString = FunctionUtils.getStringValue(field, env)
+    AviatorRuntimeJavaType.valueOf(RepoField(fieldString))
+  }
+}
+
+abstract class RepoTermFunction extends AbstractFunction {
+  override def getName: String = "repo.term"
 
   override def call(env: JavaMap[String, AnyRef], field: AviatorObject, value: AviatorObject): AviatorObject = {
     val fieldString = FunctionUtils.getStringValue(field, env)
@@ -18,9 +29,9 @@ abstract class RepoFieldFunction extends AbstractFunction {
   def call(field: String, value: Object): AviatorObject
 }
 
-abstract class RepoFieldInFunction extends AbstractFunction {
+abstract class RepoTermsFunction extends AbstractFunction {
   import scala.collection.JavaConversions._
-  override def getName: String = "repo.fieldIn"
+  override def getName: String = "repo.terms"
 
   override def call(env: JavaMap[String, AnyRef], field: AviatorObject, value: AviatorObject): AviatorObject = {
     val fieldString = FunctionUtils.getStringValue(field, env)
@@ -32,6 +43,17 @@ abstract class RepoFieldInFunction extends AbstractFunction {
   }
 
   def call(field: String, value: java.util.Collection[_]): AviatorObject
+}
+
+abstract class RepoFieldExistsFunction extends AbstractFunction {
+  override def getName: String = "repo.exists"
+
+  override def call(env: JavaMap[String, AnyRef], field: AviatorObject): AviatorObject = {
+    val fieldString = FunctionUtils.getStringValue(field, env)
+    call(fieldString)
+  }
+
+  def call(field: String): AviatorObject
 }
 
 abstract class RepoSortFunction extends AbstractFunction {
@@ -122,14 +144,4 @@ abstract class RepoSelectFunction extends AbstractFunction {
   def call(elem: AnyRef, elem2: AnyRef, elem3: AnyRef, elem4: AnyRef, elem5: AnyRef, elem6: AnyRef, elem7: AnyRef): AviatorObject
 }
 
-abstract class RepoAndFunction extends AbstractFunction {
-  override def getName: String = OperatorType.AND.token
-}
-
-abstract class RepoOrFunction extends AbstractFunction {
-  override def getName: String = OperatorType.OR.token
-}
-
-abstract class RepoNotFunction extends AbstractFunction {
-  override def getName: String = OperatorType.NOT.token
-}
+case class RepoField(field: String)

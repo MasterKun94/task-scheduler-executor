@@ -2,11 +2,12 @@ package com.oceanum.common
 
 import java.util.concurrent.atomic.AtomicBoolean
 
+import com.googlecode.aviator.lexer.token.OperatorType
 import com.googlecode.aviator.runtime.`type`.AviatorFunction
 import com.oceanum.annotation.{IOpFunction, IRepositoryFactory, IRestService, ISerialization, ISerializationMessage, IStdHandlerFactory, InjectType, Injection}
 import com.oceanum.api.RestService
 import com.oceanum.exec.StdHandlerFactory
-import com.oceanum.expr.Evaluator
+import com.oceanum.expr.{Evaluator, OpFunction}
 import com.oceanum.file.FileSystem
 import com.oceanum.persistence.{Catalog, Repository, RepositoryFactory}
 import com.oceanum.serialize.{Serialization, WrappedObject}
@@ -27,6 +28,7 @@ object SystemInit {
   private val stdHandlerFactories: mutable.Map[() => Any, Int] = mutable.Map()
   private val repositoryFactories: mutable.Map[() => Any, Int] = mutable.Map()
   private val restServices: mutable.Map[() => Any, Int] = mutable.Map()
+  private val opFunctions: mutable.Map[OperatorType, OpFunction] = mutable.Map()
 
   lazy val serialization: Serialization[_] = serializations.maxBy(_._2)._1().asInstanceOf[Serialization[_<:WrappedObject]]
   lazy val stdHandlerFactory: StdHandlerFactory = stdHandlerFactories.maxBy(_._2)._1().asInstanceOf[StdHandlerFactory]
@@ -54,8 +56,11 @@ object SystemInit {
           Triggers.addTrigger(func().asInstanceOf[Trigger])
 
         case InjectType.OPERATOR_FUNCTION =>
-          val operatorFunction = clazz.getAnnotation(classOf[IOpFunction])
-          Evaluator.addOpFunction(operatorFunction.value(), func().asInstanceOf[AviatorFunction])
+//          val operatorFunction = clazz.getAnnotation(classOf[IOpFunction])
+          val opFunc = func().asInstanceOf[OpFunction]
+          val opType = opFunc.getOpType
+          opFunctions += (opType -> opFunctions.getOrElse(opType, OpFunction.empty(opType)).merge(opFunc))
+//          Evaluator.addOpFunction(operatorFunction.value(), func().asInstanceOf[AviatorFunction])
 
         case InjectType.REPOSITORY_FACTORY =>
           val i = clazz.getAnnotation(classOf[IRepositoryFactory])
@@ -85,6 +90,7 @@ object SystemInit {
       }
     }
     lazyInitSet.foreach(_.apply())
+    opFunctions.foreach(kv => Evaluator.addOpFunction(kv._1, kv._2.toAviator))
   }
 
   private def initAnnotatedField(obj: Any): Unit = {
@@ -105,8 +111,9 @@ object SystemInit {
           Evaluator.addFunction(fieldObj.asInstanceOf[AviatorFunction])
 
         case InjectType.OPERATOR_FUNCTION =>
-          val operatorFunction = field.getAnnotation(classOf[IOpFunction])
-          Evaluator.addOpFunction(operatorFunction.value(), fieldObj.asInstanceOf[AviatorFunction])
+          val opFunc = field.asInstanceOf[OpFunction]
+          val opType = opFunc.getOpType
+          opFunctions += (opType -> opFunctions.getOrElse(opType, OpFunction.empty(opType)).merge(opFunc))
 
         case InjectType.REPOSITORY_FACTORY =>
           val IRepositoryFactory = field.getAnnotation(classOf[IRepositoryFactory])
@@ -147,8 +154,9 @@ object SystemInit {
           Evaluator.addFunction(methodObj().asInstanceOf[AviatorFunction])
 
         case InjectType.OPERATOR_FUNCTION =>
-          val operatorFunction = method.getAnnotation(classOf[IOpFunction])
-          Evaluator.addOpFunction(operatorFunction.value(), methodObj().asInstanceOf[AviatorFunction])
+          val opFunc = methodObj().asInstanceOf[OpFunction]
+          val opType = opFunc.getOpType
+          opFunctions += (opType -> opFunctions.getOrElse(opType, OpFunction.empty(opType)).merge(opFunc))
 
         case InjectType.REPOSITORY_FACTORY =>
           val IRepositoryFactory = method.getAnnotation(classOf[IRepositoryFactory])

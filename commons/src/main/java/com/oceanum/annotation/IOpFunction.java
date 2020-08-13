@@ -14,6 +14,4 @@ import java.lang.annotation.Target;
 @Target({ElementType.METHOD, ElementType.TYPE, ElementType.FIELD})
 @Retention(RetentionPolicy.RUNTIME)
 @Injection(InjectType.OPERATOR_FUNCTION)
-public @interface IOpFunction {
-    OperatorType value();
-}
+public @interface IOpFunction { }
