@@ -101,36 +101,45 @@ case class UserAdd(user: String) extends ProcessTaskProp("USER_ADD") {
 abstract class PluggableTaskProp
 extends TaskProp("PLUGGABLE") {
   override def validate(): Unit = {
-    args.foreach(ValidateParser.parse)
-    files.foreach(ValidateParser.parse)
-    jars.foreach(ValidateParser.parse)
-    options.foreach(ValidateParser.parse)
-    env.mapValues(ValidateParser.parse)
-    ValidateParser.parse(plugClass)
+    _args.foreach(ValidateParser.parse)
+    _files.foreach(ValidateParser.parse)
+    _jars.foreach(ValidateParser.parse)
+    _options.foreach(ValidateParser.parse)
+    _env.mapValues(ValidateParser.parse)
+    ValidateParser.parse(_plugClass)
   }
 
-  def args: Array[String] = Array.empty
-  def plugClass: String
-  def files: Array[String] = Array.empty
-  def jars: Array[String] = Array.empty
-  def options: Array[String] = Array.empty
-  def env: Map[String, String] = Map.empty
-  def directory: String = ""
-  def waitForTimeout: String = "24h"
+  def _args: Array[String] = Array.empty
+  def _plugClass: String
+  def _files: Array[String] = Array.empty
+  def _jars: Array[String] = Array.empty
+  def _options: Array[String] = Array.empty
+  def _env: Map[String, String] = Map.empty
+  def _directory: String = ""
+  def _waitForTimeout: String = "24h"
 }
 
 case class SparkArgs(appName: Option[String],
                      appResource: String,
                      mainClass: String,
                      appArgs: Array[String] = Array.empty,
-                     sparkHome: String = "",
-                     hadoopHome: String = "",
                      master: String = "local[2]",
                      deployMode: Option[String] = None,
                      conf: Map[String, String] = Map.empty,
                      jars: Array[String] = Array.empty,
                      files: Array[String] = Array.empty,
                      pyFiles: Array[String] = Array.empty,
-                     propertiesFile: Option[String] = None)
-
-case class SparkTaskProp()
+                     propertiesFile: Option[String] = None,
+                     options: Array[String] = Array.empty,
+                     env: Map[String, String] = Map.empty,
+                     directory: String = "",
+                     waitForTimeout: String = "24h") extends PluggableTaskProp {
+  override def _args: Array[String] = ???
+  override def _plugClass: String = ???
+  override def _files: Array[String] = ???
+  override def _jars: Array[String] = ???
+  override def _options: Array[String] = options
+  override def _env: Map[String, String] = env
+  override def _directory: String = directory
+  override def _waitForTimeout: String = waitForTimeout
+}
