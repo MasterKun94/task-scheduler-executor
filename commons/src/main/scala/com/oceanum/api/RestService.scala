@@ -46,9 +46,11 @@ trait RestService {
 
   def resumeCoordinator(name: String): Future[Boolean]
 
-  def getClusterNodes(status: Option[NodeStatus] = None, host: Option[String] = None, role: Option[String] = None): Future[ClusterNodes]
+  def clusterNodes(status: Option[NodeStatus] = None, host: Option[String] = None, role: Option[String] = None): Future[ClusterNodes]
 
-  def getClusterTaskInfos(host: Option[String]): Future[Elements[NodeTaskInfo]]
+  def clusterTaskInfos(host: Option[String]): Future[Elements[NodeTaskInfo]]
 
-  def getNodeTaskInfo(host: String): Future[NodeTaskInfo]
+  def clusterRunningWorkflows(host: Option[String]): Future[Elements[RunWorkflowInfo]]
+
+  def nodeTaskInfo(host: String): Future[NodeTaskInfo]
 }

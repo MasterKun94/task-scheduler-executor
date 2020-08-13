@@ -16,7 +16,7 @@ class ConsistentHashRemoteRestService(seed: String) extends RestService {
   updateRef(seed)
 
   private def updateRef(host: String): Future[ClusterNodes] = {
-    remoteRestServices.get(host).getClusterNodes(status = Some(NodeStatus.UP))
+    remoteRestServices.get(host).clusterNodes(status = Some(NodeStatus.UP))
       .andThen {
         case Success(value) => hostsRef.set(value)
         case Failure(exception) => exception.printStackTrace()
@@ -105,15 +105,15 @@ class ConsistentHashRemoteRestService(seed: String) extends RestService {
     execute(name)(_.resumeCoordinator(name))
   }
 
-  override def getClusterNodes(status: Option[NodeStatus], host: Option[String], role: Option[String]): Future[ClusterNodes] = {
-    execute(_.getClusterNodes(status, host, role))
+  override def clusterNodes(status: Option[NodeStatus], host: Option[String], role: Option[String]): Future[ClusterNodes] = {
+    execute(_.clusterNodes(status, host, role))
   }
 
-  override def getClusterTaskInfos(host: Option[String]): Future[Elements[NodeTaskInfo]] = {
-    execute(_.getClusterTaskInfos(host))
+  override def clusterTaskInfos(host: Option[String]): Future[Elements[NodeTaskInfo]] = {
+    execute(_.clusterTaskInfos(host))
   }
 
-  override def getNodeTaskInfo(host: String): Future[NodeTaskInfo] = {
-    execute(_.getNodeTaskInfo(host))
+  override def nodeTaskInfo(host: String): Future[NodeTaskInfo] = {
+    execute(_.nodeTaskInfo(host))
   }
 }

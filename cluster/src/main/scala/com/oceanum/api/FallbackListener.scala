@@ -1,7 +1,7 @@
 package com.oceanum.api
 
 import akka.actor.{Actor, ActorLogging, ActorRef, ActorSystem, PoisonPill, Props}
-import akka.cluster.ClusterEvent.{MemberDowned, MemberEvent, MemberLeft, MemberRemoved, UnreachableMember}
+import akka.cluster.ClusterEvent.{MemberDowned, MemberEvent, MemberExited, MemberLeft, MemberRemoved, UnreachableMember}
 import akka.cluster.singleton.{ClusterSingletonManager, ClusterSingletonManagerSettings}
 import akka.cluster.{Cluster, ClusterEvent}
 import com.oceanum.api.entities.{ClusterNodes, Coordinator}
@@ -24,8 +24,14 @@ class FallbackListener extends Actor with ActorLogging {
   }
 
   override def receive: Receive = {
-    case _:MemberLeft | MemberDowned | MemberRemoved =>
-      fallback()
+    case m:MemberLeft =>
+      fallback(m.member.uniqueAddress.address.host.getOrElse(""))
+    case m:MemberDowned =>
+      fallback(m.member.uniqueAddress.address.host.getOrElse(""))
+    case m:MemberExited =>
+      fallback(m.member.uniqueAddress.address.host.getOrElse(""))
+    case m:MemberRemoved =>
+      fallback(m.member.uniqueAddress.address.host.getOrElse(""))
   }
 
   override def postStop(): Unit = {
@@ -33,16 +39,16 @@ class FallbackListener extends Actor with ActorLogging {
     fallback()
   }
 
-  def fallback(): Unit = {
+  def fallback(discard: String = ""): Unit = {
 
     val future: Future[ClusterNodes] = restService
-      .getClusterNodes(status = Some(NodeStatus.UP))
+      .clusterNodes(status = Some(NodeStatus.UP))
     future
       .flatMap { value: ClusterNodes =>
         coordinatorRepo
           .find(
             expr = "(!repo.terms('host', values)) && (!repo.exists('endTime') || (repo.field('endTime') > date.now()))",
-            env = Map("values" -> value.nodes.map(_.host))
+            env = Map("values" -> value.nodes.map(_.host).filterNot(_.equals(discard)))
           )
           .map(_.filter(coord => coord.endTime.map(_.getTime).getOrElse(Long.MaxValue) > System.currentTimeMillis()))
           .flatMap { coordinators =>

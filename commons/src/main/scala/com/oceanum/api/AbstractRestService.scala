@@ -38,7 +38,7 @@ abstract class AbstractRestService extends Log with RestService {
   }
 
   private def selectHost(key: String): Future[String] = {
-    getClusterNodes(status = Option(NodeStatus.UP), None, None).map(_.consistentHashSelect(key).host)
+    clusterNodes(status = Option(NodeStatus.UP), None, None).map(_.consistentHashSelect(key).host)
   }
 
   private def submitWorkflow(workflowDefine: WorkflowDefine, host: String): Future[Unit] = {

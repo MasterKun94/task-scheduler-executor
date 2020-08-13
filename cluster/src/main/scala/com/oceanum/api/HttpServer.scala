@@ -195,21 +195,21 @@ object HttpServer extends Log {
 
   def clusterNodes(): Route = {
     parameterMap { map =>
-      val nodes = restService.getClusterNodes(map.get("status").map(NodeStatus.valueOf), map.get("host"), map.get("role"))
+      val nodes = restService.clusterNodes(map.get("status").map(NodeStatus.valueOf), map.get("host"), map.get("role"))
       returnResponseWithEntity(nodes)
     }
   }
 
   def taskInfo(): Route = {
     parameterMap { map =>
-      val taskInfo = restService.getNodeTaskInfo(map.getOrElse("host", Environment.HOST))
+      val taskInfo = restService.nodeTaskInfo(map.getOrElse("host", Environment.HOST))
       returnResponseWithEntity(taskInfo)
     }
   }
 
   def clusterTaskInfo(): Route = {
     parameterMap { map =>
-      val future = restService.getClusterTaskInfos(map.get("host"))
+      val future = restService.clusterTaskInfos(map.get("host"))
       returnResponseWithEntity(future)
     }
   }

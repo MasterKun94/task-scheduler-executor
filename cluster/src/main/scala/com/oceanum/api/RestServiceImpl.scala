@@ -73,7 +73,7 @@ class RestServiceImpl extends AbstractRestService {
 
   override def isWorkflowAlive(name: String): Future[Boolean] = Future.successful(workflows.contains(name))
 
-  override def getClusterNodes(status: Option[NodeStatus], host: Option[String], role: Option[String]): Future[ClusterNodes] = {
+  override def clusterNodes(status: Option[NodeStatus], host: Option[String], role: Option[String]): Future[ClusterNodes] = {
     Future.successful {
       val members = cluster.state.members
       val members1 = status match {
@@ -119,20 +119,20 @@ class RestServiceImpl extends AbstractRestService {
     MemberStatus.WeaklyUp -> NodeStatus.WEAKLY_UP
   )
 
-  override def getClusterTaskInfos(host: Option[String]): Future[Elements[NodeTaskInfo]] = {
-    val nodes = getClusterNodes(status = Some(NodeStatus.UP), host = host)
+  override def clusterTaskInfos(host: Option[String]): Future[Elements[NodeTaskInfo]] = {
+    val nodes = clusterNodes(status = Some(NodeStatus.UP), host = host)
     nodes
       .flatMap { nodes =>
-        Future.sequence(nodes.nodes.map(node => getNodeTaskInfo(node.host)))
+        Future.sequence(nodes.nodes.map(node => nodeTaskInfo(node.host)))
       }
       .map(Elements(_))
   }
 
-  override def getNodeTaskInfo(host: String): Future[NodeTaskInfo] = {
+  override def nodeTaskInfo(host: String): Future[NodeTaskInfo] = {
     if (host.equals(Environment.HOST)) {
       Future(RunnerManager.getTaskInfo)
     } else {
-      RemoteRestServices.get(host).getNodeTaskInfo(host)
+      RemoteRestServices.get(host).nodeTaskInfo(host)
     }
   }
 }

@@ -131,7 +131,7 @@ class RemoteRestService(host: String) extends RestService {
     ).map(_.value)
   }
 
-  override def getClusterNodes(status: Option[NodeStatus], host: Option[String], role: Option[String]): Future[ClusterNodes] = {
+  override def clusterNodes(status: Option[NodeStatus], host: Option[String], role: Option[String]): Future[ClusterNodes] = {
     HttpClient.get[Nothing, ClusterNodes](
       url = hostPort + "/api/cluster/nodes",
       param = Map(
@@ -144,14 +144,14 @@ class RemoteRestService(host: String) extends RestService {
     )
   }
 
-  override def getClusterTaskInfos(host: Option[String]): Future[Elements[NodeTaskInfo]] = {
+  override def clusterTaskInfos(host: Option[String]): Future[Elements[NodeTaskInfo]] = {
     HttpClient.get[Nothing, Elements[NodeTaskInfo]](
       url = hostPort + "/api/cluster/task-infos",
       param = host.map(s => "host" -> s).toMap
     )
   }
 
-  override def getNodeTaskInfo(host: String): Future[NodeTaskInfo] = {
+  override def nodeTaskInfo(host: String): Future[NodeTaskInfo] = {
     HttpClient.get[Nothing, NodeTaskInfo](
       url = hostPort + "/api/node/task-info",
       param = Map("host" -> host)

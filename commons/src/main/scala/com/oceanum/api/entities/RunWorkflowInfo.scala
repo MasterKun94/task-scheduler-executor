@@ -12,6 +12,7 @@ case class RunWorkflowInfo(id: Int,
                            fallbackStrategy: FallbackStrategy,
                            rerunStrategy: RerunStrategy,
                            createTime: Option[Date],
+                           scheduleTime: Option[Date],
                            host: String)
 
 object RunWorkflowInfo {
@@ -22,6 +23,7 @@ object RunWorkflowInfo {
     fallbackStrategy = graphMeta.fallbackStrategy,
     rerunStrategy = graphMeta.rerunStrategy,
     createTime = graphMeta.createTime,
+    scheduleTime = graphMeta.scheduleTime,
     host = graphMeta.host
   )
 }
