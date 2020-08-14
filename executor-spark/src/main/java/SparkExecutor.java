@@ -11,7 +11,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
-public class Launcher implements Executor {
+public class SparkExecutor implements Executor {
     private final AtomicReference<SparkAppHandle.State> currentState = new AtomicReference<>();
     private final AtomicReference<SparkAppHandle> handleRef = new AtomicReference<>();
     private final CountDownLatch countDown = new CountDownLatch(1);

@@ -5,7 +5,7 @@ import akka.cluster.ClusterEvent.{MemberDowned, MemberEvent, MemberExited, Membe
 import akka.cluster.singleton.{ClusterSingletonManager, ClusterSingletonManagerSettings}
 import akka.cluster.{Cluster, ClusterEvent}
 import com.oceanum.api.entities.{ClusterNodes, Coordinator}
-import com.oceanum.common.{NodeStatus, SystemInit}
+import com.oceanum.common.{Environment, NodeStatus, SystemInit}
 import com.oceanum.persistence.Catalog
 
 import scala.collection.JavaConversions.mapAsJavaMap
@@ -20,26 +20,34 @@ class FallbackListener extends Actor with ActorLogging {
 
   override def preStart(): Unit = {
     cluster.subscribe(self, ClusterEvent.initialStateAsEvents, classOf[UnreachableMember], classOf[MemberEvent])
-    fallback()
+    log.info("start")
+    recover()
+  }
+
+  override def postRestart(reason: Throwable): Unit = {
+    log.info("restart")
+    recover()
   }
 
   override def receive: Receive = {
     case m:MemberLeft =>
-      fallback(m.member.uniqueAddress.address.host.getOrElse(""))
+      recover(m.member.uniqueAddress.address.host.getOrElse(""))
     case m:MemberDowned =>
-      fallback(m.member.uniqueAddress.address.host.getOrElse(""))
+      recover(m.member.uniqueAddress.address.host.getOrElse(""))
     case m:MemberExited =>
-      fallback(m.member.uniqueAddress.address.host.getOrElse(""))
+      recover(m.member.uniqueAddress.address.host.getOrElse(""))
     case m:MemberRemoved =>
-      fallback(m.member.uniqueAddress.address.host.getOrElse(""))
+      recover(m.member.uniqueAddress.address.host.getOrElse(""))
+    case _ => // discard
   }
 
   override def postStop(): Unit = {
     cluster.unsubscribe(self)
-    fallback()
+    log.info("stop")
+    recover()
   }
 
-  def fallback(discard: String = ""): Unit = {
+  def recover(discard: String = ""): Unit = {
 
     val future: Future[ClusterNodes] = restService
       .clusterNodes(status = Some(NodeStatus.UP))
@@ -55,7 +63,7 @@ class FallbackListener extends Actor with ActorLogging {
             val seq: Seq[Future[Unit]] = coordinators
               .map(coord => {
                 val host = value.consistentHashSelect(coord.name).host
-                log.info("fallback: moving coordinator: [{}] to host: [{}]", coord, host)
+                log.info("fallback: moving coordinator: [{}] to host: [{}]", coord.name, host)
                 val newCoord = coord.copy(host = Option(host), version = coord.version + 1)
                 val remoteRestService = RemoteRestServices.get(newCoord.host.get)
                 remoteRestService.recover(newCoord)
@@ -72,10 +80,11 @@ class FallbackListener extends Actor with ActorLogging {
 
 object FallbackListener {
   def start(system: ActorSystem): ActorRef = {
-    system.actorOf(ClusterSingletonManager.props(
+    val listener = system.actorOf(ClusterSingletonManager.props(
       singletonProps = Props(classOf[FallbackListener]),
       settings = ClusterSingletonManagerSettings(system),
       terminationMessage = PoisonPill.getInstance
     ), name = "fallback-listener")
+    listener
   }
 }
