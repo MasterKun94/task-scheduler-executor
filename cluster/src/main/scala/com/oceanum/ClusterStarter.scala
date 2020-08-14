@@ -5,9 +5,7 @@ import akka.cluster.client.ClusterClientReceptionist
 import com.oceanum.api.HttpServer
 import com.oceanum.cluster.{ClusterNode, ExecutionEndpoint, ReceptionistListener}
 import com.oceanum.common.{ActorSystems, Environment}
-import com.oceanum.singleton.MetricsListener
-
-import scala.util.Properties
+import com.oceanum.singleton.{FallbackListener, MetricsListener}
 
 /**
  * @author chenmingkun
