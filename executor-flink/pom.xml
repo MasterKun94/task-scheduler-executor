@@ -9,7 +9,7 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>flink-executor</artifactId>
+    <artifactId>executor-flink</artifactId>
 
     <dependencies>
         <dependency>

@@ -9,7 +9,7 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>spark-executor</artifactId>
+    <artifactId>executor-spark</artifactId>
     <properties>
         <spark.version>2.1.0</spark.version>
     </properties>

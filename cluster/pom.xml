@@ -25,12 +25,12 @@
         </dependency>
         <dependency>
             <groupId>com.oceanum</groupId>
-            <artifactId>elastic-repository</artifactId>
+            <artifactId>repository-elastic</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>com.oceanum</groupId>
-            <artifactId>hdfs-file-system</artifactId>
+            <artifactId>file-system-hadoop</artifactId>
             <version>${project.version}</version>
         </dependency>
 
