@@ -19,6 +19,6 @@ class OptionFunction extends AbstractFunction {
 }
 
 @IFunction
-class OptionalFunction extends AbstractFunction {
+class OptionalFunction extends OptionFunction {
   override def getName: String = "optional"
 }
