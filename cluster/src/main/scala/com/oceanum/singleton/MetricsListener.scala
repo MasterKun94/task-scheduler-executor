@@ -1,4 +1,4 @@
-package com.oceanum.metrics
+package com.oceanum.singleton
 
 import akka.actor.{Actor, ActorLogging, ActorRef, ActorSystem, Cancellable, PoisonPill, Props}
 import akka.cluster.ClusterEvent.{MemberEvent, UnreachableMember}

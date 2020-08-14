@@ -2,10 +2,10 @@ package com.oceanum
 
 import akka.actor.Props
 import akka.cluster.client.ClusterClientReceptionist
-import com.oceanum.api.{FallbackListener, HttpServer}
+import com.oceanum.api.HttpServer
 import com.oceanum.cluster.{ClusterNode, ExecutionEndpoint, ReceptionistListener}
 import com.oceanum.common.{ActorSystems, Environment}
-import com.oceanum.metrics.MetricsListener
+import com.oceanum.singleton.MetricsListener
 
 import scala.util.Properties
 

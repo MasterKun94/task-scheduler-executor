@@ -1,11 +1,12 @@
-package com.oceanum.api
+package com.oceanum.singleton
 
 import akka.actor.{Actor, ActorLogging, ActorRef, ActorSystem, PoisonPill, Props}
-import akka.cluster.ClusterEvent.{MemberDowned, MemberEvent, MemberExited, MemberLeft, MemberRemoved, UnreachableMember}
+import akka.cluster.ClusterEvent._
 import akka.cluster.singleton.{ClusterSingletonManager, ClusterSingletonManagerSettings}
 import akka.cluster.{Cluster, ClusterEvent}
+import com.oceanum.api.RemoteRestServices
 import com.oceanum.api.entities.{ClusterNodes, Coordinator}
-import com.oceanum.common.{Environment, NodeStatus, SystemInit}
+import com.oceanum.common.{NodeStatus, SystemInit}
 import com.oceanum.persistence.Catalog
 
 import scala.collection.JavaConversions.mapAsJavaMap
