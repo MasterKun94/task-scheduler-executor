@@ -4,13 +4,12 @@ import akka.actor.{Actor, ActorLogging, ActorRef, Cancellable, PoisonPill}
 import com.oceanum.client.Task
 import com.oceanum.common.Scheduler.{schedule, scheduleOnce}
 import com.oceanum.common.{TaskStatus, _}
-import com.oceanum.exec.{EventListener, ExecutionHook, ExecutionTask, FAILED, KILL, OFFLINE, PREPARE, RETRY, RUNNING, RunnerManager, START, SUCCESS, State, TIMEOUT}
-
-import scala.concurrent.ExecutionContext
+import com.oceanum.exec._
 
 /**
+ * 负责管理一个任务的运行，和状态的查看，也是一个状态机
+ *
  * @author chenmingkun
- * @date 2020/5/2
  */
 class ExecutionInstance(task: Task, actor: ActorRef) extends Actor with ActorLogging {
   private def listener: EventListener = new EventListener {
@@ -57,7 +56,7 @@ class ExecutionInstance(task: Task, actor: ActorRef) extends Actor with ActorLog
     val cancelable: Cancellable = schedule(interval, interval) {
       self.tell(CheckState, client)
     }
-    val hook: ExecutionHook = RunnerManager.submit(executionTask)
+    val hook: ExecutionHook = RunnerManager.submit(executionTask) // 提交任务
     val metadata: RichTaskMeta = executionTask.metadata
     context.become(offline(metadata)(Holder(hook, cancelable, client)))
     client ! ExecuteOperatorResponse(executionTask.metadata)

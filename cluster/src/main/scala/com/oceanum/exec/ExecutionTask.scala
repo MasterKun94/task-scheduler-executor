@@ -33,25 +33,39 @@ case class ExecutionTask[T <: TaskConfig](name: String,
     }
   }
 
+  /**
+   * 接收新的钩子
+   */
   def receive(hook: ExecutionHook): Unit = {
     hookRef.set(hook)
     if (this.hook.isKilled) {
       hook.kill()
     }
   }
+
+  /**
+   * 任务重试
+   *
+   * @return 重试次数减一次后的任务配置
+   */
   def retry(): ExecutionTask[T] = {
     val meta = metadata.incRetry()
-    this.copy(retryCount = this.retryCount - 1).updateMeta(meta)
+    this.copy(retryCount = this.retryCount - 1).updateTaskMeta(meta)
   }
 
   def metadata: RichTaskMeta = RichTaskMeta(env.taskMeta)
 
+  /**
+   * 任务执行前准备
+   *
+   * @return 准备好的任务配置
+   */
   def prepareStart(implicit ec: ExecutionContext): Future[ExecutionTask[_<:TaskConfig]] = {
     prop.prepare(env)
       .map(p => this.copy(prop = p))
   }
 
-  def updateMeta(meta: RichTaskMeta): ExecutionTask[T] = {
+  def updateTaskMeta(meta: RichTaskMeta): ExecutionTask[T] = {
     this.copy(env = env.copy(taskMeta = meta))
   }
 }

@@ -43,6 +43,11 @@ object RunnerManager extends Log {
     )
   }
 
+  /**
+   * 将任务提交到优先队列中
+   *
+   * @return 钩子，用来kill掉任务
+   */
   def submit(operatorProp: Prop): ExecutionHook = {
     operatorProp.eventListener.prepare(_ => operatorProp.env.taskMeta.asInstanceOf[RichTaskMeta])
     priorityMailbox.send(operatorProp)
@@ -55,9 +60,15 @@ object RunnerManager extends Log {
     log.info("execute manager closed")
   }
 
+  /**
+   * 从mailbox中拉取任务并执行
+   *
+   * @param operatorProp 任务配置
+   */
   private def consume(operatorProp: Prop): Unit = {
-    val prop = operatorProp.updateMeta(operatorProp.metadata.copy(startTime = Option(new Date())))
-    prop.eventListener.start(_ => prop.metadata)
+    val prop = operatorProp.updateTaskMeta(operatorProp.metadata.copy(startTime = Option(new Date())))
+    val listener = prop.eventListener
+    listener.start(_ => prop.metadata)
     incRunning()
     TaskInfoTrigger.trigger()
     try {
@@ -65,7 +76,7 @@ object RunnerManager extends Log {
         case ExitCode.ERROR(msg) =>
           if (prop.retryCount > 1) {
             val newOperatorProp = prop.retry()
-            prop.eventListener.retry(_ => newOperatorProp.metadata.copy(message = msg.getMessage, error = Option(msg)))
+            listener.retry(_ => newOperatorProp.metadata.copy(message = msg.getMessage, error = Option(msg)))
             log.info("task begin retry: " + newOperatorProp.name)
             incRetrying()
             val cancellable = scheduleOnce(newOperatorProp.retryInterval) {
@@ -78,7 +89,7 @@ object RunnerManager extends Log {
             scheduleOnce(10.second) {
               prop.prop.close()
             }
-            prop.eventListener.failed(_ => prop.metadata.copy(message = msg.getMessage, error = Option(msg), endTime = Option(new Date())))
+            listener.failed(_ => prop.metadata.copy(message = msg.getMessage, error = Option(msg), endTime = Option(new Date())))
             log.info("task failed: " + prop.name)
             incFailed()
           }
@@ -87,7 +98,7 @@ object RunnerManager extends Log {
           scheduleOnce(10.second) {
             prop.prop.close()
           }
-          prop.eventListener.success(_ => prop.metadata.copy(endTime = Option(new Date())))
+          listener.success(_ => prop.metadata.copy(endTime = Option(new Date())))
           log.info("task success: " + prop.name)
           incSuccess()
 
@@ -95,13 +106,13 @@ object RunnerManager extends Log {
           scheduleOnce(10.second) {
             prop.prop.close()
           }
-          prop.eventListener.kill(_ => prop.metadata.copy(endTime = Option(new Date())))
+          listener.kill(_ => prop.metadata.copy(endTime = Option(new Date())))
           log.info("task kill: " + prop.name)
           incKilled()
 
         case unSupport: ExitCode.UN_SUPPORT =>
           log.error(s"no executable executor exists for prop ${prop.prop.getClass}")
-          prop.eventListener.failed(_ => prop.metadata.copy(message = s"task type not support: ${unSupport.taskType}", endTime = Option(new Date())))
+          listener.failed(_ => prop.metadata.copy(message = s"task type not support: ${unSupport.taskType}", endTime = Option(new Date())))
           scheduleOnce(10.second) {
             prop.prop.close()
           }
@@ -110,7 +121,7 @@ object RunnerManager extends Log {
     } catch {
       case e: Throwable =>
         log.error(e, e.getMessage)
-        prop.eventListener.failed(_ => prop.metadata.copy(message = e.getMessage, error = Option(e)))
+        listener.failed(_ => prop.metadata.copy(message = e.getMessage, error = Option(e)))
         scheduleOnce(10.second) {
           prop.prop.close()
         }
@@ -122,17 +133,19 @@ object RunnerManager extends Log {
   }
 
   private def run(prop: Prop): ExitCode = {
+    import Environment.FILE_SYSTEM_EXECUTION_CONTEXT
     val queue = new ArrayBlockingQueue[Try[Prop]](1)
-    prop.prepareStart(Environment.FILE_SYSTEM_EXECUTION_CONTEXT)
-      .onComplete(queue.put)(Environment.NONE_BLOCKING_EXECUTION_CONTEXT)
+    prop
+      .prepareStart
+      .onComplete(queue.put)
     queue.take() match {
       case Success(task) =>
         runners.find(_.executable(task)) match {
-        case Some(executor) =>
+        case Some(runner) =>
           if (task.hook.isKilled) {
             ExitCode.KILL
           } else {
-            executor.run(task)
+            runner.run(task) // run task
           }
         case None =>
           ExitCode.UN_SUPPORT(task.metadata.taskType)
