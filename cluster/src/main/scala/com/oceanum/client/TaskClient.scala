@@ -48,37 +48,7 @@ class TaskClient(endpoint: ActorRef, val system: ActorSystem)(implicit execution
       })
   }
 
-  def handleClusterMetrics(interval: String)(handler: ClusterMetrics => Unit): ShutdownHook = {
-    subscribe(ClusterMetricsRequest(interval, interval)) {
-      case res: ClusterMetrics => handler(res)
-    }
-  }
-
-  def handleClusterInfo(interval: String)(handler: ClusterState => Unit): ShutdownHook = {
-    subscribe(ClusterStateRequest(interval, interval)) {
-      case res: ClusterState => handler(res)
-    }
-  }
-
-  def handleTaskInfo(handler: NodeTaskInfo => Unit): ShutdownHook = {
-    subscribe(NodeTaskInfoRequest("", "")) {
-      case res: NodeTaskInfo => handler(res)
-    }
-  }
-
   def close: Future[Unit] = system.terminate().map(_ => Unit)
-
-  private def subscribe(message: ClusterMessage)(receive: Actor.Receive): ShutdownHook = {
-    val handlerActor = system.actorOf(Props(new HandlerActor(_ => receive)))
-    val publish = Publish(Environment.CLUSTER_NODE_METRICS_TOPIC, ClusterInfoMessageHolder(message, handlerActor))
-    endpoint ! publish
-    new ShutdownHook {
-      override def kill(): Future[Boolean] = {
-        handlerActor ! PoisonPill
-        endpoint.ask(StopRequest(handlerActor)).mapTo
-      }
-    }
-  }
 }
 
 object TaskClient {

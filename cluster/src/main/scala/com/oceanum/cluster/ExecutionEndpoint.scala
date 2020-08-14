@@ -20,10 +20,6 @@ class ExecutionEndpoint extends Actor {
     for (topic <- topics) {
       mediator ! Subscribe(topic, self)
     }
-    val duration = Environment.TASK_INFO_TRIGGER_INTERVAL
-    Scheduler.schedule(duration, duration) {
-      mediator ! Publish(Environment.CLUSTER_NODE_METRICS_TOPIC, RunnerManager.getTaskInfo)
-    }
   }
 
   override def postStop(): Unit = {

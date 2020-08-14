@@ -86,13 +86,16 @@ object Environment {
   lazy val logger = "akka.event.slf4j.Slf4jLogger"
   lazy val AVIATOR_CACHE_ENABLED: Boolean = true
   lazy val AVIATOR_CACHE_CAPACITY: Int = 10000
+  lazy val TASK_KILL_MAX_WAIT: String = "12s"
+
   lazy val OS: OS = {
     val sys = scala.util.Properties
     if (sys.isWin) WINDOWS
     else if (sys.isMac) MAC
     else LINUX
   }
-  lazy val PLUGGABLE_EXECUTOR_JARS: Array[String] = getPluggableExecutorJars
+  lazy val JARS_PLUGGABLE_EXECUTOR: Array[String] = getPluggableExecutorJars
+  lazy val JARS_SCALA: Array[String] = getScalaJars
   implicit lazy val NONE_BLOCKING_EXECUTION_CONTEXT: ExecutionContextExecutor = ActorSystems.SYSTEM.dispatcher
   implicit lazy val FILE_SYSTEM_EXECUTION_CONTEXT: ExecutionContext = ExecutionContext.global
 
@@ -189,6 +192,17 @@ object Environment {
   }
 
   def initSystem(): Unit = SystemInit.initAnnotatedClass()
+
+  def getScalaJars: Array[String] = {
+    val file = new File(BASE_PATH/"lib")
+    file.listFiles(new FileFilter {
+      override def accept(pathname: File): Boolean = {
+        val fileName = pathname.getName
+        fileName.startsWith("scala") && fileName.endsWith(".jar")
+      }
+    })
+      .map(_.getAbsolutePath)
+  }
 
   def getPluggableExecutorJars: Array[String] = {
     val file = new File(BASE_PATH/"lib")

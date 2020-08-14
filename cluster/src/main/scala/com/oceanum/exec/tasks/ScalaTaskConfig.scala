@@ -19,7 +19,7 @@ case class ScalaTaskConfig(jars: Array[String],
                            stdoutHandler: StdHandler,
                            stderrHandler: StdHandler)
   extends ProcessTaskConfig(
-    (Environment.EXEC_SCALA +: options :+ "-cp" :+ jars.mkString(":") :+ mainClass) ++ args,
+    (Environment.EXEC_JAVA +: options :+ "-cp" :+ (jars ++ Environment.JARS_SCALA).mkString(":") :+ mainClass) ++ args,
     env,
     directory,
     waitForTimeout,

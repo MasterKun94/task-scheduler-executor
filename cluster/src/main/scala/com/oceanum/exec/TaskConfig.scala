@@ -86,7 +86,7 @@ object TaskConfig {
       val communicator = ActorSystems.SYSTEM.actorOf(Props(classOf[PluggablePrimEndpoint], execListener), UUID.randomUUID().toString)
       PluggableTaskConfig(
         args = prop._args,
-        plugJars = Environment.PLUGGABLE_EXECUTOR_JARS,
+        plugJars = Environment.JARS_PLUGGABLE_EXECUTOR,
         plugClass = prop._plugClass,
         mainClass = "com.oceanum.pluggable.Main",
         files = prop._files,

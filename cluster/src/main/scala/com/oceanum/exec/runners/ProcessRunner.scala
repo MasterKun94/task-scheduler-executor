@@ -107,11 +107,15 @@ object ProcessRunner extends TypedRunner[ProcessTaskConfig]("SHELL", "SHELL_SCRI
       val killing = new ProcessBuilder()
         .command("kill", "-15", pid)
         .start()
-      val exited = process.waitFor(120, TimeUnit.SECONDS)
+      val maxWait = Duration(Environment.TASK_KILL_MAX_WAIT)
+      val exited = process.waitFor(maxWait.toMillis, TimeUnit.MILLISECONDS)
 
       if (!exited) {
-        log.error("'kill -15' failed, start to destroy pid: {}", pid)
-        process.destroy()
+        log.warning("'kill -15' failed, start to force kill pid: {}", pid)
+        new ProcessBuilder()
+          .command("kill", "-9", pid)
+          .start()
+        process.waitFor(20, TimeUnit.SECONDS)
         if (process.isAlive) {
           process.destroyForcibly()
         }

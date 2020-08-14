@@ -171,9 +171,9 @@ class EsRepoMatchFunction extends OpFunction {
   override def getOpType: OperatorType = OperatorType.MATCH
   override def call2(env: JavaMap[String, AnyRef]): PartialFunction[(Any, Any), AviatorObject] = {
       case (b1: RepoField, b2) =>
-        AviatorRuntimeJavaType.valueOf(QueryBuilders.matchQuery(b1.field, b2))
+        AviatorRuntimeJavaType.valueOf(QueryBuilders.wildcardQuery(b1.field, b2.toString))
       case (b1, b2: RepoField) =>
-        AviatorRuntimeJavaType.valueOf(QueryBuilders.matchQuery(b2.field, b1))
+        AviatorRuntimeJavaType.valueOf(QueryBuilders.wildcardQuery(b2.field, b1.toString))
   }
 }
 
