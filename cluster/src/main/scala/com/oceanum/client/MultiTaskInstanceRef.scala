@@ -4,7 +4,6 @@ import com.oceanum.exec.State
 
 import scala.concurrent.{ExecutionContext, Future}
 
-@deprecated
 class MultiTaskInstanceRef(val instances: Future[Seq[TaskInstance]])(implicit ex: ExecutionContext) {
 
   def killAll(): Future[Unit] = instances.map(_.map(_.kill()).reduce((_, _) => Unit))

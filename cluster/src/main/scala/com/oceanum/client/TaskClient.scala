@@ -24,7 +24,6 @@ class TaskClient(endpoint: ActorRef, val system: ActorSystem)(implicit execution
     new SingleTaskInstanceRef(doExecute(AvailableExecutorRequest(task.topic), task, stateHandler).map(_.head))
   }
 
-  @deprecated
   def broadcastExecute(task: Task, stateHandler: StateHandler = StateHandler.default(), timeWait: String = "10s"): MultiTaskInstanceRef = {
     new MultiTaskInstanceRef(doExecute(AvailableExecutorsRequest(task.topic, timeWait), task, stateHandler))
   }
