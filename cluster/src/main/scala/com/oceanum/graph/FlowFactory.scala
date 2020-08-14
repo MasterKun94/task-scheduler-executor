@@ -17,10 +17,10 @@ object FlowFactory {
 
   def createFlow(task: Task, parallelism: Int = 1)(implicit taskClient: TaskClient, builder: GraphBuilder): TaskFlow = {
     task.validate()
-    createOperator(parallelism)(_ => task)
+    createTask(parallelism)(_ => task)
   }
 
-  def createOperator(parallelism: Int)(taskFunc: GraphMeta => Task)(implicit taskClient: TaskClient, builder: GraphBuilder): TaskFlow = {
+  def createTask(parallelism: Int)(taskFunc: GraphMeta => Task)(implicit taskClient: TaskClient, builder: GraphBuilder): TaskFlow = {
     val idValue = builder.idValue
     mapAsync(parallelism, idValue) { implicit graphMeta =>
       val initialTask = taskFunc(graphMeta)

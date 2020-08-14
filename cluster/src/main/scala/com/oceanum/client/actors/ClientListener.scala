@@ -10,7 +10,7 @@ import akka.cluster.client._
 class ClientListener(clusterClient: ActorRef) extends Actor with ActorLogging {
   override def preStart(): Unit = {
     clusterClient ! SubscribeContactPoints
-    context.system.eventStream.subscribe(self, classOf[DeadLetter])
+//    context.system.eventStream.subscribe(self, classOf[DeadLetter])
     super.preStart()
   }
 

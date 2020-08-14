@@ -3,13 +3,11 @@ package com.oceanum.client
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 
-import akka.actor.{Actor, ActorPaths, ActorRef, ActorSystem, PoisonPill, Props}
-import akka.cluster.client.ClusterClient.Publish
+import akka.actor.{ActorPaths, ActorRef, ActorSystem, Props}
 import akka.cluster.client.{ClusterClient, ClusterClientSettings}
 import akka.pattern.ask
 import akka.util.Timeout
-import com.oceanum.api.entities.NodeTaskInfo
-import com.oceanum.client.actors.{ClientEndpoint, ClientInstance, ClientListener, HandlerActor}
+import com.oceanum.client.actors.{ClientEndpoint, ClientInstance, ClientListener}
 import com.oceanum.common._
 import com.oceanum.exec.State
 
@@ -26,15 +24,16 @@ class TaskClient(endpoint: ActorRef, val system: ActorSystem)(implicit execution
     new SingleTaskInstanceRef(doExecute(AvailableExecutorRequest(task.topic), task, stateHandler).map(_.head))
   }
 
+  @deprecated
   def broadcastExecute(task: Task, stateHandler: StateHandler = StateHandler.default(), timeWait: String = "10s"): MultiTaskInstanceRef = {
     new MultiTaskInstanceRef(doExecute(AvailableExecutorsRequest(task.topic, timeWait), task, stateHandler))
   }
 
-  def getClient(implicit executionContext: ExecutionContext): ActorRef = {
+  private def getClient(implicit executionContext: ExecutionContext): ActorRef = {
     system.actorOf(Props(classOf[ClientEndpoint], endpoint))
   }
 
-  def doExecute(requestMsg: Message, task: Task, handler: StateHandler): Future[Seq[TaskInstance]] = {
+  private def doExecute(requestMsg: Message, task: Task, handler: StateHandler): Future[Seq[TaskInstance]] = {
     val client = getClient
     val promise = Promise[State]()
     client

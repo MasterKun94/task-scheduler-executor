@@ -1,30 +1,21 @@
-package com.oceanum.Test
-
 import java.net.{InetAddress, UnknownHostException}
 
-import com.oceanum.api.entities.{ConvergeVertex, Dag, DecisionVertex, EndVertex, ForkVertex, JoinVertex, StartVertex, TaskVertex, WorkflowDefine}
+import com.oceanum.api.entities._
 import com.oceanum.client.TaskClient
 import com.oceanum.common.{GraphContext, GraphMeta, RerunStrategy, RichGraphMeta}
 import com.oceanum.exec.State
-import com.oceanum.graph.Operators._
-import com.oceanum.graph.{GraphDefine, GraphMetaHandler, Workflow}
-import com.oceanum.serialize.{DefaultJsonSerialization, Serialization}
+import com.oceanum.graph.{GraphMetaHandler, Workflow}
+import com.oceanum.serialize.Serialization
 
 import scala.concurrent.Promise
 
 object Graph {
   val ip2 = "192.168.10.131"
-  val ip1 = getSelfAddress
-  def getSelfAddress: String = {
-    try {
-      InetAddress.getLocalHost.getHostAddress
-    } catch {
-      case _: UnknownHostException => "127.0.0.1"
-      case e: Throwable => throw e
-    }
+  val ip1 = try {
+    InetAddress.getLocalHost.getHostAddress
+  } catch {
+    case _: Throwable => "127.0.0.1"
   }
-
-  val promise: Promise[RichGraphMeta] = Promise[RichGraphMeta]()
 
   implicit val client: TaskClient = TaskClient(ip1, 5552, ip2, "cluster/src/main/resources/application.properties")
 
@@ -34,8 +25,6 @@ object Graph {
     }
 
     override def onComplete(graphMeta: GraphMeta): Unit = {
-      if (!promise.isCompleted)
-        promise.success(RichGraphMeta(graphMeta))
       println("graphMeta complete: " + graphMeta.graphStatus)
       graphMeta.tasks.foreach(println)
     }
@@ -53,11 +42,11 @@ object Graph {
 
     val instance = Workflow.create { implicit graph => import graph.flowFactory._
 
-      val python1 = createFlow(Test.task().copy(rawEnv = GraphContext(Map("file_name" -> "${(graph.reRunId() % 2 == 0) ? 'python-err' : 'python'}"))))
-      val python2 = createFlow(Test.task())
-      val python3 = createFlow(Test.task())
-      val python4 = createFlow(Test.task())
-      val python5 = createFlow(Test.task())
+      val python1 = createFlow(TaskTest.task().copy(rawEnv = GraphContext(Map("file_name" -> "${(graph.reRunId() % 2 == 0) ? 'python-err' : 'python'}"))))
+      val python2 = createFlow(TaskTest.task())
+      val python3 = createFlow(TaskTest.task())
+      val python4 = createFlow(TaskTest.task())
+      val python5 = createFlow(TaskTest.task())
       val fork = createFork(2)
       val join = createJoin(2)
       val decision = createDecision(Array("false"))
@@ -68,49 +57,27 @@ object Graph {
       start --> fork --> python1 -->                                       join --> python5 --> end
                 fork --> python2 --> decision --> python3 --> converge --> join
                                      decision --> python4 --> converge
-
     }.run()
 
-
     instance.offer(new RichGraphMeta().copy(id = 0) addEnv ("file_name" -> "python"))
-
-    import scala.concurrent.ExecutionContext.Implicits.global
-    promise.future.onComplete(meta => {
-      Thread.sleep(3000)
-
-      val ctx = new GraphContext(Map.empty).copy(graphMeta = meta.get)
-      val str = Serialization.default.serialize(ctx)
-      println(str)
-      val c = Serialization.default.deSerialize(str).asInstanceOf[GraphContext]
-      println(c)
-      println(c.graphMeta)
-
-      val m = meta.get.copy(rerunStrategy = RerunStrategy.RUN_ALL_AFTER_FAILED)
-      println("retry: " + m)
-      instance.offer(m)
-    })
-
   }
 }
 
 
 object Graph2 {
 
-  val promise = Graph.promise
-
   implicit val client: TaskClient = Graph.client
-
   implicit val metaHandler: GraphMetaHandler = Graph.metaHandler
 
   def main(args: Array[String]): Unit = {
 
     val instance = Workflow.create { implicit graph => import graph._
 
-      val python1 = createFlow(Test.task().copy(rawEnv = GraphContext(Map("file_name" -> "${(graph.id() % 2 == 0) ? 'python-err' : 'python'}"))))
-      val python2 = createFlow(Test.task())
-      val python3 = createFlow(Test.task())
-      val python4 = createFlow(Test.task())
-      val python5 = createFlow(Test.task())
+      val python1 = createFlow(TaskTest.task().copy(rawEnv = GraphContext(Map("file_name" -> "${(graph.id() % 2 == 0) ? 'python-err' : 'python'}"))))
+      val python2 = createFlow(TaskTest.task())
+      val python3 = createFlow(TaskTest.task())
+      val python4 = createFlow(TaskTest.task())
+      val python5 = createFlow(TaskTest.task())
       val fork = createFork(2)
       val join = createJoin(2)
       val decision = createDecision(Array("false"))
@@ -134,24 +101,12 @@ object Graph2 {
 
 
     instance.offer(new RichGraphMeta().copy(id = 0) addEnv ("file_name" -> "python"))
-
-    import scala.concurrent.ExecutionContext.Implicits.global
-    promise.future.onComplete(meta => {
-      Thread.sleep(3000)
-      val m = meta.get.copy(rerunStrategy = RerunStrategy.RUN_ALL_AFTER_FAILED)
-      println("retry: " + m)
-      instance.offer(m)
-    })
-
   }
 }
 
 
 object Graph3 {
-  val promise = Graph.promise
-
   implicit val client: TaskClient = Graph.client
-
   implicit val metaHandler: GraphMetaHandler = Graph.metaHandler
 
   def main(args: Array[String]): Unit = {
@@ -161,11 +116,11 @@ object Graph3 {
       name = "",
       Dag(
         vertexes = Map(
-          "python1" -> TaskVertex(Test.task("1").copy(rawEnv = GraphContext(Map("file_name" -> "${(graph.id() % 2 == 0) ? 'python-err' : 'python'}")))),
-          "python2" -> TaskVertex(Test.task("2")),
-          "python3" -> TaskVertex(Test.task("3")),
-          "python4" -> TaskVertex(Test.task("4")),
-          "python5" -> TaskVertex(Test.task("5")),
+          "python1" -> TaskVertex(TaskTest.task("1").copy(rawEnv = GraphContext(Map("file_name" -> "${(graph.id() % 2 == 0) ? 'python-err' : 'python'}")))),
+          "python2" -> TaskVertex(TaskTest.task("2")),
+          "python3" -> TaskVertex(TaskTest.task("3")),
+          "python4" -> TaskVertex(TaskTest.task("4")),
+          "python5" -> TaskVertex(TaskTest.task("5")),
           "fork" -> ForkVertex(2),
           "join" -> JoinVertex(2),
           "decision" -> DecisionVertex(Array("false")),
@@ -185,21 +140,10 @@ object Graph3 {
           "join" -> Array("python5"),
           "python5" -> Array("end")
         )
-      )
-      ,
+      ),
       env = Map("file_name" -> "python")
     )).run()
 
-
     instance.offer(new RichGraphMeta().copy(id = 0))
-
-    import scala.concurrent.ExecutionContext.Implicits.global
-    promise.future.onComplete(meta => {
-      Thread.sleep(3000)
-      val m = meta.get.copy(rerunStrategy = RerunStrategy.RUN_ALL_AFTER_FAILED)
-      println("retry: " + m)
-      instance.offer(m)
-    })
-
   }
 }

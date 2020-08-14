@@ -12,7 +12,7 @@ import scala.util.{Failure, Success}
 object TriggerTest {
   def main(args: Array[String]): Unit = {
     Environment.loadEnv(Array("--conf=cluster/src/main/resources/application.properties"))
-    SystemInit.initAnnotatedClass()
+    Environment.initSystem()
 
     Triggers.getTrigger("QUARTZ")
       .start("test", Map(
