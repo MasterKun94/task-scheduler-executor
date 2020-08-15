@@ -7,6 +7,7 @@ import akka.actor.{ActorSystem, Cancellable}
 import com.oceanum.api.entities._
 import com.oceanum.common._
 import com.oceanum.exceptions.{BadRequestException, VersionOutdatedException}
+import com.oceanum.expr.{Evaluator, JavaHashMap, JavaMap}
 import com.oceanum.persistence.Catalog
 import com.oceanum.trigger.Triggers
 
@@ -147,7 +148,7 @@ abstract class AbstractRestService extends Log with RestService {
         | repo.field('name') == name,
         | repo.sort('id', 'DESC'),
         | repo.sort('rerunId', 'DESC'),
-        | repo.limit(1)
+        | repo.size(1)
         |)
         |""".stripMargin
     graphMetaRepo.find(expr, env).map { seq =>
@@ -165,7 +166,7 @@ abstract class AbstractRestService extends Log with RestService {
         |repo.select(
         | repo.field('name') == name && repo.field('id') == id,
         | repo.sort('reRunId', 'DESC'),
-        | repo.limit(1)
+        | repo.size(1)
         |)
         |""".stripMargin
     graphMetaRepo.find(expr, env).map{ seq =>
@@ -330,11 +331,39 @@ abstract class AbstractRestService extends Log with RestService {
       )
   }
 
+  override def searchWorkflows(req: SearchRequest): Future[Page[GraphMeta]] = {
+    val (newExpr, newEnv) = createExpr(req)
+    graphMetaRepo.find(newExpr, newEnv).map(Page(_, req.size, req.page))
+  }
+
+  override def searchCoordinators(req: SearchRequest): Future[Page[CoordinatorStatus]] = {
+    val (newExpr, newEnv) = createExpr(req)
+    coordinatorStateRepo.find(newExpr, newEnv).map(Page(_, req.size, req.page))
+  }
+
   override def checkCoordinatorStatus(name: String): Future[CoordinatorStatus] = {
     coordinatorStateRepo.findById(name).map(_.get)
   }
 
   private def updateCoordinatorStatus(name: String, state: CoordStatus): Future[Unit] = {
     coordinatorStateRepo.save(name, CoordinatorStatus(name, state).copy(latestUpdateTime = new Date()))
+  }
+
+  private def createExpr(req: SearchRequest): (String, JavaMap[String, AnyRef]) = {
+    val env = new JavaHashMap[String, AnyRef](req.getEnv)
+    env.put("expr", Evaluator.rawExecute(req.expr, env).asInstanceOf[AnyRef])
+    env.put("sorts", req.sorts.toArray)
+    env.put("size", req.size.asInstanceOf[AnyRef])
+    env.put("page", req.page.asInstanceOf[AnyRef])
+    val expr0 =
+      """
+        |repo.select(
+        | expr,
+        | repo.sort(sorts),
+        | repo.size(size),
+        | repo.page(page)
+        |)
+        |""".stripMargin
+    (expr0, env)
   }
 }

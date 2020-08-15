@@ -43,5 +43,5 @@ trait Repository[T<:AnyRef] {
    * @param env 参数
    * @return 查询结果
    */
-  def find(expr: String, env: JavaMap[String, AnyRef] = new JavaHashMap(0)): Future[Seq[T]]
+  def find(expr: String, env: JavaMap[String, AnyRef]): Future[Seq[T]]
 }

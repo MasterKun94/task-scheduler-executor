@@ -4,6 +4,7 @@ import java.util.Date
 
 import com.oceanum.api.entities._
 import com.oceanum.common._
+import com.oceanum.expr.JavaMap
 
 import scala.concurrent.Future
 
@@ -144,8 +145,8 @@ class RemoteRestService(host: String) extends RestService {
     )
   }
 
-  override def clusterTaskInfos(host: Option[String]): Future[Elements[NodeTaskInfo]] = {
-    HttpClient.get[Nothing, Elements[NodeTaskInfo]](
+  override def clusterTaskInfos(host: Option[String]): Future[Page[NodeTaskInfo]] = {
+    HttpClient.get[Nothing, Page[NodeTaskInfo]](
       url = hostPort + "/api/cluster/task-infos",
       param = host.map(s => "host" -> s).toMap
     )
@@ -155,6 +156,20 @@ class RemoteRestService(host: String) extends RestService {
     HttpClient.get[Nothing, NodeTaskInfo](
       url = hostPort + "/api/node/task-info",
       param = Map("host" -> host)
+    )
+  }
+
+  override def searchWorkflows(searchRequest: SearchRequest): Future[Page[GraphMeta]] = {
+    HttpClient.post[SearchRequest, Page[GraphMeta]](
+      url = hostPort + "/api/search/workflow",
+      entity = Some(searchRequest)
+    )
+  }
+
+  override def searchCoordinators(searchRequest: SearchRequest): Future[Page[CoordinatorStatus]] = {
+    HttpClient.post[SearchRequest, Page[CoordinatorStatus]](
+      url = hostPort + "/api/search/coordinator",
+      entity = Some(searchRequest)
     )
   }
 }

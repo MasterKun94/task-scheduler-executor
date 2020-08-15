@@ -21,5 +21,5 @@ class EsGraphMetaPoRepository extends AbstractRepository[WorkflowMetaInfo] {
 
   override def findByIdIn(ids: Seq[String]): Future[Seq[WorkflowMetaInfo]] = EsUtil.findByIdIn(index, ids)
 
-  override def find(expr: String, env: JavaMap[String, AnyRef] = new JavaHashMap(0)): Future[Seq[WorkflowMetaInfo]] = EsUtil.find(index, expr, env)
+  override def find(expr: String, env: JavaMap[String, AnyRef]): Future[Seq[WorkflowMetaInfo]] = EsUtil.find(index, expr, env)
 }

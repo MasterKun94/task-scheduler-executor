@@ -1,6 +1,7 @@
 package com.oceanum.persistence
 
 import com.oceanum.common.SystemInit
+import com.oceanum.expr.JavaHashMap
 
 import scala.collection.concurrent.TrieMap
 import scala.concurrent.Future
@@ -20,14 +21,4 @@ object Catalog {
   def getRepository[T<:AnyRef](implicit mf: Manifest[T]): Repository[T] = {
     repositories.getOrElseUpdate(mf, repositoryFactory.create(mf)).asInstanceOf[Repository[T]]
   }
-
-  def save[T<:AnyRef](id: String, obj: T)(implicit mf: Manifest[T]): Future[Unit] = getRepository(mf).save(id, obj)
-
-  def saveAll[T<:AnyRef](objs: Seq[(String, T)])(implicit mf: Manifest[T]): Future[Unit] = getRepository(mf).saveAll(objs)
-
-  def findById[T<:AnyRef](id: String)(implicit mf: Manifest[T]): Future[Option[T]] = getRepository(mf).findById(id)
-
-  def findByIdIn[T<:AnyRef](ids: Seq[String])(implicit mf: Manifest[T]): Future[Seq[T]] = getRepository(mf).findByIdIn(ids)
-
-  def find[T<:AnyRef](expr: String)(implicit mf: Manifest[T]): Future[Seq[T]] = getRepository(mf).find(expr)
 }

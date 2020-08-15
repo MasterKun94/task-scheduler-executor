@@ -3,6 +3,6 @@ package com.oceanum.api.entities
 import com.oceanum.annotation.ISerializationMessage
 
 @ISerializationMessage("ELEMENTS")
-case class Elements[T](elements: Seq[T]) {
-  def size: Int = elements.size
+case class Page[T](elements: Seq[T], size: Int, page: Int) {
+  def elementSize: Int = elements.size
 }

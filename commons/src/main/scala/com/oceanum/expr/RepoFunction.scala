@@ -2,10 +2,10 @@ package com.oceanum.expr
 
 import java.util
 
-import com.googlecode.aviator.lexer.token.OperatorType
-import com.googlecode.aviator.runtime.`type`.{AviatorObject, AviatorRuntimeJavaType}
+import com.googlecode.aviator.runtime.`type`.{AviatorObject, AviatorRuntimeJavaType, AviatorType}
 import com.googlecode.aviator.runtime.function.{AbstractFunction, FunctionUtils}
 import com.oceanum.annotation.IFunction
+import com.oceanum.api.Sort
 
 @IFunction
 class RepoFieldFunction extends AbstractFunction {
@@ -15,6 +15,16 @@ class RepoFieldFunction extends AbstractFunction {
     val fieldString = FunctionUtils.getStringValue(field, env)
     AviatorRuntimeJavaType.valueOf(RepoField(fieldString))
   }
+}
+
+abstract class RepoNoneFunction extends AbstractFunction {
+  override def getName: String = "repo.findAll"
+
+  override def call(env: JavaMap[String, AnyRef]): AviatorObject = {
+    emptyCall()
+  }
+
+  def emptyCall(): AviatorObject
 }
 
 abstract class RepoTermFunction extends AbstractFunction {
@@ -60,8 +70,15 @@ abstract class RepoSortFunction extends AbstractFunction {
   override def getName: String = "repo.sort"
 
   override def call(env: JavaMap[String, AnyRef], field: AviatorObject): AviatorObject = {
-    val fieldString = FunctionUtils.getStringValue(field, env)
-    call(fieldString)
+    field.getAviatorType match {
+      case AviatorType.JavaType =>
+        val sorts = FunctionUtils.getJavaObject(field, env).asInstanceOf[Array[Sort]]
+        call(sorts)
+
+      case _ =>
+        val fieldString = FunctionUtils.getStringValue(field, env)
+        call(fieldString)
+    }
   }
 
   override def call(env: JavaMap[String, AnyRef], field: AviatorObject, sortType: AviatorObject): AviatorObject = {
@@ -73,7 +90,10 @@ abstract class RepoSortFunction extends AbstractFunction {
   def call(field: String): AviatorObject
 
   def call(field: String, sortType: String): AviatorObject
+
+  def call(sorts: Array[Sort]): AviatorObject
 }
+
 //
 //class RepoSortsFunction extends AbstractFunction {
 //  override def getName: String = "repo.sorts"
@@ -91,8 +111,8 @@ abstract class RepoSortFunction extends AbstractFunction {
 //  }
 //}
 
-abstract class RepoLimitFunction extends AbstractFunction {
-  override def getName: String = "repo.limit"
+abstract class RepoSizeFunction extends AbstractFunction {
+  override def getName: String = "repo.size"
 
   override def call(env: JavaMap[String, AnyRef], limit: AviatorObject): AviatorObject = {
     val limitNum = FunctionUtils.getNumberValue(limit, env)
@@ -100,6 +120,17 @@ abstract class RepoLimitFunction extends AbstractFunction {
   }
 
   def call(limit: Int): AviatorObject
+}
+
+abstract class RepoPageFunction extends AbstractFunction {
+  override def getName: String = "repo.page"
+
+  override def call(env: JavaMap[String, AnyRef], page: AviatorObject): AviatorObject = {
+    val pageNum = FunctionUtils.getNumberValue(page, env)
+    call(pageNum.intValue())
+  }
+
+  def call(page: Int): AviatorObject
 }
 
 abstract class RepoSelectFunction extends AbstractFunction {

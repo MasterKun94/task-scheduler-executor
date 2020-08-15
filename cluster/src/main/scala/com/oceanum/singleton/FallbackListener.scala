@@ -59,7 +59,6 @@ class FallbackListener extends Actor with ActorLogging {
             expr = "(!repo.terms('host', values)) && (!repo.exists('endTime') || (repo.field('endTime') > date.now()))",
             env = Map("values" -> value.nodes.map(_.host).filterNot(_.equals(discard)))
           )
-          .map(_.filter(coord => coord.endTime.map(_.getTime).getOrElse(Long.MaxValue) > System.currentTimeMillis()))
           .flatMap { coordinators =>
             val seq: Seq[Future[Unit]] = coordinators
               .map(coord => {

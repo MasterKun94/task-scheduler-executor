@@ -2,9 +2,11 @@ package com.oceanum.api
 
 import java.util.Date
 
-import com.oceanum.api.entities.{ClusterNodes, Coordinator, CoordinatorLog, CoordinatorStatus, Elements, NodeTaskInfo, RunWorkflowInfo, WorkflowDefine}
-import com.oceanum.common.{FallbackStrategy, GraphMeta, GraphStatus, NodeStatus, RerunStrategy}
+import com.oceanum.api.entities._
+import com.oceanum.common._
+import com.oceanum.expr.{JavaHashMap, JavaMap}
 
+import scala.collection.mutable
 import scala.concurrent.Future
 
 /**
@@ -48,11 +50,55 @@ trait RestService {
 
   def clusterNodes(status: Option[NodeStatus] = None, host: Option[String] = None, role: Option[String] = None): Future[ClusterNodes]
 
-  def clusterTaskInfos(host: Option[String]): Future[Elements[NodeTaskInfo]]
+  def clusterTaskInfos(host: Option[String]): Future[Page[NodeTaskInfo]]
 
-//  def listWorkflows(host: Option[String], graphStatus: Option[GraphStatus]): Future[Elements[RunWorkflowInfo]]
-//
-//  def listCoordinators(): Future[Elements[CoordinatorStatus]]
+  def searchWorkflows(searchRequest: SearchRequest): Future[Page[GraphMeta]]
+
+  def searchCoordinators(searchRequest: SearchRequest): Future[Page[CoordinatorStatus]]
 
   def nodeTaskInfo(host: String): Future[NodeTaskInfo]
+
+  def listWorkflows(host: Option[String], graphStatus: Option[GraphStatus], sorts: Seq[Sort], size: Int, page: Int): Future[Page[GraphMeta]] = {
+    val env: mutable.Map[String, Any] = mutable.Map()
+    val expr = (host, graphStatus) match {
+      case (Some(h), Some(s)) =>
+        env.put("host", h)
+        env.put("graphStatus", s)
+        "repo.field('host') == host && repo.field('graphStatus') == graphStatus"
+      case (Some(h), None) =>
+        env.put("host", h)
+        "repo.field('host') == host"
+      case (None, Some(s)) =>
+        env.put("graphStatus", s)
+        "repo.field('graphStatus') == graphStatus"
+      case (None, None) =>
+        "repo.findAll()"
+    }
+
+    searchWorkflows(SearchRequest(expr, sorts, size, page, env.toMap))
+  }
+
+  def listCoordinators(host: Option[String], status: Option[CoordStatus], sorts: Seq[Sort], size: Int, page: Int): Future[Page[CoordinatorStatus]] = {
+    val env: mutable.Map[String, Any] = mutable.Map()
+    val expr = (host, status) match {
+      case (Some(h), Some(s)) =>
+        env.put("host", h)
+        env.put("status", s)
+        "repo.field('host') == host && repo.field('status') == status"
+      case (Some(h), None) =>
+        env.put("host", h)
+        "repo.field('host') == host"
+      case (None, Some(s)) =>
+        env.put("status", s)
+        "repo.field('status') == status"
+      case (None, None) =>
+        "repo.findAll()"
+    }
+
+    searchCoordinators(SearchRequest(expr, sorts, size, page, env.toMap))
+  }
+
+}
+
+object RestService {
 }

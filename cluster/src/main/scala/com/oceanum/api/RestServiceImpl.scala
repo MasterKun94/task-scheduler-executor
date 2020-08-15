@@ -5,7 +5,7 @@ import akka.cluster.{Cluster, MemberStatus}
 import akka.stream.QueueOfferResult.{Dropped, Enqueued, QueueClosed, Failure => QFailure}
 import com.oceanum.annotation.IRestService
 import com.oceanum.api.HttpServer.restService
-import com.oceanum.api.entities.{ClusterNode, ClusterNodes, Elements, NodeTaskInfo, RunWorkflowInfo, WorkflowDefine}
+import com.oceanum.api.entities.{ClusterNode, ClusterNodes, Page, NodeTaskInfo, RunWorkflowInfo, WorkflowDefine}
 import com.oceanum.client.TaskClient
 import com.oceanum.common.{ActorSystems, Environment, GraphMeta, NodeStatus}
 import com.oceanum.exec.RunnerManager
@@ -119,13 +119,13 @@ class RestServiceImpl extends AbstractRestService {
     MemberStatus.WeaklyUp -> NodeStatus.WEAKLY_UP
   )
 
-  override def clusterTaskInfos(host: Option[String]): Future[Elements[NodeTaskInfo]] = {
+  override def clusterTaskInfos(host: Option[String]): Future[Page[NodeTaskInfo]] = {
     val nodes = clusterNodes(status = Some(NodeStatus.UP), host = host)
     nodes
       .flatMap { nodes =>
         Future.sequence(nodes.nodes.map(node => nodeTaskInfo(node.host)))
       }
-      .map(Elements(_))
+      .map(seq => Page(seq, size = seq.size, 0))
   }
 
   override def nodeTaskInfo(host: String): Future[NodeTaskInfo] = {

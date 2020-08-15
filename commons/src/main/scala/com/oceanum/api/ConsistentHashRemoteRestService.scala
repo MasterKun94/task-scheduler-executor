@@ -109,11 +109,19 @@ class ConsistentHashRemoteRestService(seed: String) extends RestService {
     execute(_.clusterNodes(status, host, role))
   }
 
-  override def clusterTaskInfos(host: Option[String]): Future[Elements[NodeTaskInfo]] = {
+  override def clusterTaskInfos(host: Option[String]): Future[Page[NodeTaskInfo]] = {
     execute(_.clusterTaskInfos(host))
   }
 
   override def nodeTaskInfo(host: String): Future[NodeTaskInfo] = {
     execute(_.nodeTaskInfo(host))
+  }
+
+  override def searchWorkflows(searchRequest: SearchRequest): Future[Page[GraphMeta]] = {
+    execute(_.searchWorkflows(searchRequest))
+  }
+
+  override def searchCoordinators(searchRequest: SearchRequest): Future[Page[CoordinatorStatus]] = {
+    execute(_.searchCoordinators(searchRequest))
   }
 }

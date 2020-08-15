@@ -26,6 +26,14 @@ object HttpServer extends Log {
   private lazy val serialization = SystemInit.serialization
 
   private val route: Route = pathPrefix("api") {
+    pathPrefix("search") {
+      path("workflow") {
+        searchWorkflow()
+      } ~
+        path("coordinator") {
+          searchCoordinator()
+        }
+    } ~
     pathPrefix("workflow"/Segment) { name =>
       pathPrefix("status") {
         checkWorkflowStatus(name)   //api/workflow/{name}/status
@@ -87,6 +95,24 @@ object HttpServer extends Log {
       path("task-info") {
         taskInfo()
       }
+    }
+  }
+
+  def searchWorkflow(): Route = {
+    extractRequestEntity { entity =>
+      val future = deserializeAndRun[SearchRequest, Page[GraphMeta]](entity) { req =>
+        restService.searchWorkflows(req)
+      }
+      returnResponseWithEntity(future)
+    }
+  }
+
+  def searchCoordinator(): Route = {
+    extractRequestEntity { entity =>
+      val future = deserializeAndRun[SearchRequest, Page[CoordinatorStatus]](entity) { req =>
+        restService.searchCoordinators(req)
+      }
+      returnResponseWithEntity(future)
     }
   }
 

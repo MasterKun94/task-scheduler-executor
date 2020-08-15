@@ -3,9 +3,17 @@ package com.oceanum.expr
 import com.googlecode.aviator.lexer.token.OperatorType
 import com.googlecode.aviator.runtime.`type`.{AviatorObject, AviatorRuntimeJavaType}
 import com.oceanum.annotation.{IFunction, IOpFunction}
+import com.oceanum.api.Sort
 import org.elasticsearch.index.query.{QueryBuilder, QueryBuilders, RangeQueryBuilder}
 import org.elasticsearch.search.builder.SearchSourceBuilder
 import org.elasticsearch.search.sort.{SortBuilder, SortBuilders, SortOrder}
+
+@IFunction
+class EsRepoNoneFunction extends RepoNoneFunction {
+  override def emptyCall(): AviatorObject = {
+    AviatorRuntimeJavaType.valueOf(QueryBuilders.matchAllQuery())
+  }
+}
 
 @IFunction
 class EsRepoTermFunction extends RepoTermFunction {
@@ -31,21 +39,34 @@ class EsRepoFieldExistsFunction extends RepoFieldExistsFunction {
 @IFunction
 class EsRepoFSortFunction extends RepoSortFunction {
   override def call(field: String): AviatorObject = {
-    AviatorRuntimeJavaType.valueOf(SortBuilders.fieldSort(field))
+    AviatorRuntimeJavaType.valueOf(Array(SortBuilders.fieldSort(field)))
   }
 
   override def call(field: String, sortType: String): AviatorObject = {
-    AviatorRuntimeJavaType.valueOf(SortBuilders.fieldSort(field).order(SortOrder.valueOf(sortType.toUpperCase())))
+    AviatorRuntimeJavaType.valueOf(Array(SortBuilders.fieldSort(field).order(SortOrder.valueOf(sortType.toUpperCase()))))
   }
-}
-@IFunction
-class EsRepoLimitFunction extends RepoLimitFunction {
-  override def call(limit: Int): AviatorObject = {
-    AviatorRuntimeJavaType.valueOf(EsLimit(limit))
+
+  override def call(sorts: Array[Sort]): AviatorObject = {
+    val builders = sorts.map(sort => SortBuilders.fieldSort(sort.field).order(SortOrder.valueOf(sort.sortType.toUpperCase())))
+    AviatorRuntimeJavaType.valueOf(builders)
   }
 }
 
-case class EsLimit(limit: Int)
+@IFunction
+class EsRepoSizeFunction extends RepoSizeFunction {
+  override def call(limit: Int): AviatorObject = {
+    AviatorRuntimeJavaType.valueOf(EsSize(limit))
+  }
+}
+@IFunction
+class EsRepoPageFunction extends RepoPageFunction {
+  override def call(page: Int): AviatorObject = {
+    AviatorRuntimeJavaType.valueOf(EsPage(page))
+  }
+}
+
+case class EsSize(size: Int)
+case class EsPage(page: Int)
 
 @IFunction
 class EsRepoSelectFunction extends RepoSelectFunction {
@@ -113,7 +134,11 @@ class EsRepoSelectFunction extends RepoSelectFunction {
     obj match {
       case queryBuilder: QueryBuilder => searchSourceBuilder.query(queryBuilder)
       case sortBuilder: SortBuilder[_] => searchSourceBuilder.sort(sortBuilder)
-      case limit: EsLimit => searchSourceBuilder.size(limit.limit)
+      case sortBuilders: Array[SortBuilder[_]] =>
+        sortBuilders.foreach(sortBuilder => searchSourceBuilder.sort(sortBuilder))
+        searchSourceBuilder
+      case size: EsSize => searchSourceBuilder.size(size.size)
+      case page: EsPage => searchSourceBuilder.from(page.page * searchSourceBuilder.size())
     }
   }
 }
