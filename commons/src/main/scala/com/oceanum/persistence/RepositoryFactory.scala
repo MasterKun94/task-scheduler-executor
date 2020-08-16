@@ -8,4 +8,5 @@ trait RepositoryFactory {
 
   def create[T<:AnyRef](implicit mf: Manifest[T]): Repository[T]
 
+  def expressionFactory: ExpressionFactory
 }

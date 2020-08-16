@@ -1,8 +1,8 @@
 package com.oceanum.persistence.es
 
 import com.oceanum.annotation.{IRepositoryFactory, ISerializationMessage}
-import com.oceanum.expr.{JavaHashMap, JavaMap}
-import com.oceanum.persistence.{AbstractRepository, Repository, RepositoryFactory}
+import com.oceanum.expr.{EsExpressionFactory, JavaHashMap, JavaMap}
+import com.oceanum.persistence.{AbstractRepository, ExpressionFactory, Repository, RepositoryFactory}
 
 import scala.concurrent.Future
 
@@ -33,4 +33,6 @@ class EsRepositoryFactory extends RepositoryFactory {
 
     override def find(expr: String, env: JavaMap[String, AnyRef] = new JavaHashMap(0)): Future[Seq[T]] = EsUtil.find(index, expr, env)
   }
+
+  override def expressionFactory: ExpressionFactory = new EsExpressionFactory()
 }

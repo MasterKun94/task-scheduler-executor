@@ -1,7 +1,7 @@
 package com.oceanum.persistence.es
 
 import com.oceanum.common.Environment
-import com.oceanum.expr.{Evaluator, JavaHashMap, JavaMap}
+import com.oceanum.expr.{Evaluator, JavaHashMap, JavaMap, PageExpression, QueryExpression, RangeExpression, SearchSourceExpression, SizeExpression}
 import com.oceanum.serialize.Serialization
 import org.apache.http.HttpHost
 import org.elasticsearch.action.ActionListener
@@ -37,7 +37,7 @@ object EsUtil {
 
   def save[T<:AnyRef](idx: String, id: String, t: T): Future[Unit] = {
     val req = new IndexRequest(idx, typ, id)
-      .source(serialization.serialize[T](t), XContentType.JSON)
+      .source(serialization.serialize(t), XContentType.JSON)
     val promise = Promise[Unit]()
     client.indexAsync(req, RequestOptions.DEFAULT, Listener[IndexResponse, Unit](promise)(_ => Unit))
     promise.future
@@ -45,7 +45,7 @@ object EsUtil {
 
   def save[T<:AnyRef](idx: String, t: T): Future[String] = {
     val req = new IndexRequest(idx, typ)
-      .source(serialization.serialize[T](t), XContentType.JSON)
+      .source(serialization.serialize(t), XContentType.JSON)
     val promise = Promise[String]()
     client.indexAsync(req, RequestOptions.DEFAULT, Listener[IndexResponse, String](promise)(_.getId))
     promise.future
@@ -57,7 +57,7 @@ object EsUtil {
     }
     val req = new BulkRequest()
     for ((id, t) <- objs) {
-      req.add(new IndexRequest(idx, typ, id).source(serialization.serialize[T](t), XContentType.JSON))
+      req.add(new IndexRequest(idx, typ, id).source(serialization.serialize(t), XContentType.JSON))
     }
     val promise = Promise[Unit]()
     client.bulkAsync(req, RequestOptions.DEFAULT, Listener[BulkResponse, Unit](promise) { res =>
@@ -114,10 +114,16 @@ object EsUtil {
 
   def parseExpr(expr: String, env: JavaMap[String, AnyRef] = new JavaHashMap(0)): SearchSourceBuilder = {
     val obj = Evaluator.rawExecute(expr, env)
-    obj match {
-      case searchSourceBuilder: SearchSourceBuilder => searchSourceBuilder
-      case queryBuilder: QueryBuilder => new SearchSourceBuilder().query(queryBuilder)
+    val builder: SearchSourceBuilder = obj match {
+      case SearchSourceExpression(searchSourceBuilder) => searchSourceBuilder
+      case QueryExpression(queryBuilder) => new SearchSourceBuilder().query(queryBuilder)
+      case RangeExpression(rangeQueryBuilder) => new SearchSourceBuilder().query(rangeQueryBuilder)
+      case SizeExpression(size) => new SearchSourceBuilder().size(size)
+      case PageExpression(page) =>
+        val builder = new SearchSourceBuilder()
+        builder.from(page * builder.size())
     }
+    builder
   }
 
   def createIndex(index: String): Future[Unit] = {

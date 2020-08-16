@@ -11,4 +11,6 @@ class EmptyRepositoryFactory extends RepositoryFactory {
   override def create[T <: AnyRef](implicit mf: Manifest[T]): Repository[T] = {
     throw new IllegalArgumentException("no RepositoryFactory found")
   }
+
+  override def expressionFactory: ExpressionFactory = ???
 }

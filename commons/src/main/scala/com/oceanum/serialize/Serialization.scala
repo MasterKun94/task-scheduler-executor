@@ -12,7 +12,7 @@ trait Serialization[W<:WrappedObject] {
   def unRegister(name: String): Unit
   def unRegister[T<:AnyRef](implicit mf: Manifest[T]): Unit
   def unRegister[T<:AnyRef](clazz: Class[T]): Unit = unRegister(Manifest.classType[T](clazz))
-  def serialize[T<:AnyRef](obj: T, pretty: Boolean = false): String
+  def serialize(obj: AnyRef, pretty: Boolean = false): String
   def deSerialize(str: String): AnyRef
   def deSerializeRaw[T<:AnyRef](str: String)(implicit mf: Manifest[T]): T
 }

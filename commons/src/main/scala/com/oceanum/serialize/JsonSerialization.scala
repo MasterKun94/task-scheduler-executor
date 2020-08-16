@@ -38,13 +38,18 @@ class JsonSerialization(protected val serializableMap: TrieMap[String, Serializa
     names.remove(mf.runtimeClass.asInstanceOf[Class[_<:AnyRef]]).foreach(serializableMap.remove)
   }
 
-  override def serialize[T<:AnyRef](obj: T, pretty: Boolean = false): String = {
-    val name = names.getOrElse(obj.getClass, obj.getClass.getName)
+  import scala.language.existentials
+  override def serialize(obj: AnyRef, pretty: Boolean = false): String = {
+    val clazz = obj match {
+      case _: Throwable => classOf[Throwable]
+      case _ => obj.getClass
+    }
+    val name = names.getOrElse(clazz, clazz.getName)
     val serializer = serializableMap.get(name) match {
       case Some(serializer) =>
         serializer
       case None =>
-        if (autoType) register(obj.getClass)
+        if (autoType) register(clazz)
         else throw new IllegalArgumentException("can not serialize obj: " + obj.getClass)
     }
     serializer.toJson(obj).serializedString(pretty)
