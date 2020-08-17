@@ -2,7 +2,7 @@ package com.oceanum.common
 
 
 import com.oceanum.annotation.ISerializationMessage
-import com.oceanum.expr.{ExprParser, JavaMap}
+import com.oceanum.jdbc.expr.{ExprParser, JavaMap}
 
 import scala.collection.JavaConverters._
 

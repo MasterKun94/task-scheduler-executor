@@ -7,7 +7,7 @@ import akka.actor.{ActorSystem, Cancellable}
 import com.oceanum.api.entities._
 import com.oceanum.common._
 import com.oceanum.exceptions.{BadRequestException, VersionOutdatedException}
-import com.oceanum.expr.{Evaluator, JavaHashMap, JavaMap}
+import com.oceanum.jdbc.expr.{Evaluator, JavaHashMap, JavaMap}
 import com.oceanum.persistence.Catalog
 import com.oceanum.trigger.Triggers
 
@@ -194,13 +194,29 @@ abstract class AbstractRestService extends Log with RestService {
       }
   }
 
+  import scala.collection.JavaConversions.mapAsJavaMap
   override def recover(coordinator: Coordinator): Future[Unit] = {
     submitCoordinator(coordinator, Environment.HOST)
       .flatMap { _ =>
         checkCoordinatorStatus(coordinator.name)
       }
+      .flatMap { s =>
+        val env = Map("name" -> coordinator.name)
+        coordinatorLogRepo.find(
+          """
+            |repo.select(
+            | repo.field('name') == name,
+            | repo.sort('timestamp', 'DESC'),
+            | repo.size(1)
+            |)
+            |""".stripMargin, env)
+          .map(_.head)
+          .map(_.timestamp.getTime + 1)
+          .map(new Date(_))
+          .map(_ -> s)
+      }
       .map { s =>
-        coordinatorAction(coordinator, recoverStatus = Option(s.status))
+        coordinatorAction(coordinator.copy(startTime = Option(s._1)), recoverStatus = Option(s._2.status))
       }
   }
 
@@ -230,9 +246,9 @@ abstract class AbstractRestService extends Log with RestService {
     }
     val trigger = Triggers.getTrigger(coordinator.trigger.name)
 
-    val action = { date: Date =>
+    val action: (Date, Map[String, Any]) => Unit = { (date, env) =>
       log.info("trigger running Workflow: " + name)
-      runWorkflow(name, coordinator.fallbackStrategy, coordinator.workflowDefine.env, keepAlive = true, scheduleTime = Some(date), Some(coordinator.version))
+      runWorkflow(name, coordinator.fallbackStrategy, coordinator.workflowDefine.env ++ env, keepAlive = true, scheduleTime = Some(date), Some(coordinator.version))
         .andThen {
           case Failure(_: VersionOutdatedException) =>
             log.warning("coordinator outdated: " + coordinator)
@@ -280,10 +296,9 @@ abstract class AbstractRestService extends Log with RestService {
   override def suspendCoordinator(name: String): Future[Boolean] = {
     getCoordinator(name).flatMap { coord =>
       if (isLocal(coord.host)) {
-        if (Triggers.getTrigger(coord.trigger.name).suspend(name)) {
-          updateCoordinatorStatus(name, CoordStatus.SUSPENDED).map(_ => true)
-        } else {
-          Future(false)
+        Triggers.getTrigger(coord.trigger.name).suspend(name).flatMap {
+          case true => updateCoordinatorStatus(name, CoordStatus.SUSPENDED).map(_ => true)
+          case false => Future(false)
         }
       } else {
         RemoteRestServices.get(coord.host.get).suspendCoordinator(name)
@@ -294,10 +309,9 @@ abstract class AbstractRestService extends Log with RestService {
   override def stopCoordinator(name: String): Future[Boolean] = {
     getCoordinator(name).flatMap { coord =>
       if (isLocal(coord.host)) {
-        if (Triggers.getTrigger(coord.trigger.name).stop(name)) {
-          updateCoordinatorStatus(name, CoordStatus.STOPPED).map(_ => true)
-        } else {
-          Future(false)
+        Triggers.getTrigger(coord.trigger.name).stop(name).flatMap {
+          case true => updateCoordinatorStatus(name, CoordStatus.STOPPED).map(_ => true)
+          case false => Future(false)
         }
       } else {
         RemoteRestServices.get(coord.host.get).stopCoordinator(name)
@@ -309,10 +323,9 @@ abstract class AbstractRestService extends Log with RestService {
     getCoordinator(name)
       .flatMap { coord =>
         if (isLocal(coord.host)) {
-          if (Triggers.getTrigger(coord.trigger.name).resume(name)) {
-            updateCoordinatorStatus(name, CoordStatus.RUNNING).map(_ => true)
-          } else {
-            Future(false)
+          Triggers.getTrigger(coord.trigger.name).resume(name).flatMap {
+            case true => updateCoordinatorStatus(name, CoordStatus.RUNNING).map(_ => true)
+            case false => Future(false)
           }
         } else {
           RemoteRestServices.get(coord.host.get).resumeCoordinator(name)
@@ -346,7 +359,7 @@ abstract class AbstractRestService extends Log with RestService {
   }
 
   private def updateCoordinatorStatus(name: String, state: CoordStatus): Future[Unit] = {
-    coordinatorStateRepo.save(name, CoordinatorStatus(name, state).copy(latestUpdateTime = new Date()))
+    coordinatorStateRepo.save(name, CoordinatorStatus(name, state, latestUpdateTime = new Date()))
   }
 
   private def createExpr(req: SearchRequest): (String, JavaMap[String, AnyRef]) = {

@@ -4,7 +4,7 @@ import com.oceanum.persistence.Catalog
 
 import scala.collection.JavaConversions._
 import Environment.NONE_BLOCKING_EXECUTION_CONTEXT
-import com.oceanum.expr.{ExprParser, JavaHashMap}
+import com.oceanum.jdbc.expr.{ExprParser, JavaHashMap}
 import com.oceanum.trigger.Triggers
 
 import scala.util.{Failure, Success}
@@ -18,7 +18,7 @@ object TriggerTest {
       .start("test", Map(
         "cron" -> "0 * * * * ? *"
       ), startTime = None) {
-        println(_)
+        println(_, _)
       }
   }
 }

@@ -7,7 +7,7 @@ import com.googlecode.aviator.runtime.`type`.AviatorFunction
 import com.oceanum.annotation.{IOpFunction, IRepositoryFactory, IRestService, ISerialization, ISerializationMessage, IStdHandlerFactory, InjectType, Injection}
 import com.oceanum.api.RestService
 import com.oceanum.exec.StdHandlerFactory
-import com.oceanum.expr.{Evaluator, OpFunction}
+import com.oceanum.jdbc.expr.{Evaluator, OpFunction}
 import com.oceanum.file.FileSystem
 import com.oceanum.persistence.{Catalog, Repository, RepositoryFactory}
 import com.oceanum.serialize.{Serialization, WrappedObject}
@@ -44,7 +44,7 @@ object SystemInit {
       val func: () => Any = () => clazz.getConstructor().newInstance()
       injection.value() match {
         case InjectType.REPOSITORY =>
-          Catalog.addRepository(func().asInstanceOf[Repository[_<:AnyRef]])
+          Catalog.registerRepository(func().asInstanceOf[Repository[_<:AnyRef]])
 
         case InjectType.FILE_SYSTEM =>
           FileSystem.add(func().asInstanceOf[FileSystem])
@@ -102,7 +102,7 @@ object SystemInit {
       val fieldObj = field.get(obj)
       fieldInjection.value() match {
         case InjectType.REPOSITORY =>
-          Catalog.addRepository(fieldObj.asInstanceOf[Repository[_<:AnyRef]])
+          Catalog.registerRepository(fieldObj.asInstanceOf[Repository[_<:AnyRef]])
 
         case InjectType.FILE_SYSTEM =>
           FileSystem.add(fieldObj.asInstanceOf[FileSystem])
@@ -145,7 +145,7 @@ object SystemInit {
       val methodObj: () => Any = () => method.invoke(obj)
       methodInjection.value() match {
         case InjectType.REPOSITORY =>
-          Catalog.addRepository(methodObj().asInstanceOf[Repository[_<:AnyRef]])
+          Catalog.registerRepository(methodObj().asInstanceOf[Repository[_<:AnyRef]])
 
         case InjectType.FILE_SYSTEM =>
           FileSystem.add(methodObj().asInstanceOf[FileSystem])

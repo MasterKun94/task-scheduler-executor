@@ -1,5 +1,5 @@
 package com.oceanum.exec.tasks
-import com.oceanum.expr.{ExprParser, JavaMap}
+import com.oceanum.jdbc.expr.{ExprParser, JavaMap}
 
 /**
  * @author chenmingkun

@@ -3,7 +3,7 @@ package com.oceanum.exec.tasks
 import akka.actor.{ActorRef, PoisonPill}
 import com.oceanum.common.Environment
 import com.oceanum.exec.StdHandler
-import com.oceanum.expr.{ExprParser, JavaMap}
+import com.oceanum.jdbc.expr.{ExprParser, JavaMap}
 
 case class PluggableTaskConfig(args: Array[String] = Array.empty,
                                plugJars: Array[String],

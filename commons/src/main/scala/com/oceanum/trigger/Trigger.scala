@@ -4,6 +4,8 @@ import java.util.Date
 
 import com.oceanum.common.CoordStatus
 
+import scala.concurrent.Future
+
 /**
  * 触发器接口，Coordinator运行时会启动一个触发器任务，用以计划性的执行工作流。
  *
@@ -22,9 +24,9 @@ trait Trigger {
    * @param action 当任务被触发时执行的动作，输入参数为触发时间
    * @param startTime 第一次触发时间在此之后
    */
-  def start(name: String, config: Map[String, String], startTime: Option[Date])(action: Date => Unit): Unit
+  def start(name: String, config: Map[String, String], startTime: Option[Date])(action: (Date, Map[String, Any]) => Unit): Future[Unit]
 
-  def recover(name: String, config: Map[String, String], startTime: Option[Date], state: CoordStatus)(action: Date => Unit)
+  def recover(name: String, config: Map[String, String], startTime: Option[Date], state: CoordStatus)(action: (Date, Map[String, Any]) => Unit): Future[Unit]
 
   /**
    * 根据任务名称停止任务
@@ -32,7 +34,7 @@ trait Trigger {
    * @param name 任务名称
    * @return 是否有任务被停止，false表示没有该名称的任务，true反之
    */
-  def stop(name: String): Boolean
+  def stop(name: String): Future[Boolean]
 
   /**
    * 根据任务名称暂停任务
@@ -40,7 +42,7 @@ trait Trigger {
    * @param name 任务名称
    * @return 是否有任务被暂停，false表示没有该名称的任务，true反之
    */
-  def suspend(name: String): Boolean
+  def suspend(name: String): Future[Boolean]
 
   /**
    * 根据任务名称继续任务
@@ -48,7 +50,7 @@ trait Trigger {
    * @param name 任务名称
    * @return 是否有任务被继续，false表示没有该名称的任务，true反之
    */
-  def resume(name: String): Boolean
+  def resume(name: String): Future[Boolean]
 
   /**
    * 触发器的类型名称，自定义的不同触发器类应该有不同的triggerType，系统会根据此来找到对应的触发器

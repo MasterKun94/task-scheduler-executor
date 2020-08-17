@@ -8,7 +8,7 @@ import com.oceanum.common.{ActorSystems, Environment, GraphContext, RichTaskMeta
 import com.oceanum.exec.StdHandlerFactory.default._
 import com.oceanum.exec.tasks.SysTasks.UserAddTaskConfig
 import com.oceanum.exec.tasks._
-import com.oceanum.expr.JavaMap
+import com.oceanum.jdbc.expr.JavaMap
 import com.oceanum.pluggable.{PluggablePrimEndpoint, PrimListener}
 
 import scala.concurrent.{ExecutionContext, Future}

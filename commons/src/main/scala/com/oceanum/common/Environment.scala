@@ -80,7 +80,7 @@ object Environment {
 
   lazy val HADOOP_HOME: String = getProperty(Key.HADOOP_HOME, findHadoopHome).toPath()
   lazy val HADOOP_FS_URL: String = getProperty(Key.HADOOP_FS_URL, "hdfs://localhost:9000")
-  lazy val HADOOP_USER: String = getProperty(Key.HADOOP_USER, "root")
+  lazy val HADOOP_USER: String = getProperty(Key.HADOOP_USER, "hdfs")
   lazy val HADOOP_BUFFER_SIZE: Int = getProperty(Key.HADOOP_BUFFER_SIZE, "8192").toInt
   lazy val DEV_MODE: Boolean = getProperty(Key.DEV_MODE, "false").toBoolean
   lazy val logger = "akka.event.slf4j.Slf4jLogger"

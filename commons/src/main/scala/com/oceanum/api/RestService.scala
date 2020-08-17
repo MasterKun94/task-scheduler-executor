@@ -4,7 +4,7 @@ import java.util.Date
 
 import com.oceanum.api.entities._
 import com.oceanum.common._
-import com.oceanum.expr.{JavaHashMap, JavaMap}
+import com.oceanum.jdbc.expr.{JavaHashMap, JavaMap}
 
 import scala.collection.mutable
 import scala.concurrent.Future

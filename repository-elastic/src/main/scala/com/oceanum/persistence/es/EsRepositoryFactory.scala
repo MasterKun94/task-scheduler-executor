@@ -1,7 +1,7 @@
 package com.oceanum.persistence.es
 
 import com.oceanum.annotation.{IRepositoryFactory, ISerializationMessage}
-import com.oceanum.expr.{EsExpressionFactory, JavaHashMap, JavaMap}
+import com.oceanum.jdbc.expr.{EsExpressionFactory, JavaHashMap, JavaMap}
 import com.oceanum.persistence.{AbstractRepository, ExpressionFactory, Repository, RepositoryFactory}
 
 import scala.concurrent.Future

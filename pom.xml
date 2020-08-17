@@ -33,7 +33,8 @@ under the License.
         <module>executor-spark</module>
         <module>executor-flink</module>
 		<module>executor-mapreduce</module>
-	</modules>
+        <module>repository-jdbc</module>
+    </modules>
 	<packaging>pom</packaging>
 
 	<name>Workflow Scheduler</name>
@@ -64,7 +65,7 @@ under the License.
 
 		<akka.version>2.5.31</akka.version>
 		<akka.http.version>10.1.12</akka.http.version>
-		<hadoop.version>2.6.0</hadoop.version>
+		<hadoop.version>2.6.1</hadoop.version>
 		<aviator.version>5.0.1</aviator.version>
 		<json4s.version>3.6.9</json4s.version>
 

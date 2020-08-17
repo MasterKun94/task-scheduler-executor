@@ -1,9 +1,9 @@
 package com.oceanum.exec.tasks
 
 import com.oceanum.common.Environment
-import com.oceanum.expr.ExprParser.parse
+import com.oceanum.jdbc.expr.ExprParser.parse
 import com.oceanum.exec.StdHandler
-import com.oceanum.expr.JavaMap
+import com.oceanum.jdbc.expr.JavaMap
 
 /**
  * @author chenmingkun
