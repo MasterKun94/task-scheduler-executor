@@ -1,4 +1,4 @@
-package com.oceanum.jdbc.expr
+package com.oceanum.expr
 
 import com.googlecode.aviator.runtime.`type`.{AviatorLong, AviatorObject, AviatorRuntimeJavaType, AviatorString}
 import com.googlecode.aviator.runtime.function.{AbstractFunction, FunctionUtils}

@@ -1,6 +1,6 @@
 package com.oceanum.client
 
-import com.oceanum.jdbc.expr.ValidateParser
+import com.oceanum.expr.ValidateParser
 
 @SerialVersionUID(1L)
 abstract class TaskProp(val taskType: String) extends Serializable {

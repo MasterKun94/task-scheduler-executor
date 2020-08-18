@@ -2,11 +2,10 @@ package com.oceanum.exec.tasks
 
 import java.io.{File, IOException}
 
-import com.oceanum.client.TaskProp
-import com.oceanum.common.{Environment, GraphContext, TaskMeta}
 import com.oceanum.common.Implicits.PathHelper
+import com.oceanum.common.{Environment, GraphContext}
 import com.oceanum.exec.{StdHandler, TaskConfig}
-import com.oceanum.jdbc.expr.JavaMap
+import com.oceanum.expr.JavaMap
 import com.oceanum.file.FileSystem
 
 import scala.concurrent.{ExecutionContext, Future}

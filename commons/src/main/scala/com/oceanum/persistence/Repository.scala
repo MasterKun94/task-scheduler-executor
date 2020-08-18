@@ -1,6 +1,6 @@
 package com.oceanum.persistence
 
-import com.oceanum.jdbc.expr.{JavaHashMap, JavaMap}
+import com.oceanum.expr.{JavaHashMap, JavaMap}
 
 import scala.concurrent.Future
 

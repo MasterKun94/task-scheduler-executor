@@ -1,6 +1,6 @@
 package com.oceanum.api
 
-import com.oceanum.jdbc.expr.JavaMap
+import com.oceanum.expr.JavaMap
 import scala.collection.JavaConversions.mapAsJavaMap
 
 /**

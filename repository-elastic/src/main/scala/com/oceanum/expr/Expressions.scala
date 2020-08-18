@@ -1,4 +1,4 @@
-package com.oceanum.jdbc.expr
+package com.oceanum.expr
 
 import com.oceanum.persistence.Expression
 import org.elasticsearch.index.query.{QueryBuilder, RangeQueryBuilder}

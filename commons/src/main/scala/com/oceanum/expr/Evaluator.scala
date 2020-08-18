@@ -1,4 +1,4 @@
-package com.oceanum.jdbc.expr
+package com.oceanum.expr
 
 import com.googlecode.aviator.lexer.token.OperatorType
 import com.googlecode.aviator.runtime.`type`.AviatorFunction

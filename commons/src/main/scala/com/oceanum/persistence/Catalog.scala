@@ -1,11 +1,8 @@
 package com.oceanum.persistence
 
-import com.oceanum.api.entities.{Coordinator, CoordinatorLog, CoordinatorStatus, TaskMetaInfo, WorkflowDefine, WorkflowMetaInfo}
-import com.oceanum.common.{GraphMeta, SystemInit, TaskMeta}
-import com.oceanum.jdbc.expr.JavaHashMap
+import com.oceanum.common.SystemInit
 
 import scala.collection.concurrent.TrieMap
-import scala.concurrent.Future
 
 object Catalog {
   private val repositories: TrieMap[Manifest[_], Repository[_]] = TrieMap()

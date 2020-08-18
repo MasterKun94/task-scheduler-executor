@@ -7,7 +7,7 @@ import akka.actor.{ActorSystem, Cancellable}
 import com.oceanum.api.entities._
 import com.oceanum.common._
 import com.oceanum.exceptions.{BadRequestException, VersionOutdatedException}
-import com.oceanum.jdbc.expr.{Evaluator, JavaHashMap, JavaMap}
+import com.oceanum.expr.{Evaluator, JavaHashMap, JavaMap}
 import com.oceanum.persistence.Catalog
 import com.oceanum.trigger.Triggers
 

@@ -1,4 +1,4 @@
-package com.oceanum.jdbc.expr
+package com.oceanum.expr
 
 import com.googlecode.aviator.AviatorEvaluator
 import com.oceanum.annotation.{IConfiguration, Init}

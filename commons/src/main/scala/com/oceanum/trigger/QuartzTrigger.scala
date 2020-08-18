@@ -5,9 +5,8 @@ import java.util.Date
 import akka.actor.{ActorRef, ActorSystem, Props}
 import com.oceanum.annotation.ITrigger
 import com.oceanum.common.{ActorSystems, CoordStatus, Environment}
-import com.oceanum.jdbc.expr.{ExprParser, JavaHashMap}
+import com.oceanum.expr.{ExprParser, JavaHashMap}
 import com.typesafe.akka.extension.quartz.{MessageRequireFireTime, QuartzSchedulerExtension}
-import org.quartz.impl.StdSchedulerFactory
 
 import scala.collection.concurrent.TrieMap
 import scala.concurrent.Future

@@ -1,4 +1,4 @@
-package com.oceanum.jdbc.expr
+package com.oceanum.expr
 
 import com.oceanum.api.Sort
 import com.oceanum.persistence.{Expression, ExpressionFactory}

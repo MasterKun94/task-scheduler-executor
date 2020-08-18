@@ -1,11 +1,9 @@
 package com.oceanum.trigger
 
-import java.util.Date
-
 import akka.actor.{Actor, ActorRef, ActorSystem, PoisonPill, Props}
 import akka.cluster.singleton.{ClusterSingletonManager, ClusterSingletonManagerSettings}
 import com.oceanum.common.Environment
-import com.oceanum.jdbc.expr.{ExprParser, JavaHashMap}
+import com.oceanum.expr.{ExprParser, JavaHashMap}
 import com.typesafe.akka.`extension`.quartz.{MessageRequireFireTime, QuartzSchedulerExtension}
 
 class SingletonQuartzActor extends Actor {

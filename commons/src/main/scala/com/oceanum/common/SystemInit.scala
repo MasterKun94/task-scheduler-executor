@@ -7,7 +7,7 @@ import com.googlecode.aviator.runtime.`type`.AviatorFunction
 import com.oceanum.annotation.{IOpFunction, IRepositoryFactory, IRestService, ISerialization, ISerializationMessage, IStdHandlerFactory, InjectType, Injection}
 import com.oceanum.api.RestService
 import com.oceanum.exec.StdHandlerFactory
-import com.oceanum.jdbc.expr.{Evaluator, OpFunction}
+import com.oceanum.expr.{Evaluator, OpFunction}
 import com.oceanum.file.FileSystem
 import com.oceanum.persistence.{Catalog, Repository, RepositoryFactory}
 import com.oceanum.serialize.{Serialization, WrappedObject}

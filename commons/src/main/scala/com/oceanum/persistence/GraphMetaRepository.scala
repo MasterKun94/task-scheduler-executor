@@ -3,7 +3,7 @@ package com.oceanum.persistence
 import com.oceanum.annotation.IRepository
 import com.oceanum.api.entities.WorkflowMetaInfo
 import com.oceanum.common.{Environment, GraphMeta, TaskMeta}
-import com.oceanum.jdbc.expr.{JavaHashMap, JavaMap}
+import com.oceanum.expr.{JavaHashMap, JavaMap}
 
 import scala.concurrent.{ExecutionContext, Future}
 
