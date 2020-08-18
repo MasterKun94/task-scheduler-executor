@@ -7,7 +7,7 @@ import com.oceanum.common.CoordStatus
 
 import scala.concurrent.Future
 
-@ITrigger
+//@ITrigger
 class HDFSTrigger extends Trigger {
   private val listener = new HDFSEventListener()
   import com.oceanum.common.Environment.NONE_BLOCKING_EXECUTION_CONTEXT

@@ -11,15 +11,15 @@ import scala.concurrent.Future
 class EsGraphMetaPoRepository extends AbstractRepository[WorkflowMetaInfo] {
   private val index = "graph-meta"
 
-  override def save(id: String, obj: WorkflowMetaInfo): Future[Unit] = EsUtil.save(index, id, obj)
+  override def save(id: String, obj: WorkflowMetaInfo): Future[Unit] = EsUtil.save[WorkflowMetaInfo](index, id, obj)
 
-  override def save(obj: WorkflowMetaInfo): Future[String] = EsUtil.save(index, obj)
+  override def save(obj: WorkflowMetaInfo): Future[String] = EsUtil.save[WorkflowMetaInfo](index, obj)
 
-  override def saveAll(objs: Seq[(String, WorkflowMetaInfo)]): Future[Unit] = EsUtil.saveAll(index, objs)
+  override def saveAll(objs: Seq[(String, WorkflowMetaInfo)]): Future[Unit] = EsUtil.saveAll[WorkflowMetaInfo](index, objs)
 
-  override def findById(id: String): Future[Option[WorkflowMetaInfo]] = EsUtil.findById(index, id)
+  override def findById(id: String): Future[Option[WorkflowMetaInfo]] = EsUtil.findById[WorkflowMetaInfo](index, id)
 
-  override def findByIdIn(ids: Seq[String]): Future[Seq[WorkflowMetaInfo]] = EsUtil.findByIdIn(index, ids)
+  override def findByIdIn(ids: Seq[String]): Future[Seq[WorkflowMetaInfo]] = EsUtil.findByIdIn[WorkflowMetaInfo](index, ids)
 
-  override def find(expr: String, env: JavaMap[String, AnyRef]): Future[Seq[WorkflowMetaInfo]] = EsUtil.find(index, expr, env)
+  override def find(expr: String, env: JavaMap[String, AnyRef]): Future[Seq[WorkflowMetaInfo]] = EsUtil.find[WorkflowMetaInfo](index, expr, env)
 }

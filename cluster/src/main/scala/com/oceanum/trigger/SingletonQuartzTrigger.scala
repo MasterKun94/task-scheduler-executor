@@ -10,7 +10,7 @@ import com.oceanum.common.{ActorSystems, CoordStatus}
 
 import scala.concurrent.Future
 
-@ITrigger
+//@ITrigger
 class SingletonQuartzTrigger extends Trigger {
   private val singleton = SingletonQuartzActor.start(ActorSystems.SYSTEM)
   implicit private val timeout: Timeout = Timeout(20, TimeUnit.SECONDS)
