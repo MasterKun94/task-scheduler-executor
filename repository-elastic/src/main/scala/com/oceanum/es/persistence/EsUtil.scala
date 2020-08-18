@@ -1,7 +1,8 @@
-package com.oceanum.persistence.es
+package com.oceanum.es.persistence
 
 import com.oceanum.common.Environment
-import com.oceanum.expr.{Evaluator, JavaHashMap, JavaMap, PageExpression, QueryExpression, RangeExpression, SearchSourceExpression, SizeExpression}
+import com.oceanum.es.expr._
+import com.oceanum.expr._
 import com.oceanum.serialize.Serialization
 import org.apache.http.HttpHost
 import org.elasticsearch.action.ActionListener
@@ -12,7 +13,7 @@ import org.elasticsearch.action.index.{IndexRequest, IndexResponse}
 import org.elasticsearch.action.search.{SearchRequest, SearchResponse}
 import org.elasticsearch.client.{RequestOptions, RestClient, RestHighLevelClient}
 import org.elasticsearch.common.xcontent.XContentType
-import org.elasticsearch.index.query.{QueryBuilder, QueryBuilders}
+import org.elasticsearch.index.query.QueryBuilders
 import org.elasticsearch.search.builder.SearchSourceBuilder
 
 import scala.concurrent.{ExecutionContext, ExecutionContextExecutor, Future, Promise}

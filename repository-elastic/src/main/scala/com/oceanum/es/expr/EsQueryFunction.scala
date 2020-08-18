@@ -1,12 +1,10 @@
-package com.oceanum.expr
+package com.oceanum.es.expr
 
 import com.googlecode.aviator.runtime.`type`.{AviatorObject, AviatorRuntimeJavaType}
 import com.googlecode.aviator.runtime.function.{AbstractFunction, FunctionUtils}
 import com.oceanum.annotation.IFunction
-import org.elasticsearch.index.query.{BoolQueryBuilder, QueryBuilder, QueryBuilders, RangeQueryBuilder}
-import org.elasticsearch.search.aggregations.AggregationBuilder
-import org.elasticsearch.search.builder.SearchSourceBuilder
-import org.elasticsearch.search.sort.SortBuilder
+import com.oceanum.expr.JavaMap
+import org.elasticsearch.index.query.{BoolQueryBuilder, QueryBuilders, RangeQueryBuilder}
 
 /**
  * @author chenmingkun

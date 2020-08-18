@@ -1,7 +1,7 @@
-package com.oceanum.common
+package com.oceanum.es.common
 
 import com.oceanum.annotation.{IConfiguration, Init}
-import com.oceanum.persistence.es.EsUtil
+import com.oceanum.es.persistence.EsUtil
 
 /**
  * @author chenmingkun

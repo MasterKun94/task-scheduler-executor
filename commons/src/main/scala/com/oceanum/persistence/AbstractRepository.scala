@@ -1,5 +1,6 @@
 package com.oceanum.persistence
+import scala.reflect.runtime.universe
 
-abstract class AbstractRepository[T<:AnyRef](implicit protected val mf: Manifest[T]) extends Repository[T] {
-  override def manifest: Manifest[T] = mf
+abstract class AbstractRepository[T<:AnyRef](implicit protected val tag: universe.TypeTag[T]) extends Repository[T] {
+  override def typeTag: universe.TypeTag[T] = tag
 }

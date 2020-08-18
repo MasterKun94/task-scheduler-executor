@@ -1,4 +1,4 @@
-package com.oceanum.expr
+package com.oceanum.es.expr
 
 import com.oceanum.persistence.Expression
 import org.elasticsearch.index.query.{QueryBuilder, RangeQueryBuilder}

@@ -1,4 +1,4 @@
-package com.oceanum.persistence.es
+package com.oceanum.es.persistence
 
 import com.oceanum.annotation.IRepository
 import com.oceanum.api.entities.TaskMetaInfo

@@ -1,8 +1,8 @@
-package com.oceanum.persistence.es
+package com.oceanum.es.persistence
 
 import com.oceanum.annotation.IRepository
 import com.oceanum.api.entities.WorkflowMetaInfo
-import com.oceanum.expr.{JavaHashMap, JavaMap}
+import com.oceanum.expr.JavaMap
 import com.oceanum.persistence.AbstractRepository
 
 import scala.concurrent.Future

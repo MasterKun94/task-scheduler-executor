@@ -1,4 +1,4 @@
-package com.oceanum.expr
+package com.oceanum.es.expr
 
 import com.oceanum.api.Sort
 import com.oceanum.persistence.{Expression, ExpressionFactory}

@@ -1,10 +1,12 @@
-package com.oceanum.persistence.es
+package com.oceanum.es.persistence
 
 import com.oceanum.annotation.{IRepositoryFactory, ISerializationMessage}
-import com.oceanum.expr.{EsExpressionFactory, JavaHashMap, JavaMap}
+import com.oceanum.es.expr.EsExpressionFactory
+import com.oceanum.expr.{JavaHashMap, JavaMap}
 import com.oceanum.persistence.{AbstractRepository, ExpressionFactory, Repository, RepositoryFactory}
 
 import scala.concurrent.Future
+import scala.reflect.runtime.universe.{TypeTag, typeOf}
 
 /**
  * @author chenmingkun
@@ -12,13 +14,13 @@ import scala.concurrent.Future
  */
 @IRepositoryFactory(priority = 1)
 class EsRepositoryFactory extends RepositoryFactory {
-  override def create[T <: AnyRef](implicit mf: Manifest[T]): Repository[T] = new AbstractRepository[T]() {
+  override def create[T <: AnyRef](implicit tag: TypeTag[T]): Repository[T] = new AbstractRepository[T]() {
     private val index = {
-      val clazz = mf.runtimeClass
+      val clazz = tag.mirror.runtimeClass(typeOf(tag))
       if (clazz.isAnnotationPresent(classOf[ISerializationMessage]))
         clazz.getAnnotation(classOf[ISerializationMessage]).value().toLowerCase
       else
-        mf.runtimeClass.getName.toLowerCase
+        clazz.getName.toLowerCase
     }
 
     override def save(id: String, obj: T): Future[Unit] = EsUtil.save(index, id, obj)

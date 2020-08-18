@@ -55,6 +55,10 @@ class JsonSerialization(protected val serializableMap: TrieMap[String, Serializa
     serializer.toJson(obj).serializedString(pretty)
   }
 
+  override def serializeRaw(obj: AnyRef, pretty: Boolean): String = {
+    JackSerial.write(obj)
+  }
+
   override def deSerialize(str: String): AnyRef = {
     val jValue = new JsonObject(JsonMethods.parse(str))
     val name = jValue.objType

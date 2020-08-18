@@ -5,7 +5,7 @@ import java.util.Collections
 
 import com.oceanum.api.Sort
 import com.oceanum.persistence.Expression
-import tech.ibit.sqlbuilder.{Criteria, Table, CriteriaItemMaker => maker}
+import tech.ibit.sqlbuilder.{Criteria, OrderBy, Sql, SqlParams, Table, CriteriaItemMaker => maker}
 
 trait JdbcWhereExpression extends Expression {
   def reverse(): JdbcWhereExpression
@@ -86,7 +86,22 @@ case class GeExpression(field: String, value: AnyRef) extends JdbcWhereExpressio
 
   override def criteria(implicit table: Table): Criteria = maker.greaterThanOrEqualsTo(field, value)
 }
-case class LimitExpression(limit: Int = 0) extends Expression
-case class PageExpression(limit: Int = 0) extends Expression
+case class LimitExpression(num: Int = 0) extends Expression
+case class PageExpression(num: Int = 0) extends Expression
 case class SortsExpression(sorts: Array[Sort]) extends Expression
-case class SelectExpression(where: JdbcWhereExpression = EmptyExpression(), sorts: SortsExpression = SortsExpression(Array.empty), limit: LimitExpression = LimitExpression(10), page: PageExpression = PageExpression(0)) extends Expression
+case class SelectExpression(where: JdbcWhereExpression = EmptyExpression(), sorts: SortsExpression = SortsExpression(Array.empty), limit: LimitExpression = LimitExpression(10), page: PageExpression = PageExpression(0)) extends Expression {
+  import scala.collection.JavaConversions.seqAsJavaList
+  import scala.reflect.runtime.universe._
+  def createSql[T](implicit table: Table, sql: Sql, typeTag: TypeTag[T]): SqlParams = {
+    val select: Iterable[String] = typeOf[T](typeTag).members.collect {
+      case m: MethodSymbol if m.isCaseAccessor => m.name.toString
+    }
+    sql
+      .select(select.map(column(_)).toSeq)
+      .orderBy(sorts.sorts.map(sort => new OrderBy(column(sort.field), "DESC".equalsIgnoreCase(sort.order))).toSeq)
+      .limit(page.num * limit.num, limit.num)
+      .where(where.criteria)
+      .from(table)
+      .getSqlParams
+  }
+}

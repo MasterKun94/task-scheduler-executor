@@ -3,6 +3,8 @@ package com.oceanum.jdbc.expr
 import com.oceanum.api.Sort
 import com.oceanum.persistence.{Expression, ExpressionFactory}
 
+import scala.reflect.runtime.universe
+
 class JdbcExpressionFactory extends ExpressionFactory {
   override def select(query: Expression, sorts: Expression): Expression = {
     SelectExpression(query.asInstanceOf[JdbcWhereExpression], sorts.asInstanceOf[SortsExpression])
@@ -124,11 +126,17 @@ object JdbcExpressionFactory {
 
   def tag[A](implicit typeTag: TypeTag[A]): Type = typeOf(typeTag)
 
-  def classAccessors[T: TypeTag]: List[MethodSymbol] = typeOf[T].members.collect {
+  def classAccessors[T: TypeTag]: Iterable[(String, universe.Type)] = typeOf[T].members.collect {
     case m: MethodSymbol if m.isCaseAccessor => m
-  }.toList
+  }
+    .map(field => field.name.toString -> field.returnType)
 
   def main(args: Array[String]): Unit = {
-    classAccessors[GtExpression].map(_.name.toString).foreach(println)
+    classAccessors[GtExpression].foreach {
+      case (str, t) =>
+        println(str)
+        println(t)
+        println(t =:= typeOf[String])
+    }
   }
 }

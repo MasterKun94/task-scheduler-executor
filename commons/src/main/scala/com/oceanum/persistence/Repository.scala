@@ -3,6 +3,7 @@ package com.oceanum.persistence
 import com.oceanum.expr.{JavaHashMap, JavaMap}
 
 import scala.concurrent.Future
+import scala.reflect.runtime.universe.TypeTag
 
 /**
  * 对象仓库，用于持久化和查询对象
@@ -24,7 +25,7 @@ import scala.concurrent.Future
  * 此外还需要实现 com/oceanum/expr/RepoFunction.scala下的所有抽象类，用于支持仓库的查询表达式
  */
 trait Repository[T<:AnyRef] {
-  def manifest: Manifest[T]
+  def typeTag: TypeTag[T]
 
   def save(id: String, obj: T): Future[Unit]
 

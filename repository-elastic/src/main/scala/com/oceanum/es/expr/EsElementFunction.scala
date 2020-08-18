@@ -1,8 +1,9 @@
-package com.oceanum.expr
+package com.oceanum.es.expr
 
 import com.googlecode.aviator.runtime.`type`.{AviatorObject, AviatorRuntimeJavaType}
 import com.googlecode.aviator.runtime.function.AbstractFunction
 import com.oceanum.annotation.IFunction
+import com.oceanum.expr.JavaMap
 import org.elasticsearch.index.query.{BoolQueryBuilder, QueryBuilder, RangeQueryBuilder}
 
 
@@ -52,6 +53,7 @@ class EsFilterFunction extends EsElementFunction("es.filter", EsFilter.apply)
 
 
 import java.util.{List => JavaList}
+
 import scala.collection.JavaConversions.{collectionAsScalaIterable, seqAsJavaList}
 trait EsElement[T<:QueryBuilder] {
   def create(queryBuilder: T)

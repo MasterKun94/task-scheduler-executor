@@ -141,13 +141,14 @@ abstract class AbstractRestService extends Log with RestService {
   }
 
   override def checkWorkflowStatus(name: String): Future[GraphMeta] = {
-    val env = Map[String, AnyRef]("name" -> name)
+    val env = Map[String, AnyRef](
+      "name" -> name,
+      "sorts" -> Array(Sort("id", "DESC"), Sort("rerunId", "DESC")))
     val expr =
       """
         |repo.select(
         | repo.field('name') == name,
-        | repo.sort('id', 'DESC'),
-        | repo.sort('rerunId', 'DESC'),
+        | repo.sort(sorts),
         | repo.size(1)
         |)
         |""".stripMargin
