@@ -11,7 +11,11 @@ import scala.reflect.runtime.universe._
 @IRepositoryFactory(priority = 100)
 class JdbcRepositoryFactory extends RepositoryFactory {
   override def create[T <: AnyRef](implicit tag: TypeTag[T]): Repository[T] = new AbstractRepository[T]() {
-
+    private val fields: Map[String, Type] = typeOf(tag).members
+      .collect {
+        case m: MethodSymbol if m.isCaseAccessor => m.name.toString -> m.returnType
+      }
+      .toMap
 
     override def save(id: String, obj: T): Future[Unit] = ???
 
