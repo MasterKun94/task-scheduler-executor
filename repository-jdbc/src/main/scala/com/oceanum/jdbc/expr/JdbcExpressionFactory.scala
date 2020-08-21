@@ -1,7 +1,10 @@
 package com.oceanum.jdbc.expr
 
 import com.oceanum.api.Sort
+import com.oceanum.common.Environment
+import com.oceanum.expr.Evaluator
 import com.oceanum.persistence.{Expression, ExpressionFactory}
+import tech.ibit.sqlbuilder.Sql
 
 import scala.reflect.runtime.universe
 
@@ -121,22 +124,45 @@ class JdbcExpressionFactory extends ExpressionFactory {
 }
 
 object JdbcExpressionFactory {
-  import scala.reflect.runtime.universe._
-  def mf[T](implicit mf: Manifest[T]): Manifest[T] = mf
-
-  def tag[A](implicit typeTag: TypeTag[A]): Type = typeOf(typeTag)
-
-  def classAccessors[T: TypeTag]: Iterable[(String, universe.Type)] = typeOf[T].members.collect {
-    case m: MethodSymbol if m.isCaseAccessor => m
-  }
-    .map(field => field.name.toString -> field.returnType)
-
   def main(args: Array[String]): Unit = {
-    classAccessors[GtExpression].foreach {
-      case (str, t) =>
-        println(str)
-        println(t)
-        println(t =:= typeOf[String])
-    }
+//    Environment.loadEnv(Array("--conf=cluster/src/main/resources/application.properties"))
+//    Environment.initSystem()
+//    val env = Map(
+//      "name" -> "name",
+//      "sorts" -> Array(Sort("time", "DESC"))
+//    )
+//    import scala.collection.JavaConversions.mapAsJavaMap
+//    val sql = Evaluator.rawExecute(
+//      """
+//        |repo.select(
+//        | repo.field('name') == name,
+//        | repo.sort(sorts),
+//        | repo.size(1)
+//        |)
+//        |""".stripMargin, env)
+//      .asInstanceOf[SelectExpression]
+//      .createSql("table", "field1", "field2" )(new Sql())
+//    println(sql.getSql)
+//    println(sql.getParams)
+
+    import scala.reflect.runtime.universe._
+    val tag = typeTag[GtExpression]
+    val calls: Map[String, MethodMirror] = tag.tpe.members
+      .collect {
+        case m: MethodSymbol if m.isCaseAccessor =>
+          val key = hump2line(m.name.toString)
+          val t = m.returnType
+          println(key, t)
+          key -> tag.mirror.reflect(GtExpression("field", "value")).reflectMethod(m)
+      }
+      .toMap
+    println(calls)
+    println(calls("value")())
+    println(calls("field")())
+  }
+
+  private val pattern = "[A-Z]".r
+  private def hump2line(hump: String): String = {
+    pattern.replaceAllIn(hump, m => "_" + (hump.charAt(m.start) + 32).toChar)
   }
 }

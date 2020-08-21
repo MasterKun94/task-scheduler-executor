@@ -92,16 +92,14 @@ case class SortsExpression(sorts: Array[Sort]) extends Expression
 case class SelectExpression(where: JdbcWhereExpression = EmptyExpression(), sorts: SortsExpression = SortsExpression(Array.empty), limit: LimitExpression = LimitExpression(10), page: PageExpression = PageExpression(0)) extends Expression {
   import scala.collection.JavaConversions.seqAsJavaList
   import scala.reflect.runtime.universe._
-  def createSql[T](implicit table: Table, sql: Sql, typeTag: TypeTag[T]): SqlParams = {
-    val select: Iterable[String] = typeOf[T](typeTag).members.collect {
-      case m: MethodSymbol if m.isCaseAccessor => m.name.toString
-    }
+  def createSql(tableName: String, fieldNamess: String*)(implicit sql: Sql): SqlParams = {
+    implicit val t: Table = table(tableName)
     sql
-      .select(select.map(column(_)).toSeq)
+      .select(fieldNamess.map(column(_)))
       .orderBy(sorts.sorts.map(sort => new OrderBy(column(sort.field), "DESC".equalsIgnoreCase(sort.order))).toSeq)
       .limit(page.num * limit.num, limit.num)
       .where(where.criteria)
-      .from(table)
+      .from(t)
       .getSqlParams
   }
 }
