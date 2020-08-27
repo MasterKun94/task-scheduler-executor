@@ -1,12 +1,15 @@
 package com.oceanum.jdbc.expr
 
+import java.sql.DriverManager
+
 import com.oceanum.api.Sort
 import com.oceanum.common.Environment
 import com.oceanum.expr.Evaluator
 import com.oceanum.persistence.{Expression, ExpressionFactory}
+import slick.ast.TypedType
+import slick.jdbc.JdbcBackend.Database
+import slick.lifted.Tag
 import tech.ibit.sqlbuilder.Sql
-
-import scala.reflect.runtime.universe
 
 class JdbcExpressionFactory extends ExpressionFactory {
   override def select(query: Expression, sorts: Expression): Expression = {
@@ -125,40 +128,42 @@ class JdbcExpressionFactory extends ExpressionFactory {
 
 object JdbcExpressionFactory {
   def main(args: Array[String]): Unit = {
-//    Environment.loadEnv(Array("--conf=cluster/src/main/resources/application.properties"))
-//    Environment.initSystem()
-//    val env = Map(
-//      "name" -> "name",
-//      "sorts" -> Array(Sort("time", "DESC"))
-//    )
-//    import scala.collection.JavaConversions.mapAsJavaMap
-//    val sql = Evaluator.rawExecute(
-//      """
-//        |repo.select(
-//        | repo.field('name') == name,
-//        | repo.sort(sorts),
-//        | repo.size(1)
-//        |)
-//        |""".stripMargin, env)
-//      .asInstanceOf[SelectExpression]
-//      .createSql("table", "field1", "field2" )(new Sql())
-//    println(sql.getSql)
-//    println(sql.getParams)
+        Environment.loadEnv(Array("--conf=cluster/src/main/resources/application.properties"))
+        Environment.initSystem()
+        val env = Map(
+          "name" -> "name",
+          "sorts" -> Array(Sort("time", "DESC"))
+        )
+        import scala.collection.JavaConversions.mapAsJavaMap
+        val sql = Evaluator.rawExecute(
+          """
+            |repo.select(
+            | repo.field('name') == name,
+            | repo.sort(sorts),
+            | repo.size(1)
+            |)
+            |""".stripMargin, env)
+          .asInstanceOf[SelectExpression]
+          .createSql("table", "field1", "field2" )(new Sql())
+        println(sql.getSql)
+        println(sql.getParams)
+    println(sql)
+    //
+    //    import scala.reflect.runtime.universe._
+    //    val tag = typeTag[GtExpression]
+    //    val calls: Map[String, MethodMirror] = tag.tpe.members
+    //      .collect {
+    //        case m: MethodSymbol if m.isCaseAccessor =>
+    //          val key = hump2line(m.name.toString)
+    //          val t = m.returnType
+    //          println(key, t)
+    //          key -> tag.mirror.reflect(GtExpression("field", "value")).reflectMethod(m)
+    //      }
+    //      .toMap
+    //    println(calls)
+    //    println(calls("value")())
+    //    println(calls("field")())
 
-    import scala.reflect.runtime.universe._
-    val tag = typeTag[GtExpression]
-    val calls: Map[String, MethodMirror] = tag.tpe.members
-      .collect {
-        case m: MethodSymbol if m.isCaseAccessor =>
-          val key = hump2line(m.name.toString)
-          val t = m.returnType
-          println(key, t)
-          key -> tag.mirror.reflect(GtExpression("field", "value")).reflectMethod(m)
-      }
-      .toMap
-    println(calls)
-    println(calls("value")())
-    println(calls("field")())
   }
 
   private val pattern = "[A-Z]".r
